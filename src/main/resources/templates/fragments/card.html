@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="card"
+     class="flashcard"
+     x-data="{ flipped: false }"
+     @click="flipped = !flipped">
+
+    <div class="card-inner" :class="{ 'is-flipped': flipped }">
+        <div class="card card-front">
+            <span th:text="${card.fromWord()}">word</span>
+        </div>
+        <div class="card card-back">
+            <span class="card-to-word" th:text="${card.toWord()}">translation</span>
+            <span class="card-example"
+                  th:if="${card.example() != null and !card.example().isEmpty()}"
+                  th:text="${card.example()}">example</span>
+        </div>
+    </div>
+
+    <p class="flip-hint" x-show="!flipped">Click to reveal</p>
+</div>
+</body>
+</html>

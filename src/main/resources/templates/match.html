@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#content})}">
+<head>
+    <title>Match Game – Easy Language Learning</title>
+</head>
+<body>
+    <div id="content">
+        <h2>Match Game</h2>
+        <div id="board-container"
+             hx-on::after-request="htmx.process(document.getElementById('board-container'))">
+            <div th:replace="~{fragments/board :: board}"></div>
+        </div>
+    </div>
+</body>
+</html>

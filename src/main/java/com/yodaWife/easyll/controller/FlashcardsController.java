@@ -1,0 +1,60 @@
+package com.yodawife.easyll.controller;
+
+import com.yodawife.easyll.domain.MatchSession;
+import com.yodawife.easyll.domain.WordEntry;
+import com.yodawife.easyll.service.DataHealthService;
+import com.yodawife.easyll.service.FlashcardService;
+import com.yodawife.easyll.service.SessionStore;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+
+import java.util.Optional;
+
+@Controller
+public class FlashcardsController {
+
+    private final FlashcardService flashcardService;
+    private final SessionStore sessionStore;
+    private final DataHealthService dataHealthService;
+
+    public FlashcardsController(FlashcardService flashcardService,
+                                SessionStore sessionStore,
+                                DataHealthService dataHealthService) {
+        this.flashcardService = flashcardService;
+        this.sessionStore = sessionStore;
+        this.dataHealthService = dataHealthService;
+    }
+
+    @GetMapping("/flashcards")
+    public String flashcardsPage(HttpSession httpSession, Model model) {
+        String sessionId = (String) httpSession.getAttribute("sessionId");
+        Optional<MatchSession> session = sessionStore.get(sessionId);
+
+        if (session.isEmpty() || !"flashcards".equals(session.get().getMode())) {
+            return "redirect:/";
+        }
+
+        var snapshot = dataHealthService.snapshot();
+        if (!snapshot.healthy() || snapshot.wordData() == null) {
+            return "redirect:/";
+        }
+
+        WordEntry card = flashcardService.randomCard()
+                .orElse(null);
+
+        model.addAttribute("card", card);
+        model.addAttribute("fromLang", snapshot.wordData().metadata().fromLanguageName());
+        model.addAttribute("toLang", snapshot.wordData().metadata().toLanguageName());
+        return "flashcards";
+    }
+
+    @GetMapping("/flashcards/card")
+    public String cardPartial(Model model) {
+        WordEntry card = flashcardService.randomCard()
+                .orElse(null);
+        model.addAttribute("card", card);
+        return "fragments/card :: card";
+    }
+}

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:fragment="layout(title, content)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:replace="${title}">Easy Language Learning</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}" defer></script>
+    <script th:src="@{/webjars/alpinejs/dist/cdn.min.js}" defer></script>
+</head>
+<body>
+    <header>
+        <h1>Easy Language Learning</h1>
+        <nav>
+            <a th:href="@{/}">Home</a>
+        </nav>
+    </header>
+    <main th:replace="${content}">
+        <!-- page content injected here -->
+    </main>
+</body>
+</html>

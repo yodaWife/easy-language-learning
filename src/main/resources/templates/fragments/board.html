@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="board" id="match-board">
+
+    <div class="attempt-counter">
+        Matched <span th:text="${attempts}">0</span> / <span th:text="${maxAttempts}">30</span>
+    </div>
+
+    <!-- Feedback flash (shown when lastCorrect is set) -->
+    <div th:if="${lastCorrect != null}"
+         th:class="${lastCorrect ? 'feedback-correct' : 'feedback-incorrect'}"
+         th:text="${lastCorrect ? '✓ Correct!' : '✗ Try again'}">
+    </div>
+
+    <div class="match-columns">
+        <div class="match-column">
+            <div th:each="card : ${board.leftColumn()}"
+                 th:unless="${board.matchedPairIds().contains(card.pairId())}"
+                 class="match-cell drag-card"
+                 th:attr="draggable='true',
+                          data-word=${card.word()},
+                          data-pair-id=${card.pairId()},
+                          data-side=${card.side()}">
+                <span th:text="${card.word()}">word</span>
+            </div>
+        </div>
+        <div class="match-column">
+            <div th:each="card : ${board.rightColumn()}"
+                 th:unless="${board.matchedPairIds().contains(card.pairId())}"
+                 class="match-cell drop-slot"
+                 th:attr="draggable='false',
+                          data-word=${card.word()},
+                          data-pair-id=${card.pairId()},
+                          data-side=${card.side()}">
+                <span th:text="${card.word()}">word</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        let draggedWord = null;
+        let draggedSide = null;
+
+        document.querySelectorAll('.drag-card').forEach(function(card) {
+            card.addEventListener('dragstart', function(e) {
+                draggedWord = card.dataset.word;
+                draggedSide = card.dataset.side;
+                card.classList.add('dragging');
+            });
+            card.addEventListener('dragend', function() {
+                card.classList.remove('dragging');
+            });
+        });
+
+        document.querySelectorAll('.drop-slot').forEach(function(slot) {
+            slot.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                slot.classList.add('drag-over');
+            });
+            slot.addEventListener('dragleave', function() {
+                slot.classList.remove('drag-over');
+            });
+            slot.addEventListener('drop', function(e) {
+                e.preventDefault();
+                slot.classList.remove('drag-over');
+                if (!draggedWord) return;
+
+                var targetWord = slot.dataset.word;
+                var targetSide = slot.dataset.side;
+
+                var fromWord, toWord;
+                if (draggedSide === 'from') {
+                    fromWord = draggedWord;
+                    toWord = targetWord;
+                } else {
+                    fromWord = targetWord;
+                    toWord = draggedWord;
+                }
+
+                draggedWord = null;
+                draggedSide = null;
+
+                htmx.ajax('POST', '/match/attempt', {
+                    target: '#board-container',
+                    swap: 'innerHTML',
+                    values: { fromWord: fromWord, toWord: toWord }
+                });
+            });
+        });
+    })();
+    </script>
+</div>
+</body>
+</html>

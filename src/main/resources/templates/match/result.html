@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#content})}">
+<head>
+    <title>Result – Easy Language Learning</title>
+</head>
+<body>
+    <div id="content">
+        <h2>Session Complete!</h2>
+
+        <div class="result-card">
+            <p class="result-message" th:text="${resultMessage}">Result</p>
+            <div class="result-stats">
+                <div class="stat">
+                    <span class="stat-value" th:text="${successes}">0</span>
+                    <span class="stat-label">Correct</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" th:text="${failures}">0</span>
+                    <span class="stat-label">Incorrect</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" th:text="${successRate + '%'}">0%</span>
+                    <span class="stat-label">Success Rate</span>
+                </div>
+            </div>
+        </div>
+
+        <a th:href="@{/}" class="button-link">Play again</a>
+    </div>
+</body>
+</html>

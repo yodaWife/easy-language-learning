@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#content})}">
+<head>
+    <title>Home – Easy Language Learning</title>
+</head>
+<body>
+    <div id="content">
+        <!-- Data health banner -->
+        <div id="health-banner-wrapper">
+            <div th:replace="~{fragments/health-banner :: healthBanner}"></div>
+        </div>
+
+        <h2>Welcome!</h2>
+
+        <form th:action="@{/session/start}" method="post" class="start-form">
+            <div class="form-group">
+                <label for="nickname">Nickname <span class="hint">(optional — enables score tracking)</span></label>
+                <input type="text" id="nickname" name="nickname"
+                       list="nickname-suggestions"
+                       placeholder="Leave blank to play anonymously"
+                       autocomplete="off"
+                       th:disabled="${!healthy}">
+                <datalist id="nickname-suggestions">
+                    <option th:each="n : ${nicknames}" th:value="${n}"></option>
+                </datalist>
+            </div>
+
+            <div class="form-group">
+                <label>Choose mode</label>
+                <div class="mode-radio">
+                    <label class="radio-label">
+                        <input type="radio" name="mode" value="flashcards" checked th:disabled="${!healthy}">
+                        Flashcards
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="mode" value="match" th:disabled="${!healthy}">
+                        Match Game
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" th:disabled="${!healthy}">Start</button>
+        </form>
+    </div>
+</body>
+</html>

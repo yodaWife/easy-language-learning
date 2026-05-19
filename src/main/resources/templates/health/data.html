@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#content})}">
+<head>
+    <title>Data Health – Easy Language Learning</title>
+</head>
+<body>
+    <div id="content">
+        <h2>Data Health Status</h2>
+
+        <div th:if="${healthy}" class="banner-success">
+            All data loaded successfully.
+        </div>
+
+        <div th:if="${!healthy}" class="banner-error">
+            <strong>Data is in a degraded state. The following errors were found:</strong>
+            <ul>
+                <li th:each="err : ${errors}" th:text="${err}"></li>
+            </ul>
+        </div>
+
+        <p><a th:href="@{/}">← Back to Home</a></p>
+    </div>
+</body>
+</html>

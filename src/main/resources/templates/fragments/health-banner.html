@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="healthBanner">
+    <div th:if="${!healthy}" class="banner-error" id="health-banner">
+        <strong>Data error — game features are disabled.</strong>
+        <ul>
+            <li th:each="err : ${errors}" th:text="${err}"></li>
+        </ul>
+        <div class="banner-actions">
+            <a th:href="@{/health/data}">View diagnostics</a>
+            <form th:action="@{/admin/data/reload}"
+                  method="post"
+                  style="display:inline"
+                  hx-post="/admin/data/reload"
+                  hx-target="#health-banner-wrapper"
+                  hx-swap="innerHTML">
+                <button type="submit" class="btn-reload">Reload data</button>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>
