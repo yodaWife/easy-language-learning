@@ -26,7 +26,11 @@ public class MatchBoardGenerator {
 
     public MatchBoard generate() {
         DataSnapshot snapshot = dataHealthService.snapshot();
-        List<WordEntry> allWords = new ArrayList<>(snapshot.wordData().words());
+        var wordData = snapshot.wordData();
+        if (wordData == null) {
+            return new MatchBoard(List.of(), List.of(), List.of(), java.util.Set.of());
+        }
+        List<WordEntry> allWords = new ArrayList<>(wordData.words());
 
         // Pick random entries (no duplicates within a set) using configured board size.
         Collections.shuffle(allWords, random);

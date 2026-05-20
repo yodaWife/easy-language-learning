@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,7 +21,7 @@ class UserScoreServiceTest {
 
         UserWordKey key = new UserWordKey("alice", "Letter", "Betű");
         assertThat(histories).containsKey(key);
-        assertThat(histories.get(key).entries()).containsExactly("S");
+        assertThat(Objects.requireNonNull(histories.get(key)).entries()).containsExactly("S");
     }
 
     @Test
@@ -30,7 +31,7 @@ class UserScoreServiceTest {
         service.append(histories, "alice", "Letter", "Betű", "F");
 
         UserWordKey key = new UserWordKey("alice", "Letter", "Betű");
-        assertThat(histories.get(key).entries()).containsExactly("S", "F");
+    assertThat(Objects.requireNonNull(histories.get(key)).entries()).containsExactly("S", "F");
     }
 
     @Test
@@ -40,8 +41,10 @@ class UserScoreServiceTest {
         service.append(histories, "bob",   "Letter", "Betű", "F");
 
         assertThat(histories).hasSize(2);
-        assertThat(histories.get(new UserWordKey("alice", "Letter", "Betű")).entries()).containsExactly("S");
-        assertThat(histories.get(new UserWordKey("bob",   "Letter", "Betű")).entries()).containsExactly("F");
+    assertThat(Objects.requireNonNull(histories.get(new UserWordKey("alice", "Letter", "Betű"))).entries())
+        .containsExactly("S");
+    assertThat(Objects.requireNonNull(histories.get(new UserWordKey("bob", "Letter", "Betű"))).entries())
+        .containsExactly("F");
     }
 
     @Test
@@ -51,6 +54,6 @@ class UserScoreServiceTest {
             service.append(histories, "alice", "A", "B", i % 2 == 0 ? "S" : "F");
         }
         UserWordKey key = new UserWordKey("alice", "A", "B");
-        assertThat(histories.get(key).entries()).hasSize(10);
+        assertThat(Objects.requireNonNull(histories.get(key)).entries()).hasSize(10);
     }
 }

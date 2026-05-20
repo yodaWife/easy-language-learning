@@ -2,14 +2,15 @@ package com.yodawife.easyll.service;
 
 import com.yodawife.easyll.domain.ScoreDataBundle;
 import com.yodawife.easyll.domain.WordDataBundle;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
 public record DataSnapshot(
         boolean healthy,
         List<String> errors,
-        WordDataBundle wordData,
-        ScoreDataBundle scoreData
+    @Nullable WordDataBundle wordData,
+    @Nullable ScoreDataBundle scoreData
 ) {
     public DataSnapshot {
         errors = List.copyOf(errors);

@@ -2,6 +2,7 @@ package com.yodawife.easyll.service;
 
 import com.yodawife.easyll.config.MatchGameProperties;
 import com.yodawife.easyll.domain.MatchSession;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -17,18 +18,18 @@ public class SessionStore {
         this.matchGameProperties = matchGameProperties;
     }
 
-    public MatchSession create(String nickname, String mode) {
+    public MatchSession create(@Nullable String nickname, String mode) {
         MatchSession session = new MatchSession(nickname, mode, matchGameProperties.getMaxAttempts());
         sessions.put(session.getSessionId(), session);
         return session;
     }
 
-    public Optional<MatchSession> get(String sessionId) {
+    public Optional<MatchSession> get(@Nullable String sessionId) {
         if (sessionId == null) return Optional.empty();
         return Optional.ofNullable(sessions.get(sessionId));
     }
 
-    public void remove(String sessionId) {
+    public void remove(@Nullable String sessionId) {
         if (sessionId != null) {
             sessions.remove(sessionId);
         }

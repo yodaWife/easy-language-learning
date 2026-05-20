@@ -13,6 +13,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.util.Objects;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -92,8 +94,7 @@ class MatchControllerTest {
         httpSession.setAttribute("sessionId", session.getSessionId());
 
         mockMvc.perform(get("/match").session(httpSession)).andReturn();
-        MatchBoard initialBoard = (MatchBoard) httpSession.getAttribute("currentBoard");
-        assertThat(initialBoard).isNotNull();
+        MatchBoard initialBoard = (MatchBoard) Objects.requireNonNull(httpSession.getAttribute("currentBoard"));
 
         var correctPair = initialBoard.pairs().getFirst();
 
@@ -102,7 +103,7 @@ class MatchControllerTest {
                         .param("toWord", correctPair.toWord()))
                 .andExpect(status().isOk());
 
-        MatchBoard updatedBoard = (MatchBoard) httpSession.getAttribute("currentBoard");
+        MatchBoard updatedBoard = (MatchBoard) Objects.requireNonNull(httpSession.getAttribute("currentBoard"));
         assertThat(updatedBoard.matchedPairIds()).hasSize(1);
     }
 
@@ -113,8 +114,7 @@ class MatchControllerTest {
         httpSession.setAttribute("sessionId", session.getSessionId());
 
         mockMvc.perform(get("/match").session(httpSession)).andReturn();
-        MatchBoard initialBoard = (MatchBoard) httpSession.getAttribute("currentBoard");
-        assertThat(initialBoard).isNotNull();
+        MatchBoard initialBoard = (MatchBoard) Objects.requireNonNull(httpSession.getAttribute("currentBoard"));
         assertThat(initialBoard.pairs()).hasSizeGreaterThan(1);
 
         var first = initialBoard.pairs().get(0);
@@ -125,7 +125,7 @@ class MatchControllerTest {
                         .param("toWord", second.toWord()))
                 .andExpect(status().isOk());
 
-        MatchBoard updatedBoard = (MatchBoard) httpSession.getAttribute("currentBoard");
+        MatchBoard updatedBoard = (MatchBoard) Objects.requireNonNull(httpSession.getAttribute("currentBoard"));
         assertThat(updatedBoard.matchedPairIds()).isEmpty();
     }
 
@@ -138,7 +138,7 @@ class MatchControllerTest {
         mockMvc.perform(get("/match").session(httpSession)).andReturn();
 
         for (int i = 0; i < 9; i++) {
-            MatchBoard board = (MatchBoard) httpSession.getAttribute("currentBoard");
+            MatchBoard board = (MatchBoard) Objects.requireNonNull(httpSession.getAttribute("currentBoard"));
             var pair = board.pairs().getFirst();
             mockMvc.perform(post("/match/attempt").session(httpSession)
                             .param("fromWord", pair.fromWord())
@@ -146,7 +146,7 @@ class MatchControllerTest {
                     .andExpect(status().isOk());
         }
 
-        MatchBoard board = (MatchBoard) httpSession.getAttribute("currentBoard");
+        MatchBoard board = (MatchBoard) Objects.requireNonNull(httpSession.getAttribute("currentBoard"));
         var pair = board.pairs().getFirst();
         mockMvc.perform(post("/match/attempt").session(httpSession)
                         .param("fromWord", pair.fromWord())

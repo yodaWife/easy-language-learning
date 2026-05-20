@@ -1,5 +1,7 @@
 package com.yodawife.easyll.domain;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.UUID;
 
 public class MatchSession {
@@ -7,18 +9,18 @@ public class MatchSession {
     public static final int DEFAULT_MAX_ATTEMPTS = 10;
 
     private final String sessionId;
-    private final String nickname;
+    private final @Nullable String nickname;
     private final String mode;
     private final int maxAttempts;
     private int attempts;
     private int successes;
     private int failures;
 
-    public MatchSession(String nickname, String mode) {
+    public MatchSession(@Nullable String nickname, String mode) {
         this(nickname, mode, DEFAULT_MAX_ATTEMPTS);
     }
 
-    public MatchSession(String nickname, String mode, int maxAttempts) {
+    public MatchSession(@Nullable String nickname, String mode, int maxAttempts) {
         this.sessionId = UUID.randomUUID().toString();
         this.nickname = (nickname == null || nickname.isBlank()) ? null : nickname.trim();
         this.mode = mode;
@@ -29,7 +31,7 @@ public class MatchSession {
     }
 
     public String getSessionId() { return sessionId; }
-    public String getNickname() { return nickname; }
+    public @Nullable String getNickname() { return nickname; }
     public String getMode() { return mode; }
     public int getMaxAttempts() { return maxAttempts; }
     public int getAttempts() { return attempts; }

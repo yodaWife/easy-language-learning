@@ -5,6 +5,7 @@ import com.yodawife.easyll.domain.UserWordKey;
 import com.yodawife.easyll.service.DataHealthService;
 import com.yodawife.easyll.service.UserScoreService;
 import com.yodawife.easyll.validation.ScoreCsvParser;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
@@ -17,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Repository
 public class ScoreRepository {
@@ -28,7 +30,7 @@ public class ScoreRepository {
     private final ScoreCsvParser scoreCsvParser;
 
     // Mutable working copy of histories; lazily initialised from snapshot
-    private Map<UserWordKey, UserWordHistory> histories = null;
+    private @Nullable Map<UserWordKey, UserWordHistory> histories = null;
 
     public ScoreRepository(DataHealthService dataHealthService,
                            UserScoreService userScoreService,
@@ -54,6 +56,11 @@ public class ScoreRepository {
         }
     }
 
+    private synchronized Map<UserWordKey, UserWordHistory> histories() {
+        ensureInitialised();
+        return Objects.requireNonNull(histories);
+    }
+
     /**
      * Append a match attempt result for the given user/word pair.
      *
@@ -63,8 +70,7 @@ public class ScoreRepository {
      * @param result   "S" or "F"
      */
     public synchronized void appendAttempt(String user, String fromWord, String toWord, String result) {
-        ensureInitialised();
-        userScoreService.append(histories, user, fromWord, toWord, result);
+        userScoreService.append(histories(), user, fromWord, toWord, result);
     }
 
     /**
@@ -72,7 +78,7 @@ public class ScoreRepository {
      * Uses temp-file + Files.move(ATOMIC_MOVE) to prevent corruption.
      */
     public synchronized void flush() {
-        ensureInitialised();
+        Map<UserWordKey, UserWordHistory> currentHistories = histories();
         Path targetPath = scoreCsvParser.getScoreFilePath();
         Path tempPath = targetPath.resolveSibling(targetPath.getFileName() + ".tmp");
 
@@ -84,7 +90,7 @@ public class ScoreRepository {
             }
 
             try (BufferedWriter writer = Files.newBufferedWriter(tempPath, StandardCharsets.UTF_8)) {
-                for (Map.Entry<UserWordKey, UserWordHistory> entry : histories.entrySet()) {
+                for (Map.Entry<UserWordKey, UserWordHistory> entry : currentHistories.entrySet()) {
                     UserWordKey key = entry.getKey();
                     UserWordHistory history = entry.getValue();
                     writer.write(escape(key.user()) + ";" +
@@ -116,9 +122,9 @@ public class ScoreRepository {
 
     /** Expose current known user nicknames for autocomplete. */
     public synchronized java.util.Set<String> knownUsers() {
-        ensureInitialised();
+        Map<UserWordKey, UserWordHistory> currentHistories = histories();
         var users = new java.util.TreeSet<String>();
-        histories.keySet().forEach(k -> users.add(k.user()));
+        currentHistories.keySet().forEach(k -> users.add(k.user()));
         return java.util.Collections.unmodifiableSet(users);
     }
 }

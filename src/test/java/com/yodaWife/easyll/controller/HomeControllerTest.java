@@ -11,6 +11,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.util.Objects;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -75,25 +77,23 @@ class HomeControllerTest {
             .andExpect(redirectedUrl("/match"))
             .andReturn();
 
-        MockHttpSession httpSession = (MockHttpSession) mvcResult.getRequest().getSession(false);
-        assertThat(httpSession).isNotNull();
-        String sessionId = (String) httpSession.getAttribute("sessionId");
+        MockHttpSession httpSession = (MockHttpSession) Objects.requireNonNull(mvcResult.getRequest().getSession(false));
+        String sessionId = (String) Objects.requireNonNull(httpSession.getAttribute("sessionId"));
         assertThat(sessionId).isNotBlank();
         assertThat(sessionStore.get(sessionId)).isPresent();
         assertThat(sessionStore.get(sessionId).orElseThrow().getNickname()).isEqualTo("alice");
-        }
+    }
 
-        @Test
-        void startSessionWithoutNicknameCreatesAnonymousSession() throws Exception {
+    @Test
+    void startSessionWithoutNicknameCreatesAnonymousSession() throws Exception {
         var mvcResult = mockMvc.perform(post("/session/start")
                 .param("mode", "flashcards"))
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/flashcards"))
             .andReturn();
 
-        MockHttpSession httpSession = (MockHttpSession) mvcResult.getRequest().getSession(false);
-        assertThat(httpSession).isNotNull();
-        String sessionId = (String) httpSession.getAttribute("sessionId");
+        MockHttpSession httpSession = (MockHttpSession) Objects.requireNonNull(mvcResult.getRequest().getSession(false));
+        String sessionId = (String) Objects.requireNonNull(httpSession.getAttribute("sessionId"));
         assertThat(sessionStore.get(sessionId)).isPresent();
         assertThat(sessionStore.get(sessionId).orElseThrow().getNickname()).isNull();
     }

@@ -3,6 +3,7 @@ package com.yodawife.easyll.validation;
 import com.yodawife.easyll.domain.CsvParseResult;
 import com.yodawife.easyll.domain.ScoreDataBundle;
 import com.yodawife.easyll.domain.UserWordKey;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.core.io.DefaultResourceLoader;
@@ -11,13 +12,18 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ScoreCsvParserTest {
 
     @TempDir
-    Path tempDir;
+    @Nullable Path tempDir;
+
+    private Path tempDir() {
+        return Objects.requireNonNull(tempDir);
+    }
 
     private ScoreCsvParser parserFor(String filePath) {
         return new ScoreCsvParser(filePath, new DefaultResourceLoader());
@@ -35,7 +41,7 @@ class ScoreCsvParserTest {
 
     @Test
     void missingFilReturnsEmptySuccess() {
-        ScoreCsvParser parser = parserFor(tempDir.resolve("nonexistent.csv").toString());
+        ScoreCsvParser parser = parserFor(tempDir().resolve("nonexistent.csv").toString());
         CsvParseResult<ScoreDataBundle> result = parser.parse();
         assertThat(result).isInstanceOf(CsvParseResult.Success.class);
         ScoreDataBundle bundle = ((CsvParseResult.Success<ScoreDataBundle>) result).value();
@@ -44,7 +50,7 @@ class ScoreCsvParserTest {
 
     @Test
     void validScoreFileLoadsSuccessfully() throws IOException {
-        Path file = tempDir.resolve("scores.csv");
+        Path file = tempDir().resolve("scores.csv");
         Files.writeString(file, "alice;Letter;Betű;S,F,S\n");
         ScoreCsvParser parser = parserFor(file.toString());
 
@@ -53,12 +59,12 @@ class ScoreCsvParserTest {
         ScoreDataBundle bundle = ((CsvParseResult.Success<ScoreDataBundle>) result).value();
         UserWordKey key = new UserWordKey("alice", "Letter", "Betű");
         assertThat(bundle.histories()).containsKey(key);
-        assertThat(bundle.histories().get(key).entries()).containsExactly("S", "F", "S");
+        assertThat(Objects.requireNonNull(bundle.histories().get(key)).entries()).containsExactly("S", "F", "S");
     }
 
     @Test
     void invalidHistorySymbolReturnsFailure() throws IOException {
-        Path file = tempDir.resolve("scores.csv");
+        Path file = tempDir().resolve("scores.csv");
         Files.writeString(file, "alice;Letter;Betű;S,X,F\n");
         ScoreCsvParser parser = parserFor(file.toString());
 
@@ -70,7 +76,7 @@ class ScoreCsvParserTest {
 
     @Test
     void emptyHistorySymbolReturnsFailure() throws IOException {
-        Path file = tempDir.resolve("scores.csv");
+        Path file = tempDir().resolve("scores.csv");
         Files.writeString(file, "alice;Letter;Betű;S,,F\n");
         ScoreCsvParser parser = parserFor(file.toString());
 
@@ -82,7 +88,7 @@ class ScoreCsvParserTest {
 
     @Test
     void blankHistoryReturnsFailure() throws IOException {
-        Path file = tempDir.resolve("scores.csv");
+        Path file = tempDir().resolve("scores.csv");
         Files.writeString(file, "alice;Letter;Betű;\n");
         ScoreCsvParser parser = parserFor(file.toString());
 
@@ -94,7 +100,7 @@ class ScoreCsvParserTest {
 
     @Test
     void wrongColumnCountReturnsFailure() throws IOException {
-        Path file = tempDir.resolve("scores.csv");
+        Path file = tempDir().resolve("scores.csv");
         Files.writeString(file, "alice;Letter\n");
         ScoreCsvParser parser = parserFor(file.toString());
 

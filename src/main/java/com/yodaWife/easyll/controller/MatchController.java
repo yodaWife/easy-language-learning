@@ -9,6 +9,7 @@ import com.yodawife.easyll.service.MatchSessionService;
 import com.yodawife.easyll.service.SessionStore;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,7 +59,7 @@ public class MatchController {
 
     @SuppressWarnings("unchecked")
     @PostMapping("/match/attempt")
-    public String attempt(
+    public @Nullable String attempt(
             @RequestParam String fromWord,
             @RequestParam String toWord,
             HttpSession httpSession,
@@ -93,9 +94,10 @@ public class MatchController {
 
         if (result.sessionComplete()) {
             // Persist per-user scores if nickname is present
-            if (session.hasNickname()) {
+            String nickname = session.getNickname();
+            if (nickname != null) {
                 for (var attempt : attempts) {
-                    scoreRepository.appendAttempt(session.getNickname(), attempt[0], attempt[1], attempt[2]);
+                    scoreRepository.appendAttempt(nickname, attempt[0], attempt[1], attempt[2]);
                 }
                 scoreRepository.flush();
             }
@@ -140,7 +142,7 @@ public class MatchController {
     }
 
     private void populateModel(Model model, MatchSession session, MatchBoard board,
-                               AttemptResult lastResult) {
+                               @Nullable AttemptResult lastResult) {
         model.addAttribute("board", board);
         model.addAttribute("attempts", session.getSuccesses());
         model.addAttribute("maxAttempts", session.getMaxAttempts());

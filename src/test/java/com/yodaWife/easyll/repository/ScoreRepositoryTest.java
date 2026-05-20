@@ -3,12 +3,14 @@ package com.yodawife.easyll.repository;
 import com.yodawife.easyll.service.DataHealthService;
 import com.yodawife.easyll.service.UserScoreService;
 import com.yodawife.easyll.validation.ScoreCsvParser;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -18,7 +20,11 @@ import static org.mockito.Mockito.when;
 class ScoreRepositoryTest {
 
     @TempDir
-    Path tempDir;
+    @Nullable Path tempDir;
+
+    private Path tempDir() {
+        return Objects.requireNonNull(tempDir);
+    }
 
     private ScoreRepository buildRepository(Path scoreFile) {
         // Mock DataHealthService to return a degraded snapshot (empty histories)
@@ -37,7 +43,7 @@ class ScoreRepositoryTest {
 
     @Test
     void flushWritesValidCsvFile() throws Exception {
-        Path scoreFile = tempDir.resolve("scores.csv");
+        Path scoreFile = tempDir().resolve("scores.csv");
         ScoreRepository repo = buildRepository(scoreFile);
 
         repo.appendAttempt("alice", "Letter", "Betű", "S");
@@ -52,7 +58,7 @@ class ScoreRepositoryTest {
 
     @Test
     void flushOverwritesPreviousFile() throws Exception {
-        Path scoreFile = tempDir.resolve("scores.csv");
+        Path scoreFile = tempDir().resolve("scores.csv");
         Files.writeString(scoreFile, "old;data;here;S\n");
 
         ScoreRepository repo = buildRepository(scoreFile);
@@ -67,7 +73,7 @@ class ScoreRepositoryTest {
     @Test
     void flushDoesNotCrashWhenDirectoryMissing() throws Exception {
         // Point to a file in a subdirectory that doesn't exist yet
-        Path scoreFile = tempDir.resolve("subdir/scores.csv");
+        Path scoreFile = tempDir().resolve("subdir/scores.csv");
         ScoreRepository repo = buildRepository(scoreFile);
 
         repo.appendAttempt("alice", "A", "B", "S");
@@ -79,7 +85,7 @@ class ScoreRepositoryTest {
 
     @Test
     void knownUsersReturnsAllDistinctUsers() {
-        Path scoreFile = tempDir.resolve("scores.csv");
+        Path scoreFile = tempDir().resolve("scores.csv");
         ScoreRepository repo = buildRepository(scoreFile);
 
         repo.appendAttempt("alice", "A", "B", "S");
@@ -99,7 +105,7 @@ class ScoreRepositoryTest {
         UserScoreService userScoreService = new UserScoreService();
 
         ScoreCsvParser mockParser = mock(ScoreCsvParser.class);
-        when(mockParser.getScoreFilePath()).thenReturn(tempDir);
+        when(mockParser.getScoreFilePath()).thenReturn(tempDir());
 
         ScoreRepository repo = new ScoreRepository(mockHealth, userScoreService, mockParser);
         repo.appendAttempt("alice", "A", "B", "S");

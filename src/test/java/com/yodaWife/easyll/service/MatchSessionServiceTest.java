@@ -6,23 +6,17 @@ import com.yodawife.easyll.domain.MatchCard;
 import com.yodawife.easyll.domain.MatchSession;
 import com.yodawife.easyll.domain.WordEntry;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
-@ExtendWith(MockitoExtension.class)
 class MatchSessionServiceTest {
 
-    @Mock
-    MatchBoardGenerator boardGenerator;
+    MatchBoardGenerator boardGenerator = mock(MatchBoardGenerator.class);
 
-    @InjectMocks
-    MatchSessionService matchSessionService;
+    MatchSessionService matchSessionService = new MatchSessionService(boardGenerator);
 
     private MatchBoard boardWithPairs(List<WordEntry> pairs) {
         List<MatchCard> left = pairs.stream()

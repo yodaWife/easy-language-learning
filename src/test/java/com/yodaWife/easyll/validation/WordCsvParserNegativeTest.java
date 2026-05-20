@@ -2,6 +2,7 @@ package com.yodawife.easyll.validation;
 
 import com.yodawife.easyll.domain.CsvParseResult;
 import com.yodawife.easyll.domain.WordDataBundle;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -9,13 +10,18 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class WordCsvParserNegativeTest {
 
     @TempDir
-    Path tempDir;
+    @Nullable Path tempDir;
+
+    private Path tempDir() {
+        return Objects.requireNonNull(tempDir);
+    }
 
     private WordCsvParser parserFor(Path filePath) {
         return new WordCsvParser(filePath.toString());
@@ -24,7 +30,7 @@ class WordCsvParserNegativeTest {
     @Test
     @DisplayName("Malformed row fails parsing")
     void malformedRowFailsParsing() throws IOException {
-        Path file = tempDir.resolve("malformed.csv");
+        Path file = tempDir().resolve("malformed.csv");
         Files.writeString(file, "ENGLISH;HUNGARIAN;EXAMPLE\nBrokenOnlyOneColumn\n");
 
         CsvParseResult<WordDataBundle> result = parserFor(file).parse();
@@ -34,7 +40,7 @@ class WordCsvParserNegativeTest {
     @Test
     @DisplayName("Blank FROM value fails parsing")
     void blankFromValueFailsParsing() throws IOException {
-        Path file = tempDir.resolve("blank-from.csv");
+        Path file = tempDir().resolve("blank-from.csv");
         Files.writeString(file, "ENGLISH;HUNGARIAN;EXAMPLE\n ;Betű;\n");
 
         CsvParseResult<WordDataBundle> result = parserFor(file).parse();
@@ -46,7 +52,7 @@ class WordCsvParserNegativeTest {
     @Test
     @DisplayName("Blank TO value fails parsing")
     void blankToValueFailsParsing() throws IOException {
-        Path file = tempDir.resolve("blank-to.csv");
+        Path file = tempDir().resolve("blank-to.csv");
         Files.writeString(file, "ENGLISH;HUNGARIAN;EXAMPLE\nLetter; ;\n");
 
         CsvParseResult<WordDataBundle> result = parserFor(file).parse();
