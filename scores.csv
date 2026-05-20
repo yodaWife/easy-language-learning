@@ -1,39 +1,65 @@
-Ewa;Stamp;Bokor;F
-Ala;Glue;Ragaszto;S
 Ala;Detergent;Mosószer;S,S,S
-Ala;Eraser;Ragaszto;F
 Ewa;Stamp;Kő;F
-Ala;Stone;Kő;S,S,S
-Ewa;Fisherman;Horgász;S,S,S
+Ewa;Kind;Kedves;S
+Ewa;To look for(search);Keresni;S
+Ewa;Young;Fiatal;S
+Ewa;Younger sister;Húg;S
+Ewa;Sidewalk;Járda;S,S,S
 Ala;Tower;Torony;S
 Ewa;Postcard;Képeslap;S
-Ewa;Sidewalk;Járda;S,S,S
-Ala;Postcard;Képeslap;S
+Ewa;Circle;Kör;S
 Ala;Fence;Kerités;S,S,S
-Ewa;Fence;Kerités;S
-Ewa;Field;Mező;S,S,S
+Ewa;After;Után;S
+Ewa;To arrive;Megérkezni;S
+Ewa;Fence;Kerités;S,S
 Ala;Bush;Bokor;S,S
-Ala;To set;beállitni;S,S
-Ala;Cloud;Felhő;S
-Ewa;Screws;Csavarok;S
 Ala;Silliness;Butaság;S
-Ala;Sidewalk;Járda;S
+Ewa;Weekday;Hétköznap;S
 Ala;Letter;Betű;S
+Ala;Sidewalk;Járda;S
 Ala;Fill;Tölt;S
 Ala;Envelope;Boríték;S
-Ewa;Eraser;Radír;S
 Ala;To start;Elindítni;S
-Ala;Newspaper;Ujság;S
+Ewa;West;Nyugat;S
+Ewa;Old(thing);Régi;S
+Ewa;Interests me;Érdekel;S
 Ewa;Glue;Ragaszto;S,S
-Ewa;Detergent;Mosószer;S,S
-Ewa;Stone;Kő;S,S,S
+Ewa;Detergent;Mosószer;S,S,S
+Ewa;Important;Fontos;S
 Ewa;Temple;Templom;S,S
 Ewa;To set;beállitni;S
 Ala;Bus stop;Buszmegálló;S
-Ala;Screws;Csavarok;S,S
+Ewa;Full;Tele;S
+Ewa;Before;Előtt;S,S
+Ewa;Young;Előtt;F
 Ewa;Bush;Bokor;S,S
-Ewa;Newspaper;Ujság;S,S
+Ewa;Tall;Magas;S
+Ewa;Busy;Elfoglalt;S
+Ewa;Newspaper;Ujság;S,S,S
+Ewa;East;Kelet;S
 Ala;Eraser;Radír;S,S
-Ewa;Stamp;Bélyeg;S
+Ewa;Stamp;Bokor;F
+Ala;Glue;Ragaszto;S
+Ala;Eraser;Ragaszto;F
+Ala;Stone;Kő;S,S,S
+Ewa;Fisherman;Horgász;S,S,S
+Ewa;Friendly;Barátságos;S
+Ewa;North;Észak;S
+Ala;Postcard;Képeslap;S
+Ewa;Field;Mező;S,S,S
+Ewa;Bus stop;Buszmegálló;S,S
+Ala;To set;beállitni;S,S
+Ala;Cloud;Felhő;S
+Ewa;To start;Elindítni;S
+Ewa;Screws;Csavarok;S
+Ewa;Eraser;Radír;S
+Ewa;To tell(a story);Elmesélni;S
+Ala;Newspaper;Ujság;S
+Ewa;Triangle;Háromszög;S
+Ewa;Pear;Körte;S
+Ewa;Stone;Kő;S,S,S
+Ala;Screws;Csavarok;S,S
+Ewa;To stay;Maradni;S
 Ewa;Tower;Torony;S,S
+Ewa;Stamp;Bélyeg;S
 Ala;Fisherman;Horgász;S

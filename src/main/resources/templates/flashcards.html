@@ -6,22 +6,27 @@
 </head>
 <body>
     <div id="content">
-        <h2>Flashcards</h2>
-        <p class="lang-label" th:text="${fromLang + ' → ' + toLang}">ENGLISH → HUNGARIAN</p>
+        <div class="page-main">
+            <div class="page-container">
+                <h2 class="section-title">📇 Flashcards</h2>
+                <p class="lang-direction" th:text="${fromLang} + ' → ' + ${toLang}">ENGLISH → HUNGARIAN</p>
 
-        <div id="card-container">
-            <div th:if="${card == null}" class="banner-error">No cards available.</div>
-            <div th:if="${card != null}" th:replace="~{fragments/card :: card}"></div>
-        </div>
+                <div id="card-section">
+                    <div th:if="${card == null}" class="banner-error">No cards available.</div>
+                    <div th:if="${card != null}" th:replace="~{fragments/card :: card}"></div>
+                </div>
 
-        <div class="flashcard-actions">
-            <button type="button"
-                    hx-get="/flashcards/card"
-                    hx-target="#card-container"
-                    hx-swap="innerHTML">
-                Next card
-            </button>
-            <a th:href="@{/}" class="link-home">← Back to Home</a>
+                <div class="flashcard-actions">
+                    <button type="button"
+                            class="btn-primary-action"
+                            hx-get="/flashcards/card"
+                            hx-target="#card-section"
+                            hx-swap="innerHTML">
+                        Next Card →
+                    </button>
+                    <a th:href="@{/}" class="back-home-link">← Back to Home</a>
+                </div>
+            </div>
         </div>
     </div>
 </body>

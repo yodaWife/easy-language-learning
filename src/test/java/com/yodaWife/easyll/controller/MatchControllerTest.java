@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
-@TestPropertySource(properties = "app.scores.file-path=./scores-test.csv")
+@ActiveProfiles("test")
 class MatchControllerTest {
 
     @Autowired
@@ -130,14 +130,14 @@ class MatchControllerTest {
     }
 
     @Test
-    void sessionCompletesAfterThirtySuccessfulAttemptsAndRedirectsToResult() throws Exception {
+    void sessionCompletesAfterTenSuccessfulAttemptsAndRedirectsToResult() throws Exception {
         MatchSession session = sessionStore.create("alice", "match");
         MockHttpSession httpSession = new MockHttpSession();
         httpSession.setAttribute("sessionId", session.getSessionId());
 
         mockMvc.perform(get("/match").session(httpSession)).andReturn();
 
-        for (int i = 0; i < 29; i++) {
+        for (int i = 0; i < 9; i++) {
             MatchBoard board = (MatchBoard) httpSession.getAttribute("currentBoard");
             var pair = board.pairs().getFirst();
             mockMvc.perform(post("/match/attempt").session(httpSession)
@@ -155,7 +155,7 @@ class MatchControllerTest {
                 .andExpect(header().string("HX-Redirect", "/match/result"));
 
         assertThat(sessionStore.get(session.getSessionId())).isPresent();
-        assertThat(sessionStore.get(session.getSessionId()).orElseThrow().getAttempts()).isEqualTo(30);
+        assertThat(sessionStore.get(session.getSessionId()).orElseThrow().getAttempts()).isEqualTo(10);
     }
 
     @Test

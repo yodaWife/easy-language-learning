@@ -1,24 +1,37 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
-<div th:fragment="card"
-     class="flashcard"
-     x-data="{ flipped: false }"
-     @click="flipped = !flipped">
+<div th:fragment="card">
 
-    <div class="card-inner" :class="{ 'is-flipped': flipped }">
-        <div class="card card-front">
-            <span th:text="${card.fromWord()}">word</span>
+    <div class="progress-track"
+         role="progressbar"
+         th:attr="aria-valuenow=${cardIndex}, aria-valuemin=1, aria-valuemax=${totalCards}">
+        <div class="progress-fill"
+             th:style="'width: ' + ${#numbers.formatDecimal(cardIndex * 100.0 / totalCards, 1, 0)} + '%'"></div>
+    </div>
+    <p class="card-counter" th:text="'Card ' + ${cardIndex} + ' / ' + ${totalCards}">Card 1 / 30</p>
+
+    <div class="flashcard-scene"
+         x-data="{ flipped: false }"
+         @click="flipped = !flipped">
+
+        <div class="flashcard" x-bind:class="{ flipped: flipped }">
+            <div class="card-face card-front">
+                <span class="card-from-word" th:text="${card.fromWord()}">word</span>
+            </div>
+            <div class="card-face card-back"
+                 aria-live="polite"
+                 aria-atomic="true">
+                <span class="card-to-word" th:text="${card.toWord()}">translation</span>
+                <span class="card-example"
+                      th:if="${card.example() != null and !card.example().isEmpty()}"
+                      th:text="${card.example()}">example</span>
+            </div>
         </div>
-        <div class="card card-back">
-            <span class="card-to-word" th:text="${card.toWord()}">translation</span>
-            <span class="card-example"
-                  th:if="${card.example() != null and !card.example().isEmpty()}"
-                  th:text="${card.example()}">example</span>
-        </div>
+
+        <p class="flip-hint" x-show="!flipped">👆 Tap to reveal</p>
     </div>
 
-    <p class="flip-hint" x-show="!flipped">Click to reveal</p>
 </div>
 </body>
 </html>

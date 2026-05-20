@@ -6,27 +6,74 @@
 </head>
 <body>
     <div id="content">
-        <h2>Session Complete!</h2>
+        <div class="page-main">
+            <div class="page-container">
+                <div class="result-card">
+                    <div class="result-confetti" th:if="${successRate == 100}" aria-hidden="true"></div>
+                    <h1 class="result-title">🎯 Session Complete!</h1>
+                    <p class="result-subtitle" th:text="${resultMessage}">Result</p>
 
-        <div class="result-card">
-            <p class="result-message" th:text="${resultMessage}">Result</p>
-            <div class="result-stats">
-                <div class="stat">
-                    <span class="stat-value" th:text="${successes}">0</span>
-                    <span class="stat-label">Correct</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-value" th:text="${failures}">0</span>
-                    <span class="stat-label">Incorrect</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-value" th:text="${successRate + '%'}">0%</span>
-                    <span class="stat-label">Success Rate</span>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" th:text="${successes}">0</div>
+                            <div class="stat-label">Correct</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" th:text="${failures}">0</div>
+                            <div class="stat-label">Incorrect</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" th:text="${successRate + '%'}">0%</div>
+                            <div class="stat-label">Success Rate</div>
+                        </div>
+                    </div>
+
+                    <a th:href="@{/}" class="btn-start">Play again</a>
                 </div>
             </div>
         </div>
 
-        <a th:href="@{/}" class="button-link">Play again</a>
+        <script th:if="${successRate == 100}">
+        (function () {
+            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                return;
+            }
+
+            var host = document.querySelector('.result-confetti');
+            if (!host) return;
+
+            var palette = ['#2E7D32', '#66BB6A', '#FBC02D', '#FFB300', '#E53935', '#4FC3F7'];
+            var pieces = 90;
+
+            for (var i = 0; i < pieces; i += 1) {
+                var piece = document.createElement('span');
+                piece.className = 'confetti-piece';
+
+                var x = Math.random() * 100;
+                var drift = (Math.random() * 80 - 40) + 'px';
+                var duration = (2.3 + Math.random() * 1.8).toFixed(2) + 's';
+                var delay = (Math.random() * 0.7).toFixed(2) + 's';
+                var rotate = (Math.random() * 720 - 360).toFixed(0) + 'deg';
+                var color = palette[Math.floor(Math.random() * palette.length)];
+                var size = (6 + Math.floor(Math.random() * 6)) + 'px';
+
+                piece.style.left = x + '%';
+                piece.style.width = size;
+                piece.style.height = size;
+                piece.style.background = color;
+                piece.style.setProperty('--confetti-drift', drift);
+                piece.style.setProperty('--confetti-rotate', rotate);
+                piece.style.animationDuration = duration;
+                piece.style.animationDelay = delay;
+
+                host.appendChild(piece);
+            }
+
+            setTimeout(function () {
+                host.innerHTML = '';
+            }, 5200);
+        })();
+        </script>
     </div>
 </body>
 </html>

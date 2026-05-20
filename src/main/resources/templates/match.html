@@ -6,10 +6,18 @@
 </head>
 <body>
     <div id="content">
-        <h2>Match Game</h2>
-        <div id="board-container"
-             hx-on::after-request="htmx.process(document.getElementById('board-container'))">
-            <div th:replace="~{fragments/board :: board}"></div>
+        <div class="page-main">
+            <div class="match-container">
+                <h2 class="section-title">🎯 Match Game</h2>
+
+                <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+                <div id="board-container"
+                     hx-on::after-request="htmx.process(document.getElementById('board-container'))">
+                    <div th:replace="~{fragments/board :: board}"></div>
+                </div>
+
+                <a th:href="@{/}" class="back-home-link">← Back to Home</a>
+            </div>
         </div>
     </div>
 </body>

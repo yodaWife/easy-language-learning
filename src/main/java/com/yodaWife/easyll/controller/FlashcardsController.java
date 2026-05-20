@@ -29,7 +29,7 @@ public class FlashcardsController {
 
     @GetMapping("/flashcards")
     public String flashcardsPage(HttpSession httpSession, Model model) {
-        String sessionId = (String) httpSession.getAttribute("sessionId");
+        var sessionId = (String) httpSession.getAttribute("sessionId");
         Optional<MatchSession> session = sessionStore.get(sessionId);
 
         if (session.isEmpty() || !"flashcards".equals(session.get().getMode())) {
@@ -41,20 +41,38 @@ public class FlashcardsController {
             return "redirect:/";
         }
 
+        int totalCards = snapshot.wordData().words().size();
+        httpSession.setAttribute("flashcardIndex", 1);
+
         WordEntry card = flashcardService.randomCard()
                 .orElse(null);
 
         model.addAttribute("card", card);
+        model.addAttribute("cardIndex", 1);
+        model.addAttribute("totalCards", totalCards);
         model.addAttribute("fromLang", snapshot.wordData().metadata().fromLanguageName());
         model.addAttribute("toLang", snapshot.wordData().metadata().toLanguageName());
         return "flashcards";
     }
 
     @GetMapping("/flashcards/card")
-    public String cardPartial(Model model) {
+    public String cardPartial(HttpSession httpSession, Model model) {
+        var snapshot = dataHealthService.snapshot();
+        int totalCards = (snapshot.healthy() && snapshot.wordData() != null)
+                ? snapshot.wordData().words().size()
+                : 1;
+
+        var storedIndex = (Integer) httpSession.getAttribute("flashcardIndex");
+        int currentIndex = (storedIndex == null) ? 1 : storedIndex;
+        int newIndex = currentIndex >= totalCards ? 1 : currentIndex + 1;
+        httpSession.setAttribute("flashcardIndex", newIndex);
+
         WordEntry card = flashcardService.randomCard()
                 .orElse(null);
+
         model.addAttribute("card", card);
+        model.addAttribute("cardIndex", newIndex);
+        model.addAttribute("totalCards", totalCards);
         return "fragments/card :: card";
     }
 }

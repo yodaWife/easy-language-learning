@@ -51,26 +51,26 @@ class MatchSessionTest {
     }
 
     @Test
-    void isCompleteAfter30Successes() {
+    void isCompleteAfter10SuccessfulAttempts() {
         MatchSession session = new MatchSession(null, "match");
-        for (int i = 0; i < 29; i++) session.recordSuccess();
+        for (int i = 0; i < 9; i++) session.recordSuccess();
         assertThat(session.isComplete()).isFalse();
         session.recordSuccess();
         assertThat(session.isComplete()).isTrue();
     }
 
     @Test
-    void isNotCompleteAfter30FailuresOnly() {
+    void isNotCompleteAfter10FailuresOnly() {
         MatchSession session = new MatchSession(null, "match");
-        for (int i = 0; i < 30; i++) session.recordFailure();
+        for (int i = 0; i < 10; i++) session.recordFailure();
         assertThat(session.isComplete()).isFalse();
     }
 
     @Test
     void successRateIsCorrect() {
         MatchSession session = new MatchSession(null, "match");
-        for (int i = 0; i < 27; i++) session.recordSuccess();
-        for (int i = 0; i < 3; i++) session.recordFailure();
+        for (int i = 0; i < 9; i++) session.recordSuccess();
+        session.recordFailure();
         assertThat(session.successRatePercent()).isEqualTo(90);
     }
 

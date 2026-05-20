@@ -5,6 +5,7 @@ import com.yodawife.easyll.domain.ScoreDataBundle;
 import com.yodawife.easyll.domain.UserWordKey;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.core.io.DefaultResourceLoader;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,7 +20,17 @@ class ScoreCsvParserTest {
     Path tempDir;
 
     private ScoreCsvParser parserFor(String filePath) {
-        return new ScoreCsvParser(filePath);
+        return new ScoreCsvParser(filePath, new DefaultResourceLoader());
+    }
+
+    @Test
+    void classpathSourceLoadsSuccessfully() {
+        ScoreCsvParser parser = parserFor("classpath:scores-test.csv");
+
+        CsvParseResult<ScoreDataBundle> result = parser.parse();
+        assertThat(result).isInstanceOf(CsvParseResult.Success.class);
+        ScoreDataBundle bundle = ((CsvParseResult.Success<ScoreDataBundle>) result).value();
+        assertThat(bundle.histories()).isNotEmpty();
     }
 
     @Test

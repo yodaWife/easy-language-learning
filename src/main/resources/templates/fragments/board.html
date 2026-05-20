@@ -3,36 +3,38 @@
 <body>
 <div th:fragment="board" id="match-board">
 
-    <div class="attempt-counter">
-        Matched <span th:text="${attempts}">0</span> / <span th:text="${maxAttempts}">30</span>
+    <div class="match-progress-section">
+        <p class="match-score-text">
+            Matched <span th:text="${attempts}">0</span> / <span th:text="${maxAttempts}">30</span>
+        </p>
+        <div class="progress-track"
+             role="progressbar"
+             th:attr="aria-valuenow=${attempts}, aria-valuemin=0, aria-valuemax=${maxAttempts}">
+            <div class="progress-fill"
+                 th:style="'width: ' + ${attempts * 100 / maxAttempts} + '%'"></div>
+        </div>
     </div>
 
-    <!-- Feedback flash (shown when lastCorrect is set) -->
-    <div th:if="${lastCorrect != null}"
-         th:class="${lastCorrect ? 'feedback-correct' : 'feedback-incorrect'}"
-         th:text="${lastCorrect ? '✓ Correct!' : '✗ Try again'}">
-    </div>
-
-    <div class="match-columns">
-        <div class="match-column">
+    <div class="match-grid">
+        <div class="match-col">
             <div th:each="card : ${board.leftColumn()}"
                  th:unless="${board.matchedPairIds().contains(card.pairId())}"
-                 class="match-cell drag-card"
-                 th:attr="draggable='true',
-                          data-word=${card.word()},
-                          data-pair-id=${card.pairId()},
-                          data-side=${card.side()}">
+                 class="source-card"
+                 role="button"
+                 aria-pressed="false"
+                 tabindex="0"
+                 th:attr="data-word=${card.word()}, data-side=${card.side()}">
                 <span th:text="${card.word()}">word</span>
             </div>
         </div>
-        <div class="match-column">
+        <div class="match-col">
             <div th:each="card : ${board.rightColumn()}"
                  th:unless="${board.matchedPairIds().contains(card.pairId())}"
-                 class="match-cell drop-slot"
-                 th:attr="draggable='false',
-                          data-word=${card.word()},
-                          data-pair-id=${card.pairId()},
-                          data-side=${card.side()}">
+                 class="target-card"
+                 role="button"
+                 aria-pressed="false"
+                 tabindex="0"
+                 th:attr="data-word=${card.word()}, data-side=${card.side()}">
                 <span th:text="${card.word()}">word</span>
             </div>
         </div>
@@ -40,55 +42,165 @@
 
     <script>
     (function() {
-        let draggedWord = null;
-        let draggedSide = null;
+        var selected        = null;
+        var isDragging      = false;
+        var currentDragWord = null;
+        var currentDragSide = null;
 
-        document.querySelectorAll('.drag-card').forEach(function(card) {
-            card.addEventListener('dragstart', function(e) {
-                draggedWord = card.dataset.word;
-                draggedSide = card.dataset.side;
-                card.classList.add('dragging');
-            });
-            card.addEventListener('dragend', function() {
-                card.classList.remove('dragging');
-            });
-        });
+        function boardEl() { return document.getElementById('match-board'); }
 
-        document.querySelectorAll('.drop-slot').forEach(function(slot) {
-            slot.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                slot.classList.add('drag-over');
+        function deselectAll() {
+            boardEl().querySelectorAll('.source-card, .target-card').forEach(function(c) {
+                c.classList.remove('selected');
+                c.setAttribute('aria-pressed', 'false');
             });
-            slot.addEventListener('dragleave', function() {
-                slot.classList.remove('drag-over');
+            selected = null;
+        }
+
+        function sendAttempt(fromWord, toWord) {
+            sessionStorage.setItem('lastFromWord', fromWord);
+            sessionStorage.setItem('lastToWord',   toWord);
+            htmx.ajax('POST', '/match/attempt', {
+                target: '#board-container',
+                swap:   'innerHTML',
+                values: { fromWord: fromWord, toWord: toWord }
             });
-            slot.addEventListener('drop', function(e) {
-                e.preventDefault();
-                slot.classList.remove('drag-over');
-                if (!draggedWord) return;
+        }
 
-                var targetWord = slot.dataset.word;
-                var targetSide = slot.dataset.side;
+        // ── Click-to-select (keyboard-accessible fallback) ────────────────
+        function handleSelect(card) {
+            if (card.classList.contains('matched-card')) return;
+            if (isDragging) return;
 
-                var fromWord, toWord;
-                if (draggedSide === 'from') {
-                    fromWord = draggedWord;
-                    toWord = targetWord;
-                } else {
-                    fromWord = targetWord;
-                    toWord = draggedWord;
+            var side = card.dataset.side;
+
+            if (!selected) {
+                card.classList.add('selected');
+                card.setAttribute('aria-pressed', 'true');
+                selected = card;
+                return;
+            }
+
+            var prevSide = selected.dataset.side;
+            if (prevSide === side) {
+                selected.classList.remove('selected');
+                selected.setAttribute('aria-pressed', 'false');
+                card.classList.add('selected');
+                card.setAttribute('aria-pressed', 'true');
+                selected = card;
+                return;
+            }
+
+            var fromWord = prevSide === 'from' ? selected.dataset.word : card.dataset.word;
+            var toWord   = prevSide === 'from' ? card.dataset.word     : selected.dataset.word;
+            deselectAll();
+            sendAttempt(fromWord, toWord);
+        }
+
+        boardEl().querySelectorAll('.source-card, .target-card').forEach(function(card) {
+            card.addEventListener('click', function() { handleSelect(card); });
+            card.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSelect(card);
                 }
-
-                draggedWord = null;
-                draggedSide = null;
-
-                htmx.ajax('POST', '/match/attempt', {
-                    target: '#board-container',
-                    swap: 'innerHTML',
-                    values: { fromWord: fromWord, toWord: toWord }
-                });
             });
         });
+
+        // ── Incorrect flash ───────────────────────────────────────────────
+        var lastCorrect = /*[[${lastCorrect}]]*/ null;
+        if (lastCorrect === false) {
+            var lastFrom = sessionStorage.getItem('lastFromWord');
+            var lastTo   = sessionStorage.getItem('lastToWord');
+            boardEl().querySelectorAll('.source-card, .target-card').forEach(function(c) {
+                if (c.dataset.word === lastFrom || c.dataset.word === lastTo) {
+                    c.classList.add('incorrect-flash');
+                    setTimeout(function() { c.classList.remove('incorrect-flash'); }, 450);
+                }
+            });
+        }
+
+        // ── SortableJS drag & drop (bidirectional) ──────────────────────
+        var leftCol  = boardEl().querySelector('.match-col:first-child');
+        var rightCol = boardEl().querySelector('.match-col:last-child');
+        if (typeof Sortable === 'undefined' || !leftCol || !rightCol) return;
+
+        // Document-level dragover: highlights the opposite-side card under cursor.
+        // Using document rather than per-card dragenter because SortableJS intercepts
+        // dragenter on its own container elements, making per-card listeners unreliable.
+        document.addEventListener('dragover', function(e) {
+            if (!isDragging || !currentDragSide) return;
+            var card = e.target && e.target.closest ? e.target.closest('.source-card, .target-card') : null;
+            boardEl().querySelectorAll('.drag-over').forEach(function(t) { t.classList.remove('drag-over'); });
+            if (card && card.dataset.side !== currentDragSide) {
+                e.preventDefault(); // allow drop on valid targets
+                card.classList.add('drag-over');
+            }
+        });
+
+        // Per-card dragover: needed so 'drop' fires (browser requires preventDefault in dragover).
+        boardEl().querySelectorAll('.source-card, .target-card').forEach(function(card) {
+            card.addEventListener('dragover', function(e) { e.preventDefault(); });
+            card.addEventListener('drop', function(e) {
+                e.preventDefault();
+                card.classList.remove('drag-over');
+                if (!currentDragWord || !currentDragSide || card.dataset.side === currentDragSide) return;
+                var fw = currentDragSide === 'from' ? currentDragWord : card.dataset.word;
+                var tw = currentDragSide === 'from' ? card.dataset.word : currentDragWord;
+                currentDragWord = null; currentDragSide = null;
+                sendAttempt(fw, tw);
+            });
+        });
+
+        // Initialise Sortable on both columns so either side can be dragged.
+        // pull:true = items can be dragged out; put:false = SortableJS never
+        // inserts an item into the list (we handle drops ourselves above).
+        function initSortable(col) {
+            Sortable.create(col, {
+                sort:             false,
+                group:            { name: 'match', pull: true, put: false },
+                animation:        150,
+                ghostClass:       'drag-ghost',
+                chosenClass:      'drag-chosen',
+                dragClass:        'drag-transit',
+                delay:            100,
+                delayOnTouchOnly: true,
+                onStart: function(evt) {
+                    isDragging      = true;
+                    currentDragWord = evt.item.dataset.word;
+                    currentDragSide = evt.item.dataset.side;
+                    deselectAll();
+                },
+                onEnd: function(evt) {
+                    isDragging = false;
+                    boardEl().querySelectorAll('.drag-over').forEach(function(t) {
+                        t.classList.remove('drag-over');
+                    });
+
+                    // Touch path: 'drop' doesn't fire — use coordinates instead.
+                    var ne = evt.originalEvent;
+                    if (ne && ne.changedTouches && currentDragWord) {
+                        var cx = ne.changedTouches[0].clientX;
+                        var cy = ne.changedTouches[0].clientY;
+                        evt.item.style.visibility = 'hidden';
+                        var el = document.elementFromPoint(cx, cy);
+                        evt.item.style.visibility = '';
+                        var dropCard = el ? el.closest('.source-card, .target-card') : null;
+                        if (dropCard && dropCard.dataset.side !== currentDragSide) {
+                            var fw = currentDragSide === 'from' ? currentDragWord : dropCard.dataset.word;
+                            var tw = currentDragSide === 'from' ? dropCard.dataset.word : currentDragWord;
+                            currentDragWord = null; currentDragSide = null;
+                            sendAttempt(fw, tw);
+                            return;
+                        }
+                    }
+                    currentDragWord = null; currentDragSide = null;
+                }
+            });
+        }
+
+        initSortable(leftCol);
+        initSortable(rightCol);
     })();
     </script>
 </div>

@@ -1,5 +1,6 @@
 package com.yodawife.easyll.service;
 
+import com.yodawife.easyll.config.MatchGameProperties;
 import com.yodawife.easyll.domain.MatchBoard;
 import com.yodawife.easyll.domain.MatchCard;
 import com.yodawife.easyll.domain.WordEntry;
@@ -13,22 +14,24 @@ import java.util.Random;
 @Service
 public class MatchBoardGenerator {
 
-    static final int BOARD_SIZE = 5;
-
     private final DataHealthService dataHealthService;
+    private final MatchGameProperties matchGameProperties;
     private final Random random = new Random();
 
-    public MatchBoardGenerator(DataHealthService dataHealthService) {
+    public MatchBoardGenerator(DataHealthService dataHealthService,
+                               MatchGameProperties matchGameProperties) {
         this.dataHealthService = dataHealthService;
+        this.matchGameProperties = matchGameProperties;
     }
 
     public MatchBoard generate() {
         DataSnapshot snapshot = dataHealthService.snapshot();
         List<WordEntry> allWords = new ArrayList<>(snapshot.wordData().words());
 
-        // Pick 3 distinct random entries (no duplicates within a set)
+        // Pick random entries (no duplicates within a set) using configured board size.
         Collections.shuffle(allWords, random);
-        List<WordEntry> picked = new ArrayList<>(allWords.subList(0, Math.min(BOARD_SIZE, allWords.size())));
+        int boardSize = matchGameProperties.getBoardSize();
+        List<WordEntry> picked = new ArrayList<>(allWords.subList(0, Math.min(boardSize, allWords.size())));
 
         // Build left (draggable FROM) and right (drop-slot TO) columns, then shuffle each independently
         List<MatchCard> leftColumn = new ArrayList<>();

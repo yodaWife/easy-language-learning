@@ -143,7 +143,7 @@ public class MatchController {
                                AttemptResult lastResult) {
         model.addAttribute("board", board);
         model.addAttribute("attempts", session.getSuccesses());
-        model.addAttribute("maxAttempts", 30);
+        model.addAttribute("maxAttempts", session.getMaxAttempts());
         if (lastResult != null) {
             model.addAttribute("lastCorrect", lastResult.correct());
         }

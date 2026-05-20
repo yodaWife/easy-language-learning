@@ -8,10 +8,12 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -24,23 +26,46 @@ import java.util.Map;
 @Component
 public class ScoreCsvParser {
 
-    private final Path scoreFilePath;
+    private final String scoreSource;
+    private final ResourceLoader resourceLoader;
 
-    public ScoreCsvParser(@Value("${app.scores.file-path}") String scoreFilePath) {
-        this.scoreFilePath = Path.of(scoreFilePath);
+    public ScoreCsvParser(@Value("${app.scores.file-path}") String scoreSource,
+                          ResourceLoader resourceLoader) {
+        this.scoreSource = scoreSource;
+        this.resourceLoader = resourceLoader;
     }
 
     public CsvParseResult<ScoreDataBundle> parse() {
+        if (isClasspathSource()) {
+            Resource resource = resourceLoader.getResource(scoreSource);
+            if (!resource.exists()) {
+                return new CsvParseResult.Success<>(ScoreDataBundle.empty());
+            }
+            try (Reader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8)) {
+                return parseFromReader(reader);
+            } catch (IOException e) {
+                return new CsvParseResult.Failure<>(List.of("Failed to read score CSV: " + e.getMessage()));
+            }
+        }
+
+        Path scoreFilePath = getScoreFilePath();
         if (!Files.exists(scoreFilePath)) {
             // Missing file is not an error — return empty history
             return new CsvParseResult.Success<>(ScoreDataBundle.empty());
         }
 
+        try (Reader reader = Files.newBufferedReader(scoreFilePath, StandardCharsets.UTF_8)) {
+            return parseFromReader(reader);
+        } catch (IOException e) {
+            return new CsvParseResult.Failure<>(List.of("Failed to read score CSV: " + e.getMessage()));
+        }
+    }
+
+    private CsvParseResult<ScoreDataBundle> parseFromReader(Reader reader) {
         List<String> errors = new ArrayList<>();
         Map<UserWordKey, UserWordHistory> histories = new HashMap<>();
 
-        try (Reader reader = new FileReader(scoreFilePath.toFile(), StandardCharsets.UTF_8);
-             CSVParser csvParser = CSVFormat.DEFAULT
+        try (CSVParser csvParser = CSVFormat.DEFAULT
                      .builder()
                      .setDelimiter(';')
                      .setTrim(true)
@@ -114,13 +139,28 @@ public class ScoreCsvParser {
             }
 
             return new CsvParseResult.Success<>(new ScoreDataBundle(histories));
-
         } catch (IOException e) {
             return new CsvParseResult.Failure<>(List.of("Failed to read score CSV: " + e.getMessage()));
         }
     }
 
     public Path getScoreFilePath() {
-        return scoreFilePath;
+        if (!isClasspathSource()) {
+            return Path.of(scoreSource);
+        }
+
+        Resource resource = resourceLoader.getResource(scoreSource);
+        try {
+            return resource.getFile().toPath();
+        } catch (IOException e) {
+            throw new IllegalStateException(
+                    "Score CSV configured as classpath resource must resolve to a writable file path: " + scoreSource,
+                    e
+            );
+        }
+    }
+
+    private boolean isClasspathSource() {
+        return scoreSource.startsWith("classpath:");
     }
 }

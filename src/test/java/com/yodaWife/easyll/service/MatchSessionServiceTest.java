@@ -61,12 +61,12 @@ class MatchSessionServiceTest {
     }
 
     @Test
-    void sessionCompleteAfter30Successes() {
+    void sessionCompleteAfter10SuccessfulAttempts() {
         MatchSession session = new MatchSession(null, "match");
         WordEntry pair = new WordEntry("Letter", "Betű", "");
         MatchBoard board = boardWithPairs(List.of(pair));
 
-        for (int i = 0; i < 29; i++) {
+        for (int i = 0; i < 9; i++) {
             AttemptResult r = matchSessionService.processAttempt(session, board, "Letter", "Betű");
             assertThat(r.sessionComplete()).isFalse();
         }
@@ -75,25 +75,37 @@ class MatchSessionServiceTest {
     }
 
     @Test
+    void sessionDoesNotCompleteAfterIncorrectAttemptsOnly() {
+        MatchSession session = new MatchSession(null, "match");
+        WordEntry pair = new WordEntry("Letter", "Betű", "");
+        MatchBoard board = boardWithPairs(List.of(pair));
+
+        for (int i = 0; i < 10; i++) {
+            AttemptResult r = matchSessionService.processAttempt(session, board, "Letter", "Wrong");
+            assertThat(r.sessionComplete()).isFalse();
+        }
+    }
+
+    @Test
     void resultMessageFor100Percent() {
         MatchSession session = new MatchSession(null, "match");
-        for (int i = 0; i < 30; i++) session.recordSuccess();
+        for (int i = 0; i < 10; i++) session.recordSuccess();
         assertThat(matchSessionService.resultMessage(session)).isEqualTo("You did it!");
     }
 
     @Test
     void resultMessageFor85to99Percent() {
         MatchSession session = new MatchSession(null, "match");
-        for (int i = 0; i < 27; i++) session.recordSuccess(); // 90%
-        for (int i = 0; i < 3; i++) session.recordFailure();
+        for (int i = 0; i < 9; i++) session.recordSuccess(); // 90%
+        session.recordFailure();
         assertThat(matchSessionService.resultMessage(session)).isEqualTo("Almost!");
     }
 
     @Test
     void resultMessageBelow85Percent() {
         MatchSession session = new MatchSession(null, "match");
-        for (int i = 0; i < 20; i++) session.recordSuccess(); // ~67%
-        for (int i = 0; i < 10; i++) session.recordFailure();
+        for (int i = 0; i < 8; i++) session.recordSuccess(); // 80%
+        for (int i = 0; i < 2; i++) session.recordFailure();
         assertThat(matchSessionService.resultMessage(session)).isEqualTo("Let's practice some more!");
     }
 
