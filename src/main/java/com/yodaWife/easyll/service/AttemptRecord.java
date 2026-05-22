@@ -1,0 +1,10 @@
+package com.yodawife.easyll.service;
+
+/**
+ * Immutable record of a single match attempt.
+ *
+ * @param fromWord the dragged (source) word
+ * @param toWord   the target word
+ * @param correct  {@code true} if the pair matched
+ */
+public record AttemptRecord(String fromWord, String toWord, boolean correct) {}

@@ -3,11 +3,14 @@ package com.yodawife.easyll.repository;
 import com.yodawife.easyll.domain.UserWordHistory;
 import com.yodawife.easyll.domain.UserWordKey;
 import com.yodawife.easyll.service.DataHealthService;
+import com.yodawife.easyll.service.DataReloadedEvent;
 import com.yodawife.easyll.service.UserScoreService;
-import com.yodawife.easyll.validation.ScoreCsvParser;
+import jakarta.annotation.PostConstruct;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Repository;
 
 import java.io.BufferedWriter;
@@ -27,17 +30,55 @@ public class ScoreRepository {
 
     private final DataHealthService dataHealthService;
     private final UserScoreService userScoreService;
-    private final ScoreCsvParser scoreCsvParser;
+    private final Path scorePath;
 
     // Mutable working copy of histories; lazily initialised from snapshot
     private @Nullable Map<UserWordKey, UserWordHistory> histories = null;
 
+    // Tracks what was last loaded from a snapshot, to detect truly in-flight keys
+    private @Nullable Map<UserWordKey, UserWordHistory> lastSnapshotHistories = null;
+
     public ScoreRepository(DataHealthService dataHealthService,
                            UserScoreService userScoreService,
-                           ScoreCsvParser scoreCsvParser) {
+                           @Value("${app.scores.write-path}") String scoreWritePath) {
         this.dataHealthService = dataHealthService;
         this.userScoreService = userScoreService;
-        this.scoreCsvParser = scoreCsvParser;
+        this.scorePath = Path.of(scoreWritePath);
+    }
+
+    @PostConstruct
+    void validateWritePath() {
+        Path parent = scorePath.getParent();
+
+        if (parent != null && !Files.exists(parent)) {
+            try {
+                Files.createDirectories(parent);
+            } catch (IOException e) {
+                var message = "Score write path parent directory could not be created: " + parent + " — " + e.getMessage();
+                log.error(message, e);
+                dataHealthService.reportScoreWritePathError(message);
+                return;
+            }
+        }
+
+        if (Files.exists(scorePath)) {
+            if (!Files.isWritable(scorePath)) {
+                var message = "Score write path exists but is not writable: " + scorePath;
+                log.error(message);
+                dataHealthService.reportScoreWritePathError(message);
+                return;
+            }
+        } else {
+            var effectiveParent = (parent != null) ? parent : Path.of(".");
+            if (!Files.isWritable(effectiveParent)) {
+                var message = "Score write path parent directory is not writable: " + effectiveParent;
+                log.error(message);
+                dataHealthService.reportScoreWritePathError(message);
+                return;
+            }
+        }
+
+        log.debug("Score write path validation passed: {}", scorePath);
     }
 
     /**
@@ -49,9 +90,12 @@ public class ScoreRepository {
             var snapshot = dataHealthService.snapshot();
             if (snapshot.healthy() && snapshot.scoreData() != null) {
                 // Defensive mutable copy so we can modify it
-                histories = new HashMap<>(snapshot.scoreData().histories());
+                var snapshotHistories = snapshot.scoreData().histories();
+                histories = new HashMap<>(snapshotHistories);
+                lastSnapshotHistories = new HashMap<>(snapshotHistories);
             } else {
                 histories = new HashMap<>();
+                lastSnapshotHistories = new HashMap<>();
             }
         }
     }
@@ -79,7 +123,7 @@ public class ScoreRepository {
      */
     public synchronized void flush() {
         Map<UserWordKey, UserWordHistory> currentHistories = histories();
-        Path targetPath = scoreCsvParser.getScoreFilePath();
+        Path targetPath = scorePath;
         Path tempPath = targetPath.resolveSibling(targetPath.getFileName() + ".tmp");
 
         try {
@@ -126,5 +170,71 @@ public class ScoreRepository {
         var users = new java.util.TreeSet<String>();
         currentHistories.keySet().forEach(k -> users.add(k.user()));
         return java.util.Collections.unmodifiableSet(users);
+    }
+
+    /**
+     * Merges the in-memory histories with the freshly reloaded snapshot when a reload event fires.
+     * Keys whose in-memory state differs from the new snapshot (i.e. they carry unsaved in-flight
+     * updates) are preserved; all other keys pick up the fresh snapshot values.
+     *
+     * <p>Edge cases:
+     * <ul>
+     *   <li>If {@code histories} is {@code null} (not yet initialised), initialises cleanly from
+     *       the new snapshot.</li>
+     *   <li>If the new snapshot is degraded ({@code scoreData == null}), leaves histories
+     *       unchanged and logs a warning.</li>
+     * </ul>
+     *
+     * @param event the reload event published by {@link DataHealthService}
+     */
+    @EventListener
+    public synchronized void onDataReloaded(DataReloadedEvent event) {
+        var snapshot = dataHealthService.snapshot();
+        var scoreData = snapshot.scoreData();
+
+        if (scoreData == null) {
+            log.warn("Data reload signalled but snapshot is degraded (scoreData is null); "
+                    + "leaving in-memory histories unchanged.");
+            return;
+        }
+
+        var newSnapshotHistories = scoreData.histories();
+
+        if (histories == null) {
+            histories = new HashMap<>(newSnapshotHistories);
+            lastSnapshotHistories = new HashMap<>(newSnapshotHistories);
+            log.info("Data reload: histories initialised from new snapshot ({} keys).", histories.size());
+            return;
+        }
+
+        var newHistories = new HashMap<>(newSnapshotHistories);
+        int preservedCount = 0;
+
+        for (var entry : histories.entrySet()) {
+            var key = entry.getKey();
+            var snapshotHistory = newSnapshotHistories.get(key);
+
+            if (snapshotHistory == null) {
+                // Key absent from new snapshot — preserve only if it is truly in-flight:
+                // either it was never loaded from any snapshot, or it was modified since last load.
+                var baseline = lastSnapshotHistories != null ? lastSnapshotHistories.get(key) : null;
+                boolean neverPersisted = baseline == null;
+                boolean modifiedSinceLoad = baseline != null
+                        && !entry.getValue().entries().equals(baseline.entries());
+                if (neverPersisted || modifiedSinceLoad) {
+                    newHistories.put(key, entry.getValue());
+                    preservedCount++;
+                }
+                // else: was in last snapshot and not modified — new snapshot removed it intentionally, drop it
+            } else if (!entry.getValue().entries().equals(snapshotHistory.entries())) {
+                // In-memory version differs from new snapshot — keep in-flight updates
+                newHistories.put(key, entry.getValue());
+                preservedCount++;
+            }
+        }
+
+        lastSnapshotHistories = new HashMap<>(newSnapshotHistories);
+        histories = newHistories;
+        log.info("Data reload merged: {} in-flight key(s) preserved from pending state.", preservedCount);
     }
 }

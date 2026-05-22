@@ -1,15 +1,28 @@
 package com.yodawife.easyll.domain;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class MatchSessionTest {
 
     @Test
+    @DisplayName("sessionId is assigned at creation")
     void sessionIdIsAssignedAtCreation() {
         MatchSession session = new MatchSession("alice", "match");
         assertThat(session.getSessionId()).isNotNull().isNotBlank();
+    }
+
+    @Test
+    @DisplayName("createdAt is set to approximately now at construction time")
+    void createdAtIsSetAtConstruction() {
+        var before = Instant.now();
+        var session = new MatchSession("alice", "match");
+        var after = Instant.now();
+        assertThat(session.createdAt()).isBetween(before, after);
     }
 
     @Test
@@ -51,8 +64,8 @@ class MatchSessionTest {
     }
 
     @Test
-    void isCompleteAfter10SuccessfulAttempts() {
-        MatchSession session = new MatchSession(null, "match");
+    void isCompleteAfterReachingConfiguredMaxAttempts() {
+        MatchSession session = new MatchSession(null, "match", 10);
         for (int i = 0; i < 9; i++) session.recordSuccess();
         assertThat(session.isComplete()).isFalse();
         session.recordSuccess();

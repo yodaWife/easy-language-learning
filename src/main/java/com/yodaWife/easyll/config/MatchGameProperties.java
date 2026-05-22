@@ -14,6 +14,9 @@ public class MatchGameProperties {
     @Min(1)
     private int boardSize = 5;
 
+    @Min(1)
+    private int sessionTtlMinutes = 60;
+
     public int getMaxAttempts() {
         return maxAttempts;
     }
@@ -28,5 +31,13 @@ public class MatchGameProperties {
 
     public void setBoardSize(int boardSize) {
         this.boardSize = boardSize;
+    }
+
+    public int getSessionTtlMinutes() {
+        return sessionTtlMinutes;
+    }
+
+    public void setSessionTtlMinutes(int sessionTtlMinutes) {
+        this.sessionTtlMinutes = sessionTtlMinutes;
     }
 }

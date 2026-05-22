@@ -5,10 +5,13 @@ import com.yodawife.easyll.domain.WordEntry;
 import com.yodawife.easyll.service.DataHealthService;
 import com.yodawife.easyll.service.FlashcardService;
 import com.yodawife.easyll.service.SessionStore;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.Optional;
 
@@ -37,7 +40,7 @@ public class FlashcardsController {
         }
 
         var snapshot = dataHealthService.snapshot();
-        if (!snapshot.healthy() || snapshot.wordData() == null) {
+        if (!snapshot.wordsHealthy() || snapshot.wordData() == null) {
             return "redirect:/";
         }
 
@@ -56,9 +59,24 @@ public class FlashcardsController {
     }
 
     @GetMapping("/flashcards/card")
-    public String cardPartial(HttpSession httpSession, Model model) {
+    public @Nullable String cardPartial(
+            HttpSession httpSession,
+            HttpServletResponse response,
+            @RequestHeader(value = "HX-Request", required = false) String hxRequest,
+            Model model) {
+        var sessionId = (String) httpSession.getAttribute("sessionId");
+        var session = sessionStore.get(sessionId);
+
+        if (session.isEmpty() || !"flashcards".equals(session.get().getMode())) {
+            if (hxRequest != null) {
+                response.setHeader("HX-Redirect", "/");
+                return null;
+            }
+            return "redirect:/";
+        }
+
         var snapshot = dataHealthService.snapshot();
-        int totalCards = (snapshot.healthy() && snapshot.wordData() != null)
+        int totalCards = (snapshot.wordsHealthy() && snapshot.wordData() != null)
                 ? snapshot.wordData().words().size()
                 : 1;
 

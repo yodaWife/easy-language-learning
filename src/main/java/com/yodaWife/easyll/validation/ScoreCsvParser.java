@@ -20,8 +20,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class ScoreCsvParser {
@@ -48,7 +50,7 @@ public class ScoreCsvParser {
             }
         }
 
-        Path scoreFilePath = getScoreFilePath();
+        Path scoreFilePath = Path.of(scoreSource);
         if (!Files.exists(scoreFilePath)) {
             // Missing file is not an error — return empty history
             return new CsvParseResult.Success<>(ScoreDataBundle.empty());
@@ -64,6 +66,7 @@ public class ScoreCsvParser {
     private CsvParseResult<ScoreDataBundle> parseFromReader(Reader reader) {
         List<String> errors = new ArrayList<>();
         Map<UserWordKey, UserWordHistory> histories = new HashMap<>();
+        Set<UserWordKey> seenKeys = new HashSet<>();
 
         try (CSVParser csvParser = CSVFormat.DEFAULT
                      .builder()
@@ -131,6 +134,10 @@ public class ScoreCsvParser {
                 }
 
                 UserWordKey key = new UserWordKey(user, fromWord, toWord);
+                if (!seenKeys.add(key)) {
+                    errors.add("Score row " + rowNumber + ": duplicate key (user='" + user + "', fromWord='" + fromWord + "', toWord='" + toWord + "')");
+                    continue;
+                }
                 histories.put(key, new UserWordHistory(historyEntries));
             }
 
@@ -141,22 +148,6 @@ public class ScoreCsvParser {
             return new CsvParseResult.Success<>(new ScoreDataBundle(histories));
         } catch (IOException e) {
             return new CsvParseResult.Failure<>(List.of("Failed to read score CSV: " + e.getMessage()));
-        }
-    }
-
-    public Path getScoreFilePath() {
-        if (!isClasspathSource()) {
-            return Path.of(scoreSource);
-        }
-
-        Resource resource = resourceLoader.getResource(scoreSource);
-        try {
-            return resource.getFile().toPath();
-        } catch (IOException e) {
-            throw new IllegalStateException(
-                    "Score CSV configured as classpath resource must resolve to a writable file path: " + scoreSource,
-                    e
-            );
         }
     }
 

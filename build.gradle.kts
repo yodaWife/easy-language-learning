@@ -31,7 +31,9 @@ dependencies {
 	errorprone("com.uber.nullaway:nullaway:0.12.7")
 	compileOnly("org.jspecify:jspecify:1.0.0")
 	testCompileOnly("org.jspecify:jspecify:1.0.0")
+	implementation("org.springframework.boot:spring-boot-starter-security")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("org.springframework.security:spring-security-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

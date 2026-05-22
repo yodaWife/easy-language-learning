@@ -2,10 +2,8 @@ package com.yodawife.easyll.controller;
 
 import com.yodawife.easyll.domain.AttemptResult;
 import com.yodawife.easyll.domain.MatchBoard;
-import com.yodawife.easyll.domain.MatchCard;
 import com.yodawife.easyll.domain.MatchSession;
-import com.yodawife.easyll.repository.ScoreRepository;
-import com.yodawife.easyll.service.MatchSessionService;
+import com.yodawife.easyll.service.MatchGameApplicationService;
 import com.yodawife.easyll.service.SessionStore;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -16,8 +14,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 @Controller
@@ -25,18 +21,14 @@ public class MatchController {
 
     private static final String SESSION_ID_ATTR = "sessionId";
     private static final String BOARD_ATTR = "currentBoard";
-    private static final String ATTEMPTS_ATTR = "sessionAttempts";
 
     private final SessionStore sessionStore;
-    private final MatchSessionService matchSessionService;
-    private final ScoreRepository scoreRepository;
+    private final MatchGameApplicationService matchGameApplicationService;
 
     public MatchController(SessionStore sessionStore,
-                           MatchSessionService matchSessionService,
-                           ScoreRepository scoreRepository) {
+                           MatchGameApplicationService matchGameApplicationService) {
         this.sessionStore = sessionStore;
-        this.matchSessionService = matchSessionService;
-        this.scoreRepository = scoreRepository;
+        this.matchGameApplicationService = matchGameApplicationService;
     }
 
     @GetMapping("/match")
@@ -49,15 +41,13 @@ public class MatchController {
         }
 
         MatchSession session = sessionOpt.get();
-        MatchBoard board = matchSessionService.generateBoard();
+        MatchBoard board = matchGameApplicationService.generateBoard();
         httpSession.setAttribute(BOARD_ATTR, board);
-        httpSession.setAttribute(ATTEMPTS_ATTR, new ArrayList<String[]>());
 
         populateModel(model, session, board, null);
         return "match";
     }
 
-    @SuppressWarnings("unchecked")
     @PostMapping("/match/attempt")
     public @Nullable String attempt(
             @RequestParam String fromWord,
@@ -78,47 +68,22 @@ public class MatchController {
         MatchBoard board = (MatchBoard) httpSession.getAttribute(BOARD_ATTR);
 
         if (board == null) {
-            board = matchSessionService.generateBoard();
+            board = matchGameApplicationService.generateBoard();
             httpSession.setAttribute(BOARD_ATTR, board);
         }
 
-        AttemptResult result = matchSessionService.processAttempt(session, board, fromWord, toWord);
-
-        // Track attempt for end-of-session score flush
-        List<String[]> attempts = (List<String[]>) httpSession.getAttribute(ATTEMPTS_ATTR);
-        if (attempts == null) {
-            attempts = new ArrayList<>();
-            httpSession.setAttribute(ATTEMPTS_ATTR, attempts);
-        }
-        attempts.add(new String[]{fromWord, toWord, result.correct() ? "S" : "F"});
+        AttemptResult result = matchGameApplicationService.processAttempt(session, board, fromWord, toWord);
+        matchGameApplicationService.recordAttempt(sessionId, fromWord, toWord, result);
 
         if (result.sessionComplete()) {
-            // Persist per-user scores if nickname is present
-            String nickname = session.getNickname();
-            if (nickname != null) {
-                for (var attempt : attempts) {
-                    scoreRepository.appendAttempt(nickname, attempt[0], attempt[1], attempt[2]);
-                }
-                scoreRepository.flush();
-            }
-
-            httpSession.setAttribute("resultMessage", matchSessionService.resultMessage(session));
+            String message = matchGameApplicationService.finaliseSession(session);
+            httpSession.setAttribute("resultMessage", message);
             httpSession.setAttribute("resultSession", session);
-            httpSession.removeAttribute(ATTEMPTS_ATTR);
             response.setHeader("HX-Redirect", "/match/result");
             return null;
         }
 
-        // On success mark the pair as matched; when all 5 matched generate a fresh board.
-        // On failure return the same board unchanged.
-        MatchBoard nextBoard;
-        if (result.correct()) {
-            String pairId = MatchCard.buildPairId(fromWord, toWord);
-            MatchBoard updated = board.withMatched(pairId);
-            nextBoard = updated.allMatched() ? matchSessionService.generateBoard() : updated;
-        } else {
-            nextBoard = board;
-        }
+        MatchBoard nextBoard = matchGameApplicationService.computeNextBoard(board, result, fromWord, toWord);
         httpSession.setAttribute(BOARD_ATTR, nextBoard);
 
         populateModel(model, session, nextBoard, result);
@@ -133,6 +98,8 @@ public class MatchController {
         if (session == null) {
             return "redirect:/";
         }
+
+        sessionStore.remove(session.getSessionId());
 
         model.addAttribute("successes", session.getSuccesses());
         model.addAttribute("failures", session.getFailures());

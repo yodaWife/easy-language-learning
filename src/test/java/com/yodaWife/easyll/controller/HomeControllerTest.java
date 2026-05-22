@@ -15,6 +15,7 @@ import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -33,7 +34,7 @@ class HomeControllerTest {
 
     @BeforeEach
     void setup() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     }
 
     @Test
@@ -41,7 +42,7 @@ class HomeControllerTest {
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("index"))
-                .andExpect(model().attributeExists("healthy", "errors", "nicknames"));
+                .andExpect(model().attributeExists("wordsHealthy", "scoresHealthy", "wordErrors", "scoreErrors", "nicknames"));
     }
 
     @Test

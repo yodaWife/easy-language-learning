@@ -8,14 +8,21 @@
     <div id="content">
         <h2>Data Health Status</h2>
 
-        <div th:if="${healthy}" class="banner-success">
+        <div th:if="${wordsHealthy and scoresHealthy}" class="banner-success">
             All data loaded successfully.
         </div>
 
-        <div th:if="${!healthy}" class="banner-error">
-            <strong>Data is in a degraded state. The following errors were found:</strong>
+        <div th:if="${!wordsHealthy}" class="banner-error">
+            <strong>Word data is in a degraded state. Gameplay is disabled.</strong>
             <ul>
-                <li th:each="err : ${errors}" th:text="${err}"></li>
+                <li th:each="err : ${wordErrors}" th:text="${err}"></li>
+            </ul>
+        </div>
+
+        <div th:if="${!scoresHealthy}" class="banner-warning">
+            <strong>Score data is in a degraded state. Score persistence is unavailable.</strong>
+            <ul>
+                <li th:each="err : ${scoreErrors}" th:text="${err}"></li>
             </ul>
         </div>
 

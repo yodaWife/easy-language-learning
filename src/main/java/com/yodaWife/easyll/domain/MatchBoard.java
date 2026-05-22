@@ -28,4 +28,17 @@ public record MatchBoard(List<MatchCard> leftColumn, List<MatchCard> rightColumn
     public boolean allMatched() {
         return matchedPairIds.size() >= pairs.size();
     }
+
+    /**
+     * Returns true if the pair (fromWord, toWord) exists on this board and has not yet been matched.
+     *
+     * @param fromWord the source word
+     * @param toWord   the target word
+     * @return true if the pair is present in {@code pairs} and its pairId is absent from {@code matchedPairIds}
+     */
+    public boolean isPairEligible(String fromWord, String toWord) {
+        var pairId = MatchCard.buildPairId(fromWord, toWord);
+        return !matchedPairIds.contains(pairId)
+                && pairs.stream().anyMatch(e -> e.fromWord().equals(fromWord) && e.toWord().equals(toWord));
+    }
 }

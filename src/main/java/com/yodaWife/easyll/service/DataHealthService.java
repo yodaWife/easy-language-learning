@@ -8,6 +8,7 @@ import com.yodawife.easyll.validation.WordCsvParser;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -20,12 +21,15 @@ public class DataHealthService {
 
     private final WordCsvParser wordCsvParser;
     private final ScoreCsvParser scoreCsvParser;
+    private final ApplicationEventPublisher eventPublisher;
 
     private volatile DataSnapshot currentSnapshot = DataSnapshot.degraded(List.of("Data not yet loaded"));
 
-    public DataHealthService(WordCsvParser wordCsvParser, ScoreCsvParser scoreCsvParser) {
+    public DataHealthService(WordCsvParser wordCsvParser, ScoreCsvParser scoreCsvParser,
+                             ApplicationEventPublisher eventPublisher) {
         this.wordCsvParser = wordCsvParser;
         this.scoreCsvParser = scoreCsvParser;
+        this.eventPublisher = eventPublisher;
     }
 
     @PostConstruct
@@ -35,7 +39,8 @@ public class DataHealthService {
 
     public synchronized void reload() {
         log.info("Loading CSV data...");
-        List<String> errors = new ArrayList<>();
+        List<String> wordErrors = new ArrayList<>();
+        List<String> scoreErrors = new ArrayList<>();
 
         WordDataBundle wordData = null;
         ScoreDataBundle scoreData = null;
@@ -45,7 +50,7 @@ public class DataHealthService {
             case CsvParseResult.Success<WordDataBundle> s -> wordData = s.value();
             case CsvParseResult.Failure<WordDataBundle> f -> {
                 log.warn("Word CSV validation failed: {}", f.errors());
-                errors.addAll(f.errors());
+                wordErrors.addAll(f.errors());
             }
         }
 
@@ -54,17 +59,27 @@ public class DataHealthService {
             case CsvParseResult.Success<ScoreDataBundle> s -> scoreData = s.value();
             case CsvParseResult.Failure<ScoreDataBundle> f -> {
                 log.warn("Score CSV validation failed: {}", f.errors());
-                errors.addAll(f.errors());
+                scoreErrors.addAll(f.errors());
             }
         }
 
-        if (errors.isEmpty() && wordData != null && scoreData != null) {
-            currentSnapshot = DataSnapshot.healthy(wordData, scoreData);
-            log.info("Data loaded successfully. {} words, {} score entries.",
-                    wordData.words().size(), scoreData.histories().size());
+        currentSnapshot = new DataSnapshot(
+                wordData != null, scoreData != null,
+                wordErrors, scoreErrors,
+                wordData, scoreData);
+
+        if (wordData != null) {
+            eventPublisher.publishEvent(new DataReloadedEvent(this));
+            if (scoreData != null) {
+                log.info("Data loaded successfully. {} words, {} score entries.",
+                        wordData.words().size(), scoreData.histories().size());
+            } else {
+                log.warn("Score data failed ({} error(s)); word data loaded ({} words). Gameplay available.",
+                        scoreErrors.size(), wordData.words().size());
+            }
         } else {
-            currentSnapshot = DataSnapshot.degraded(errors);
-            log.warn("Data loading finished with {} error(s).", errors.size());
+            log.warn("Data loading failed: {} word error(s), {} score error(s).",
+                    wordErrors.size(), scoreErrors.size());
         }
     }
 
@@ -75,5 +90,11 @@ public class DataHealthService {
     public synchronized void reportRuntimeError(String errorMessage) {
         log.error("Runtime data error: {}", errorMessage);
         currentSnapshot = DataSnapshot.degraded(List.of(errorMessage));
+    }
+
+    public synchronized void reportScoreWritePathError(String message) {
+        log.error("Score write path error: {}", message);
+        var current = currentSnapshot;
+        currentSnapshot = new DataSnapshot(current.wordsHealthy(), false, current.wordErrors(), List.of(message), current.wordData(), null);
     }
 }

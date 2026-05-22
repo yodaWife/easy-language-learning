@@ -55,8 +55,8 @@ class MatchSessionServiceTest {
     }
 
     @Test
-    void sessionCompleteAfter10SuccessfulAttempts() {
-        MatchSession session = new MatchSession(null, "match");
+    void sessionCompleteAfterReachingConfiguredMaxAttempts() {
+        MatchSession session = new MatchSession(null, "match", 10);
         WordEntry pair = new WordEntry("Letter", "Betű", "");
         MatchBoard board = boardWithPairs(List.of(pair));
 
@@ -113,5 +113,20 @@ class MatchSessionServiceTest {
         matchSessionService.processAttempt(session, board, "A", "B");      // correct
 
         assertThat(session.getAttempts()).isEqualTo(2);
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("Replaying an already-matched pair records a failure")
+    void replayAlreadyMatchedPairRecordsFailure() {
+        var session = new MatchSession(null, "match");
+        var pair = new WordEntry("Letter", "Betű", "");
+        var pairId = MatchCard.buildPairId("Letter", "Betű");
+        var boardWithMatched = boardWithPairs(List.of(pair)).withMatched(pairId);
+
+        var result = matchSessionService.processAttempt(session, boardWithMatched, "Letter", "Betű");
+
+        assertThat(result.correct()).isFalse();
+        assertThat(session.getFailures()).isEqualTo(1);
+        assertThat(session.getSuccesses()).isEqualTo(0);
     }
 }

@@ -107,4 +107,49 @@ class ScoreCsvParserTest {
         CsvParseResult<ScoreDataBundle> result = parser.parse();
         assertThat(result).isInstanceOf(CsvParseResult.Failure.class);
     }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("CSV with a single duplicate key returns Failure naming the duplicate and its row number")
+    void singleDuplicateKeyReturnsFailure() throws IOException {
+        Path file = tempDir().resolve("scores.csv");
+        Files.writeString(file,
+                """
+                alice;Letter;Betű;S,F
+                alice;Letter;Betű;S
+                """);
+        var parser = parserFor(file.toString());
+
+        var result = parser.parse();
+
+        assertThat(result).isInstanceOf(CsvParseResult.Failure.class);
+        var errors = ((CsvParseResult.Failure<ScoreDataBundle>) result).errors();
+        assertThat(errors).hasSize(1);
+        assertThat(errors.getFirst())
+                .contains("row 2")
+                .contains("alice")
+                .contains("Letter")
+                .contains("Betű");
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("CSV with multiple duplicate keys reports all of them without aborting early")
+    void multipleDuplicateKeysReportsAll() throws IOException {
+        Path file = tempDir().resolve("scores.csv");
+        Files.writeString(file,
+                """
+                alice;Letter;Betű;S
+                bob;Cat;Macska;F
+                alice;Letter;Betű;F
+                bob;Cat;Macska;S
+                """);
+        var parser = parserFor(file.toString());
+
+        var result = parser.parse();
+
+        assertThat(result).isInstanceOf(CsvParseResult.Failure.class);
+        var errors = ((CsvParseResult.Failure<ScoreDataBundle>) result).errors();
+        assertThat(errors).hasSize(2);
+        assertThat(errors).anyMatch(e -> e.contains("row 3") && e.contains("alice") && e.contains("Letter") && e.contains("Betű"));
+        assertThat(errors).anyMatch(e -> e.contains("row 4") && e.contains("bob") && e.contains("Cat") && e.contains("Macska"));
+    }
 }

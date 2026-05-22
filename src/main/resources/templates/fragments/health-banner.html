@@ -2,10 +2,29 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <div th:fragment="healthBanner">
-    <div th:if="${!healthy}" class="banner-error" id="health-banner">
-        <strong>Data error — game features are disabled.</strong>
+    <!-- Word data degraded: game is blocked -->
+    <div th:if="${!wordsHealthy}" class="banner-error" id="health-banner">
+        <strong>Word data error — game features are disabled.</strong>
         <ul>
-            <li th:each="err : ${errors}" th:text="${err}"></li>
+            <li th:each="err : ${wordErrors}" th:text="${err}"></li>
+        </ul>
+        <div class="banner-actions">
+            <a th:href="@{/health/data}">View diagnostics</a>
+            <form th:action="@{/admin/data/reload}"
+                  method="post"
+                  style="display:inline"
+                  hx-post="/admin/data/reload"
+                  hx-target="#health-banner-wrapper"
+                  hx-swap="innerHTML">
+                <button type="submit" class="btn-reload">Reload data</button>
+            </form>
+        </div>
+    </div>
+    <!-- Score data degraded only: game is available, but scoring is unavailable -->
+    <div th:if="${wordsHealthy and !scoresHealthy}" class="banner-warning" id="health-banner">
+        <strong>Score tracking is unavailable — you can still play, but scores won't be saved.</strong>
+        <ul>
+            <li th:each="err : ${scoreErrors}" th:text="${err}"></li>
         </ul>
         <div class="banner-actions">
             <a th:href="@{/health/data}">View diagnostics</a>

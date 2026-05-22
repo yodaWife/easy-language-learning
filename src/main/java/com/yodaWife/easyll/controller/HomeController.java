@@ -32,8 +32,10 @@ public class HomeController {
     @GetMapping("/")
     public String home(Model model) {
         DataSnapshot snapshot = dataHealthService.snapshot();
-        model.addAttribute("healthy", snapshot.healthy());
-        model.addAttribute("errors", snapshot.errors());
+        model.addAttribute("wordsHealthy", snapshot.wordsHealthy());
+        model.addAttribute("scoresHealthy", snapshot.scoresHealthy());
+        model.addAttribute("wordErrors", snapshot.wordErrors());
+        model.addAttribute("scoreErrors", snapshot.scoreErrors());
         model.addAttribute("nicknames", List.copyOf(scoreRepository.knownUsers()));
         return "index";
     }
@@ -44,7 +46,7 @@ public class HomeController {
             @RequestParam String mode,
             HttpSession httpSession) {
 
-        if (!dataHealthService.snapshot().healthy()) {
+        if (!dataHealthService.snapshot().wordsHealthy()) {
             return "redirect:/";
         }
 

@@ -45,12 +45,11 @@ public class MatchSessionService {
     }
 
     /**
-     * Checks whether fromWord and toWord form a valid pair on the given board.
-     * Comparison is case-sensitive and exact (matches what was parsed from CSV).
+     * Checks whether fromWord and toWord form a valid, unmatched pair on the given board.
+     * A pair is eligible only if it exists in board.pairs() and has not already been matched.
      */
     private boolean isCorrectPair(MatchBoard board, String fromWord, String toWord) {
-        return board.pairs().stream()
-                .anyMatch(entry -> entry.fromWord().equals(fromWord) && entry.toWord().equals(toWord));
+        return board.isPairEligible(fromWord, toWord);
     }
 
     /**

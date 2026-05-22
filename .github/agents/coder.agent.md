@@ -2,7 +2,7 @@
 name: Software Developer
 description: Writes code based on requirements and implementation plan.
 model: Claude Sonnet 4.6 (copilot)
-tools: ['vscode', 'execute', 'read', 'edit'] 
+tools: ['vscode', 'execute', 'read', 'edit', vscode/memory] 
 ---
 
 # Role

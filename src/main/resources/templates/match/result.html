@@ -9,7 +9,7 @@
         <div class="page-main">
             <div class="page-container">
                 <div class="result-card">
-                    <div class="result-confetti" th:if="${successRate == 100}" aria-hidden="true"></div>
+                    <div class="result-confetti" aria-hidden="true"></div>
                     <h1 class="result-title">🎯 Session Complete!</h1>
                     <p class="result-subtitle" th:text="${resultMessage}">Result</p>
 
@@ -33,7 +33,7 @@
             </div>
         </div>
 
-        <script th:if="${successRate == 100}">
+        <script>
         (function () {
             if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 return;
