@@ -116,6 +116,8 @@ Every match attempt is counted. When you reach 30 successes the session ends and
 
 If you provided a nickname, each attempt is saved to a persistent score file. The app records **S** (success) or **F** (failure) for every attempt, keeping the **last 10 entries per word pair**. This history is used to track your long-term progress.
 
+By default, score history is stored at `data/scores/scores.csv`.
+
 > [!NOTE]
 > Playing without a nickname still gives you the per-session result. Your attempts are simply not saved between sessions.
 

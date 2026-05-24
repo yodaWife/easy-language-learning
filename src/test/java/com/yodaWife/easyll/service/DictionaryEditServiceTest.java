@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -58,6 +59,7 @@ class DictionaryEditServiceTest {
             action.run();
             return null;
         }).when(dictionaryWriteLock).executeWithLock(anyString(), anyLong(), any(Runnable.class));
+        when(dictionaryProperties.getRootPath()).thenReturn(tempDir().toString());
     }
 
     private DataSnapshot snapshotWith(Word word) {
@@ -156,5 +158,21 @@ class DictionaryEditServiceTest {
         assertThat(result).isInstanceOf(DictionaryOperationResult.Success.class);
         var updated = ((DictionaryOperationResult.Success<ModeEligibility>) result).value();
         assertThat(updated.enabled()).isFalse();
+    }
+
+    @Test
+    @DisplayName("toggleGlobalEnabled returns Failure when dictionary root path is classpath-based")
+    void toggleGlobalEnabledReturnsFailureForClasspathRootPath() throws Exception {
+        var word = new Word(WORD_ID, "Hallo", "hello", "", true);
+        when(dataHealthService.snapshot()).thenReturn(snapshotWith(word));
+        when(dictionaryProperties.getRootPath()).thenReturn("classpath:data/dictionaries");
+
+        var result = service.toggleGlobalEnabled(LANGUAGE, WORD_ID);
+
+        assertThat(result).isInstanceOf(DictionaryOperationResult.Failure.class);
+        assertThat(((DictionaryOperationResult.Failure<Word>) result).errorMessage())
+                .contains("filesystem root path");
+        verify(csvPersistence, never()).writeWords(any(), any());
+        verify(dataHealthService, never()).reload();
     }
 }

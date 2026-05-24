@@ -52,7 +52,7 @@ graph TD
     DictionaryEditService --> DictionaryWriteLock
     DictionaryEditService --> DictionaryAuditLogService
 
-    ScoreRepository -->|atomic rename| ScoreCSV[(scores.csv)]
+    ScoreRepository -->|atomic rename| ScoreCSV[(data/scores/scores.csv)]
     MultiLanguageDictionaryParser -->|reads| DictFiles[(data/dictionaries/*)]
 
     SessionStore -->|scheduled sweep| TTLEviction[TTL Eviction]
@@ -151,8 +151,7 @@ src/main/java/com/yodawife/easyll/
     ├── MultiLanguageDictionaryParser.java
     ├── WordsCsvParser.java
     ├── ModeEligibilityCsvParser.java
-    ├── ScoreCsvParser.java
-    └── WordCsvParser.java            Legacy compatibility parser
+    └── ScoreCsvParser.java
 
 src/main/resources/
 ├── application.properties
@@ -217,16 +216,14 @@ All properties live in `src/main/resources/application.properties`. Override per
 | `app.dictionaries.root-path` | `./data/dictionaries` | Root folder containing per-language dictionary subfolders. |
 | `app.dictionaries.primary-language-code` | `hun` | Fallback language code used when no explicit language is selected. |
 | `app.dictionaries.modes` | `flashcards,match` | Supported mode names used by dictionary toggles and eligibility checks. |
-| `app.scores.file-path` | `./scores.csv` | Score CSV read path. |
-| `app.scores.write-path` | `./scores.csv` | Score CSV write path. Can differ from the read path for staged setups; must be a filesystem path (not classpath). |
+| `app.scores.file-path` | `./data/scores/scores.csv` | Score CSV read path. |
+| `app.scores.write-path` | `./data/scores/scores.csv` | Score CSV write path. Can differ from the read path for staged setups; must be a filesystem path (not classpath). |
 | `app.match.max-attempts` | `30` | Successful matches required to complete a session. Minimum 1. |
 | `app.match.board-size` | `5` | Word pairs per match board. Minimum 1. |
 | `app.match.session-ttl-minutes` | `60` | Idle TTL for match sessions in minutes. Sessions not accessed within this window are evicted by the scheduled sweep. Minimum 1. |
 | `spring.security.user.name` | `admin` | Admin username for HTTP Basic Auth on `/admin/**`. |
 | `spring.security.user.password` | `admin` | Admin password. **Change this before any non-localhost deployment.** |
 | `spring.security.user.roles` | `ADMIN` | Role granted to the admin user. |
-
-`app.words.source` remains available only for legacy compatibility and diagnostics; gameplay uses the multi-language bundle loaded from `app.dictionaries.root-path`.
 
 ---
 
@@ -299,7 +296,7 @@ Eligibility used by games:
 - `word.globalEnabled == true`
 - and mode override is enabled, or missing (defaults to enabled).
 
-### Score CSV (`scores.csv`)
+### Score CSV (`data/scores/scores.csv`)
 
 Semicolon-delimited, UTF-8. No header row.
 

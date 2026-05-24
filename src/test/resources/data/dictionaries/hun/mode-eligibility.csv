@@ -65,8 +65,6 @@ WORD_ID;MODE;ENABLED
 32;match;true
 33;flashcards;true
 33;match;true
-34;flashcards;true
-34;match;true
 35;flashcards;true
 35;match;true
 36;flashcards;true
@@ -189,3 +187,5 @@ WORD_ID;MODE;ENABLED
 94;match;true
 95;flashcards;true
 95;match;true
+34;match;false
+34;flashcards;true

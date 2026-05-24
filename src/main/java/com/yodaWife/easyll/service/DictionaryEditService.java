@@ -58,6 +58,11 @@ public class DictionaryEditService {
      *         or {@link DictionaryOperationResult.Failure} with a descriptive message on any error
      */
     public DictionaryOperationResult<Word> toggleGlobalEnabled(String languageCode, WordId wordId) {
+        if (!isEditableRootPath()) {
+            return new DictionaryOperationResult.Failure<>(
+                    "Dictionary editing requires a filesystem root path; current app.dictionaries.root-path is classpath-based");
+        }
+
         var bundleOpt = dataHealthService.snapshot().getLanguageBundle(languageCode);
         if (bundleOpt.isEmpty()) {
             return new DictionaryOperationResult.Failure<>("Language not found: " + languageCode);
@@ -124,6 +129,11 @@ public class DictionaryEditService {
      *         or {@link DictionaryOperationResult.Failure} with a descriptive message on any error
      */
     public DictionaryOperationResult<ModeEligibility> toggleModeEnabled(String languageCode, WordId wordId, String mode) {
+        if (!isEditableRootPath()) {
+            return new DictionaryOperationResult.Failure<>(
+                    "Dictionary editing requires a filesystem root path; current app.dictionaries.root-path is classpath-based");
+        }
+
         var bundleOpt = dataHealthService.snapshot().getLanguageBundle(languageCode);
         if (bundleOpt.isEmpty()) {
             return new DictionaryOperationResult.Failure<>("Language not found");
@@ -201,6 +211,11 @@ public class DictionaryEditService {
             root = Path.of(rawRootPath);
         }
         return root.resolve(languageCode).resolve(filename);
+    }
+
+    private boolean isEditableRootPath() {
+        var rootPath = dictionaryProperties.getRootPath();
+        return !rootPath.startsWith(CLASSPATH_PREFIX);
     }
 
     private List<ModeEligibility> buildUpdatedEligibilities(

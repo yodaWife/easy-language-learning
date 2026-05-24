@@ -32,15 +32,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class DataReloadIntegrationTest {
 
     private static final Path TEMP_DIR;
+    private static final Path HUN_DIR;
     private static final Path WORDS_FILE;
+    private static final Path MODE_ELIGIBILITY_FILE;
     private static final Path SCORES_FILE;
 
     static {
         try {
             TEMP_DIR = Files.createTempDirectory("easyll-reload-it-");
-            WORDS_FILE = TEMP_DIR.resolve("words.csv");
+            HUN_DIR = TEMP_DIR.resolve("hun");
+            WORDS_FILE = HUN_DIR.resolve("words.csv");
+            MODE_ELIGIBILITY_FILE = HUN_DIR.resolve("mode-eligibility.csv");
             SCORES_FILE = TEMP_DIR.resolve("scores.csv");
-            Files.writeString(WORDS_FILE, "ENGLISH;HUNGARIAN;EXAMPLE\nLetter;Betű;\nStone;Kő;\n");
+
+            Files.createDirectories(HUN_DIR);
+            writeValidDictionary();
             Files.writeString(SCORES_FILE, "alice;Letter;Betű;S\n");
         } catch (IOException e) {
             throw new RuntimeException("Failed to initialize test files", e);
@@ -49,7 +55,8 @@ class DataReloadIntegrationTest {
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
-        registry.add("app.words.source", () -> WORDS_FILE.toString());
+        registry.add("app.dictionaries.root-path", () -> TEMP_DIR.toString());
+        registry.add("app.dictionaries.primary-language-code", () -> "hun");
         registry.add("app.scores.file-path", () -> SCORES_FILE.toString());
         registry.add("app.scores.write-path", () -> SCORES_FILE.toString());
     }
@@ -65,7 +72,7 @@ class DataReloadIntegrationTest {
     @BeforeEach
     void resetToValidData() throws Exception {
         mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
-        Files.writeString(WORDS_FILE, "ENGLISH;HUNGARIAN;EXAMPLE\nLetter;Betű;\nStone;Kő;\n");
+        writeValidDictionary();
         Files.writeString(SCORES_FILE, "alice;Letter;Betű;S\n");
         mockMvc.perform(post("/admin/data/reload").with(httpBasic("admin", "admin"))).andReturn();
     }
@@ -73,34 +80,34 @@ class DataReloadIntegrationTest {
     @Test
     @DisplayName("knownUsers reflects latest score CSV data after a successful reload")
     void knownUsersUpdatesAfterSuccessfulReload() throws Exception {
-        // @BeforeEach loaded: alice;Letter;Betű;S
         assertThat(scoreRepository.knownUsers()).contains("alice");
 
-        // Replace score CSV with a different user
         Files.writeString(SCORES_FILE, "newuser;Stone;Kő;F\n");
 
         mockMvc.perform(post("/admin/data/reload").with(httpBasic("admin", "admin")))
                 .andExpect(status().is3xxRedirection());
 
-        // After reload, knownUsers must reflect new snapshot — newuser in, alice out
         assertThat(scoreRepository.knownUsers()).contains("newuser");
         assertThat(scoreRepository.knownUsers()).doesNotContain("alice");
     }
 
     @Test
     void degradedDataCanBeFixedAndReloadedToHealthy() throws Exception {
-        Files.writeString(WORDS_FILE, "ENGLISH;HUNGARIAN;EXAMPLE\nLetter;Betű;\nLetter;Betű;\n");
+        Files.writeString(WORDS_FILE, """
+                WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
+                w1;Letter;Betű;;true
+                w1;Letter duplicate;Betű;;true
+                """);
 
         mockMvc.perform(post("/admin/data/reload").with(httpBasic("admin", "admin")))
                 .andExpect(status().is3xxRedirection());
 
-        // Multi-language data keeps wordsHealthy=true; legacy CSV errors are still reported in wordErrors
         var resultWithErrors = mockMvc.perform(get("/")).andReturn();
         var errorsModel = Objects.requireNonNull(resultWithErrors.getModelAndView()).getModel();
-        assertThat(errorsModel.get("wordsHealthy")).isEqualTo(true);
+        assertThat(errorsModel.get("wordsHealthy")).isEqualTo(false);
         assertThat((java.util.List<?>) errorsModel.get("wordErrors")).isNotEmpty();
 
-        Files.writeString(WORDS_FILE, "ENGLISH;HUNGARIAN;EXAMPLE\nLetter;Betű;\nCloud;Felhő;\n");
+        writeValidDictionary();
 
         mockMvc.perform(post("/admin/data/reload").with(httpBasic("admin", "admin")))
                 .andExpect(status().is3xxRedirection());
@@ -113,26 +120,31 @@ class DataReloadIntegrationTest {
 
     @Test
     void reloadWithStillInvalidDataRemainsDegradedWithUpdatedErrors() throws Exception {
-        Files.writeString(WORDS_FILE, "ENGLISH;HUNGARIAN;EXAMPLE\n ;Betű;\n");
+        Files.writeString(WORDS_FILE, """
+                WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
+                w1;;Betű;;true
+                """);
 
         mockMvc.perform(post("/admin/data/reload").with(httpBasic("admin", "admin")))
                 .andExpect(status().is3xxRedirection());
 
-        // Multi-language data keeps wordsHealthy=true; legacy CSV errors are still reported in wordErrors
         var firstResult = mockMvc.perform(get("/health/data")).andReturn();
         var firstModel = Objects.requireNonNull(firstResult.getModelAndView()).getModel();
-        assertThat(firstModel.get("wordsHealthy")).isEqualTo(true);
+        assertThat(firstModel.get("wordsHealthy")).isEqualTo(false);
         var firstErrors = (java.util.List<?>) firstModel.get("wordErrors");
         assertThat(firstErrors).isNotEmpty();
 
-        Files.writeString(WORDS_FILE, "ENGLISH;HUNGARIAN;EXAMPLE\nLetter; ;\n");
+        Files.writeString(WORDS_FILE, """
+                WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
+                w1;Letter;;;true
+                """);
 
         mockMvc.perform(post("/admin/data/reload").with(httpBasic("admin", "admin")))
                 .andExpect(status().is3xxRedirection());
 
         var secondResult = mockMvc.perform(get("/health/data")).andReturn();
         var secondModel = Objects.requireNonNull(secondResult.getModelAndView()).getModel();
-        assertThat(secondModel.get("wordsHealthy")).isEqualTo(true);
+        assertThat(secondModel.get("wordsHealthy")).isEqualTo(false);
         var secondErrors = (java.util.List<?>) secondModel.get("wordErrors");
         assertThat(secondErrors).isNotEmpty();
         assertThat(secondErrors).isNotEqualTo(firstErrors);
@@ -168,5 +180,20 @@ class DataReloadIntegrationTest {
         mockMvc.perform(post("/session/start").param("mode", "match"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/match"));
+    }
+
+    private static void writeValidDictionary() throws IOException {
+        Files.writeString(WORDS_FILE, """
+                WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
+                w1;Letter;Betű;;true
+                w2;Stone;Kő;;true
+                """);
+        Files.writeString(MODE_ELIGIBILITY_FILE, """
+                WORD_ID;MODE;ENABLED
+                w1;flashcards;true
+                w1;match;true
+                w2;flashcards;true
+                w2;match;true
+                """);
     }
 }

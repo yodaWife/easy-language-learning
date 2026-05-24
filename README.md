@@ -96,11 +96,9 @@ Key properties in `src/main/resources/application.properties`:
 app.dictionaries.root-path=./data/dictionaries
 app.dictionaries.primary-language-code=hun
 app.dictionaries.modes=flashcards,match
-app.scores.file-path=./scores.csv
-app.scores.write-path=./scores.csv
+app.scores.file-path=./data/scores/scores.csv
+app.scores.write-path=./data/scores/scores.csv
 ```
-
-`app.words.source` is still present for legacy compatibility and diagnostics, but gameplay now uses the multi-language dictionary bundle.
 
 ## Known Constraints
 
