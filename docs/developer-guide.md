@@ -6,6 +6,7 @@ This guide covers the project architecture, codebase structure, configuration, t
 
 - [Architecture overview](#architecture-overview)
 - [Project structure](#project-structure)
+- [Mobile support](#mobile-support)
 - [Build and run](#build-and-run)
 - [Configuration reference](#configuration-reference)
 - [Security model](#security-model)
@@ -180,6 +181,31 @@ src/test/java/com/yodawife/easyll/
     service/                         Service unit tests (Mockito + pure JUnit)
     validation/                      CSV parser positive and negative cases
 ```
+
+---
+
+## Mobile support
+
+The UI is responsive with a primary breakpoint at `576px`.
+
+### Key mobile behaviors
+
+- Header height reduces to `50px`; title size to `14px`.
+- Mobile safe-area support is enabled using `env(safe-area-inset-*)`.
+- Header navigation uses a house icon button on small screens and a text "Home" link on larger screens.
+- Home mode cards stack vertically with icon-left alignment.
+- Flashcards use full-width cards (up to `260px`) and larger readable word text (`26px`).
+- Match keeps two columns on mobile with compact spacing, language labels, sticky progress, and a tap hint.
+- Dictionary switches to a card-style layout below `576px`.
+
+### Related templates and styles
+
+- `templates/layout/base.html` — viewport and responsive home navigation.
+- `templates/fragments/board.html` — language labels, sticky progress class, and tap hint.
+- `templates/dictionary.html` — redesigned toolbar and sortable table headers.
+- `templates/fragments/dictionary-row.html` — compact toggle switches and row action icon.
+- `templates/fragments/dictionary-table.html` — numbered pagination with ellipsis and improved empty states.
+- `static/css/app.css` — all responsive/mobile and dictionary redesign styling.
 
 ---
 

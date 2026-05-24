@@ -3,7 +3,7 @@
 <body>
 <div th:fragment="board" id="match-board">
 
-    <div class="match-progress-section">
+    <div class="match-progress-section match-progress-sticky">
         <p class="match-score-text">
             Matched <span th:text="${attempts}">0</span> / <span th:text="${maxAttempts}">30</span>
         </p>
@@ -17,6 +17,7 @@
 
     <div class="match-grid">
         <div class="match-col">
+            <div class="match-col-label match-col-label--source" th:text="${fromLang != null ? fromLang : 'Source'}">Source</div>
             <div th:each="card : ${board.leftColumn()}"
                  th:unless="${board.matchedPairIds().contains(card.pairId())}"
                  class="source-card"
@@ -28,6 +29,7 @@
             </div>
         </div>
         <div class="match-col">
+            <div class="match-col-label match-col-label--target" th:text="${toLang != null ? toLang : 'Target'}">Target</div>
             <div th:each="card : ${board.rightColumn()}"
                  th:unless="${board.matchedPairIds().contains(card.pairId())}"
                  class="target-card"

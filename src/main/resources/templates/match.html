@@ -6,7 +6,7 @@
 </head>
 <body>
     <div id="content">
-        <div class="page-main">
+        <div class="page-main match-game-page">
             <div class="match-container">
                 <h2 class="section-title">🎯 Match Game</h2>
 
@@ -16,7 +16,11 @@
                     <div th:replace="~{fragments/board :: board}"></div>
                 </div>
 
-                <a th:href="@{/}" class="back-home-link">← Back to Home</a>
+                <div class="match-footer">
+                    <p class="match-hint-text d-none d-sm-block">Drag a word or tap to select &amp; match</p>
+                    <p class="match-hint-text d-sm-none">Tap a word on each side to match</p>
+                    <a th:href="@{/}" class="back-home-link">← Back to Home</a>
+                </div>
             </div>
         </div>
     </div>

@@ -3,7 +3,7 @@
       th:fragment="layout(title, content)">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title th:replace="${title}">Easy Language Learning</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,10 @@
 <body>
     <header class="app-header">
         <a th:href="@{/}" class="header-title">🌿 Easy Language Learning</a>
-        <a th:href="@{/}" class="header-home-link">Home</a>
+        <a th:href="@{/}" class="header-home-link d-none d-sm-block">Home</a>
+        <a th:href="@{/}" class="header-home-icon d-sm-none" aria-label="Go to Home">
+            <i class="bi bi-house-door-fill"></i>
+        </a>
     </header>
     <main th:replace="${content}">
         <!-- page content injected here -->

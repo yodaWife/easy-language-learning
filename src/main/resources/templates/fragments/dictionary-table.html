@@ -6,34 +6,200 @@
         <tr th:replace="~{fragments/dictionary-row :: row(${wv}, ${modes}, ${languageCode})}"></tr>
     </th:block>
 
+    <!-- Empty state: no results for search -->
+    <tr th:if="${words.isEmpty() and (search != null and !search.isEmpty())}" class="dict-empty-row">
+        <td th:colspan="${5 + #lists.size(modes)}" class="dict-empty-cell">
+            <div class="dict-empty-state">
+                <span class="dict-empty-icon">🔍</span>
+                <p class="dict-empty-title" th:text="'No words match \'' + ${search} + '\''">No words match 'xyz'</p>
+                <a href="#" class="dict-clear-search"
+                   hx-get="/dictionary/rows"
+                   hx-target="#dict-rows"
+                   hx-swap="innerHTML"
+                   hx-include="#dict-hidden-params"
+                   hx-vals='{"search": "", "page": "0"}'>Clear search</a>
+            </div>
+        </td>
+    </tr>
+
+    <!-- Empty state: empty dictionary -->
+    <tr th:if="${words.isEmpty() and (search == null or search.isEmpty()) and totalWords == 0}" class="dict-empty-row">
+        <td th:colspan="${5 + #lists.size(modes)}" class="dict-empty-cell">
+            <div class="dict-empty-state">
+                <span class="dict-empty-icon">📝</span>
+                <p class="dict-empty-title">Your dictionary is empty</p>
+                <p class="dict-empty-subtitle">Add your first word pair to get started</p>
+            </div>
+        </td>
+    </tr>
+
     <!-- Pagination row -->
     <tr class="dict-pagination-row">
-        <td th:colspan="${4 + #lists.size(modes)}" class="dict-pagination-cell">
+        <td th:colspan="${5 + #lists.size(modes)}" class="dict-pagination-cell"
+            th:with="
+                totalPages=${totalWords == 0 ? 1 : (totalWords + pageSize - 1) / pageSize},
+                startPage=${page > 2 ? page - 2 : 0},
+                endPage=${page + 2 < (totalWords == 0 ? 1 : (totalWords + pageSize - 1) / pageSize) - 1 ? page + 2 : (totalWords == 0 ? 1 : (totalWords + pageSize - 1) / pageSize) - 1},
+                fromItem=${page * pageSize + 1},
+                toItem=${(page + 1) * pageSize < totalWords ? (page + 1) * pageSize : totalWords}">
             <div class="dict-pagination">
-            <span class="page-info"
-                  th:text="'Showing page ' + (${page + 1}) + ', ' + ${words.size()} + ' of ' + ${totalWords} + ' words'">
-                Showing page 1, 0 of 0 words
-            </span>
-            <div class="page-nav-group">
-            <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML">
-                <input type="hidden" name="languageCode" th:value="${languageCode}">
-                <input type="hidden" name="sortBy" th:value="${sortBy}">
-                <input type="hidden" name="sortDir" th:value="${sortDir}">
-                <input type="hidden" name="search" th:value="${search}">
-                <input type="hidden" name="page" th:value="${page - 1}">
-                <input type="hidden" name="pageSize" th:value="${pageSize}">
-                <button type="submit" class="btn-page" th:disabled="${page == 0}">← Previous</button>
-            </form>
-            <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML">
-                <input type="hidden" name="languageCode" th:value="${languageCode}">
-                <input type="hidden" name="sortBy" th:value="${sortBy}">
-                <input type="hidden" name="sortDir" th:value="${sortDir}">
-                <input type="hidden" name="search" th:value="${search}">
-                <input type="hidden" name="page" th:value="${page + 1}">
-                <input type="hidden" name="pageSize" th:value="${pageSize}">
-                <button type="submit" class="btn-page" th:disabled="${(page + 1) * pageSize >= totalWords}">Next →</button>
-            </form>
+                <span class="page-info"
+                      th:text="'Showing ' + ${totalWords == 0 ? 0 : fromItem} + '\u2013' + ${totalWords == 0 ? 0 : toItem} + ' of ' + ${totalWords} + ' words'">
+                    Showing 1–0 of 0 words
+                </span>
+                <nav class="page-nav-group" aria-label="Pagination">
+                    <!-- Previous arrow -->
+                    <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML" class="page-form">
+                        <input type="hidden" name="languageCode" th:value="${languageCode}">
+                        <input type="hidden" name="sortBy" th:value="${sortBy}">
+                        <input type="hidden" name="sortDir" th:value="${sortDir}">
+                        <input type="hidden" name="search" th:value="${search}">
+                        <input type="hidden" name="page" th:value="${page - 1}">
+                        <input type="hidden" name="pageSize" th:value="${pageSize}">
+                        <button type="submit" class="btn-page-pill" th:disabled="${page == 0}" aria-label="Previous page">←</button>
+                    </form>
+
+                    <!-- First page if not in window -->
+                    <th:block th:if="${startPage > 0}">
+                        <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML" class="page-form">
+                            <input type="hidden" name="languageCode" th:value="${languageCode}">
+                            <input type="hidden" name="sortBy" th:value="${sortBy}">
+                            <input type="hidden" name="sortDir" th:value="${sortDir}">
+                            <input type="hidden" name="search" th:value="${search}">
+                            <input type="hidden" name="page" value="0">
+                            <input type="hidden" name="pageSize" th:value="${pageSize}">
+                            <button type="submit" class="btn-page-pill" th:classappend="${page == 0 ? ' btn-page-pill--active' : ''}">1</button>
+                        </form>
+                        <span th:if="${startPage > 1}" class="page-ellipsis">…</span>
+                    </th:block>
+
+                    <!-- Page window -->
+                    <th:block th:each="p : ${#numbers.sequence(startPage, endPage)}">
+                        <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML" class="page-form">
+                            <input type="hidden" name="languageCode" th:value="${languageCode}">
+                            <input type="hidden" name="sortBy" th:value="${sortBy}">
+                            <input type="hidden" name="sortDir" th:value="${sortDir}">
+                            <input type="hidden" name="search" th:value="${search}">
+                            <input type="hidden" name="page" th:value="${p}">
+                            <input type="hidden" name="pageSize" th:value="${pageSize}">
+                            <button type="submit"
+                                    class="btn-page-pill"
+                                    th:classappend="${p == page ? ' btn-page-pill--active' : ''}"
+                                    th:text="${p + 1}"
+                                    th:attr="aria-current=${p == page ? 'page' : null}">1</button>
+                        </form>
+                    </th:block>
+
+                    <!-- Last page if not in window -->
+                    <th:block th:if="${endPage < totalPages - 1}">
+                        <span th:if="${endPage < totalPages - 2}" class="page-ellipsis">…</span>
+                        <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML" class="page-form">
+                            <input type="hidden" name="languageCode" th:value="${languageCode}">
+                            <input type="hidden" name="sortBy" th:value="${sortBy}">
+                            <input type="hidden" name="sortDir" th:value="${sortDir}">
+                            <input type="hidden" name="search" th:value="${search}">
+                            <input type="hidden" name="page" th:value="${totalPages - 1}">
+                            <input type="hidden" name="pageSize" th:value="${pageSize}">
+                            <button type="submit"
+                                    class="btn-page-pill"
+                                    th:classappend="${page == totalPages - 1 ? ' btn-page-pill--active' : ''}"
+                                    th:text="${totalPages}">5</button>
+                        </form>
+                    </th:block>
+
+                    <!-- Next arrow -->
+                    <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML" class="page-form">
+                        <input type="hidden" name="languageCode" th:value="${languageCode}">
+                        <input type="hidden" name="sortBy" th:value="${sortBy}">
+                        <input type="hidden" name="sortDir" th:value="${sortDir}">
+                        <input type="hidden" name="search" th:value="${search}">
+                        <input type="hidden" name="page" th:value="${page + 1}">
+                        <input type="hidden" name="pageSize" th:value="${pageSize}">
+                        <button type="submit" class="btn-page-pill" th:disabled="${(page + 1) * pageSize >= totalWords}" aria-label="Next page">→</button>
+                    </form>
+                </nav>
             </div>
+        </td>
+    </tr>
+
+    <!-- Mobile card list (shown via CSS on small screens) -->
+    <tr class="dict-mobile-cards-row">
+        <td th:colspan="${5 + #lists.size(modes)}" class="dict-mobile-cards-cell">
+            <div class="dict-cards-list">
+                <th:block th:each="wv : ${words}">
+                    <div class="dict-card"
+                         th:attr="data-word-id=${wv.word.wordId.value}">
+                        <div class="dict-card-top">
+                            <span class="dict-card-from" th:text="${wv.word.fromWord}">Adult</span>
+                            <span class="dict-card-arrow">→</span>
+                            <span class="dict-card-to" th:text="${wv.word.toWord}">Felnőtt</span>
+                            <button type="button"
+                                    class="btn-row-action dict-card-edit"
+                                    th:attr="aria-label=${'Edit word ' + wv.word.fromWord}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </div>
+                        <p class="dict-card-example"
+                           th:if="${wv.word.example != null and !wv.word.example.isEmpty()}"
+                           th:text="${wv.word.example}">Example sentence</p>
+                        <div class="dict-card-toggles">
+                            <!-- Global toggle -->
+                            <div class="dict-card-toggle-item">
+                                <span class="dict-card-toggle-label">G:</span>
+                                <form hx-post="/dictionary/toggle/global" hx-target="#dict-rows" hx-swap="innerHTML"
+                                      hx-include="#dict-hidden-params">
+                                    <input type="hidden" name="languageCode" th:value="${languageCode}">
+                                    <input type="hidden" name="wordId" th:value="${wv.word.wordId.value}">
+                                    <input type="hidden" name="page" th:value="${page}">
+                                    <input type="hidden" name="pageSize" th:value="${pageSize}">
+                                    <input type="hidden" name="sortBy" th:value="${sortBy}">
+                                    <input type="hidden" name="sortDir" th:value="${sortDir}">
+                                    <input type="hidden" name="search" th:value="${search}">
+                                    <button type="submit"
+                                            class="toggle-switch-btn"
+                                            role="switch"
+                                            th:attr="aria-checked=${wv.word.globalEnabled},aria-label=${'Toggle global for ' + wv.word.fromWord}">
+                                        <span th:class="${wv.word.globalEnabled ? 'toggle-switch toggle-switch--on toggle-switch--sm' : 'toggle-switch toggle-switch--off toggle-switch--sm'}">
+                                            <span class="toggle-knob"></span>
+                                        </span>
+                                    </button>
+                                </form>
+                            </div>
+                            <!-- Per-mode toggles -->
+                            <div th:each="mode : ${modes}" class="dict-card-toggle-item">
+                                <span class="dict-card-toggle-label" th:text="${mode.substring(0,1) + ':'}">F:</span>
+                                <form hx-post="/dictionary/toggle/mode" hx-target="#dict-rows" hx-swap="innerHTML"
+                                      hx-include="#dict-hidden-params">
+                                    <input type="hidden" name="languageCode" th:value="${languageCode}">
+                                    <input type="hidden" name="wordId" th:value="${wv.word.wordId.value}">
+                                    <input type="hidden" name="mode" th:value="${mode}">
+                                    <input type="hidden" name="page" th:value="${page}">
+                                    <input type="hidden" name="pageSize" th:value="${pageSize}">
+                                    <input type="hidden" name="sortBy" th:value="${sortBy}">
+                                    <input type="hidden" name="sortDir" th:value="${sortDir}">
+                                    <input type="hidden" name="search" th:value="${search}">
+                                    <button type="submit"
+                                            class="toggle-switch-btn"
+                                            role="switch"
+                                            th:attr="aria-checked=${wv.modeEnabled[mode] ?: true},aria-label=${'Toggle ' + mode + ' for ' + wv.word.fromWord}">
+                                        <span th:class="${(wv.modeEnabled[mode] ?: true) ? 'toggle-switch toggle-switch--on toggle-switch--sm' : 'toggle-switch toggle-switch--off toggle-switch--sm'}">
+                                            <span class="toggle-knob"></span>
+                                        </span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </th:block>
+                <!-- Empty state for mobile -->
+                <div th:if="${words.isEmpty() and (search != null and !search.isEmpty())}" class="dict-empty-state">
+                    <span class="dict-empty-icon">🔍</span>
+                    <p class="dict-empty-title" th:text="'No words match \'' + ${search} + '\''">No results</p>
+                </div>
+                <div th:if="${words.isEmpty() and (search == null or search.isEmpty()) and totalWords == 0}" class="dict-empty-state">
+                    <span class="dict-empty-icon">📝</span>
+                    <p class="dict-empty-title">Your dictionary is empty</p>
+                </div>
             </div>
         </td>
     </tr>

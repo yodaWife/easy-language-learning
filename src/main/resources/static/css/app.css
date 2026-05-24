@@ -90,6 +90,28 @@ body {
   color: #fff;
 }
 
+.app-header .header-home-icon {
+  position: absolute;
+  right: 16px;
+  color: var(--primary-surface);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  min-width: 40px;
+  min-height: 28px;
+  font-size: 1rem;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.app-header .header-home-icon:hover,
+.app-header .header-home-icon:active {
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+}
+
 /* ── Main Layout ── */
 .page-main {
   padding-top: 48px;
@@ -106,6 +128,38 @@ body {
   max-width: 900px;
   margin: 0 auto;
   padding: 0 16px;
+}
+
+/* ── Match Game Page Layout (pinned footer) ── */
+.match-game-page {
+  min-height: calc(100vh - 60px);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+
+.match-game-page .match-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.match-game-page #board-container {
+  flex: 1;
+}
+
+.match-footer {
+  margin-top: auto;
+  padding: 16px 0 24px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+.match-hint-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0 0 8px;
 }
 
 /* ── Welcome Card ── */
@@ -453,6 +507,10 @@ body {
   cursor: not-allowed;
 }
 
+.flashcard-actions {
+  text-align: center;
+}
+
 /* ── Back to Home Link ── */
 .back-home-link {
   display: block;
@@ -482,6 +540,25 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* Match column labels */
+.match-col-label {
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 6px;
+  display: none; /* hidden on desktop */
+}
+
+.match-col-label--source {
+  color: var(--primary);
+}
+
+.match-col-label--target {
+  color: var(--accent-dark);
 }
 
 /* Source cards (left column) */
@@ -632,6 +709,14 @@ body {
   margin-bottom: 8px;
 }
 
+.match-progress-sticky {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 10;
+  padding: 8px 0;
+}
+
 /* ── Result Page ── */
 .result-card {
   background: var(--card-bg);
@@ -754,6 +839,18 @@ body {
   }
 }
 
+/* ── Safe Area Support ── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .page-main {
+    padding-bottom: calc(48px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Mobile cards row: hidden on desktop, shown on mobile via media query */
+.dict-mobile-cards-row {
+  display: none;
+}
+
 /* ── Responsive ── */
 @media (max-width: 575px) {
   .welcome-card {
@@ -765,34 +862,237 @@ body {
     width: 100%;
     max-width: 320px;
   }
+
+  /* Welcome card mobile */
+  .welcome-card {
+    padding: 20px;
+    margin: 0 16px;
+  }
+
+  /* Mode cards: vertical stacking on mobile */
+  .mode-cards {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  /* Mode card: horizontal layout (icon left, name right) on mobile */
+  .mode-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    height: 60px;
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .mode-card .mode-icon {
+    font-size: 1.4rem;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .mode-card .mode-name {
+    font-size: 0.95rem;
+  }
+
+  /* Nickname input mobile */
+  .nickname-input {
+    height: 44px;
+    font-size: 0.95rem;
+  }
+
+  /* Start button mobile */
+  .btn-start {
+    height: 50px;
+    min-width: unset;
+    padding: 0 16px;
+    font-size: 1rem;
+  }
+
+  /* Welcome card spacing */
+  .nickname-group {
+    margin-bottom: 20px;
+  }
+
+  .mode-cards {
+    margin-bottom: 20px;
+  }
+
+  /* Header mobile */
+  .app-header {
+    height: 50px;
+    padding: 0 16px;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .app-header .header-title {
+    font-size: 0.875rem;
+  }
+
+  /* Page main mobile */
+  .page-main {
+    padding-top: 16px;
+    padding-bottom: 24px;
+  }
+
+  /* Match game page: re-apply pinned layout for mobile (header is 50px on mobile) */
+  .match-game-page {
+    min-height: calc(100vh - 50px);
+    padding-bottom: 0;
+  }
+
+  /* Flashcard page mobile */
+  .flashcard-page .page-container {
+    background: transparent;
+    box-shadow: none;
+    padding: 0 12px;
+  }
+
+  .flashcard-scene {
+    width: calc(100% - 0px);
+    max-width: 100%;
+    height: 260px;
+    margin-bottom: 20px;
+  }
+
+  .card-front .card-from-word,
+  .card-back .card-to-word {
+    font-size: 1.625rem; /* 26px */
+  }
+
+  .flashcard-actions .btn-primary-action {
+    display: block;
+    width: 100%;
+    height: 50px;
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+
+  .back-home-link {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Section title mobile */
+  .section-title {
+    font-size: 1.375rem; /* 22px */
+  }
+
+  /* Match game mobile */
+  .match-grid {
+    column-gap: 8px;
+  }
+
+  .match-col-label {
+    display: block; /* show on mobile */
+  }
+
+  .source-card,
+  .target-card {
+    padding: 10px 12px;
+    font-size: 0.8125rem; /* 13px */
+  }
+
+  .match-col {
+    gap: 10px;
+  }
+
+  /* Selected state more prominent on mobile */
+  .source-card.selected {
+    border-width: 3px;
+    transform: scale(1.03);
+  }
+
+  .target-card.selected {
+    border-width: 3px;
+    transform: scale(1.03);
+  }
+
+  /* Dictionary mobile */
+  .dict-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .dict-toolbar-search {
+    max-width: 100%;
+  }
+
+  .dict-toolbar-lang,
+  .dict-toolbar-right {
+    justify-content: space-between;
+  }
+
+  /* Hide table header and regular rows; show mobile cards row */
+  .dict-table thead,
+  .dict-table tbody tr:not(.dict-mobile-cards-row):not(.dict-pagination-row):not(.dict-empty-row) {
+    display: none;
+  }
+
+  .dict-mobile-cards-row {
+    display: block;
+  }
+
+  .dict-mobile-cards-row > td {
+    display: block;
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+
+  .dict-table-wrapper {
+    box-shadow: none;
+    background: transparent;
+    border-radius: 0;
+  }
+
+  /* Mobile pagination: simplified */
+  .dict-pagination {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .page-info {
+    min-width: unset;
+    text-align: center;
+  }
+
+  .page-nav-group {
+    justify-content: center;
+  }
 }
 
 @media (max-width: 400px) {
   .mode-cards {
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
   }
 
   .mode-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
     width: 100%;
-    max-width: 220px;
-    height: 80px;
+    max-width: 100%;
+    height: 56px;
+    padding: 0 14px;
+    gap: 10px;
   }
 
-  .match-grid {
-    grid-template-columns: 1fr;
-  }
+  /* match-grid remains 2 columns on all mobile sizes */
 
-  .match-col + .match-col::before {
-    content: "▼ Translations";
-    display: block;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    text-align: center;
-    margin-bottom: 4px;
+  .source-card,
+  .target-card {
+    font-size: 0.75rem; /* 12px for very small screens */
+    padding: 8px 8px;
   }
 }
 
@@ -950,15 +1250,15 @@ body {
 }
 
 .dict-table th {
-  background: var(--primary-light);
-  color: var(--primary);
+  background: var(--primary);
+  color: #fff;
   font-weight: 700;
-  font-size: 0.8rem;
-  letter-spacing: 0.04em;
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   padding: 10px 14px;
   text-align: left;
-  border-bottom: 2px solid var(--primary-surface);
+  border-bottom: none;
   white-space: nowrap;
 }
 
@@ -981,45 +1281,106 @@ body {
   background: var(--primary-light);
 }
 
-/* ── Toggle Buttons ── */
-.toggle-on {
-  padding: 4px 12px;
+/* ── Toggle Switch (CSS) ── */
+.toggle-switch-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color var(--transition-fast);
+}
+
+.toggle-switch-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.toggle-switch {
+  display: inline-flex;
+  align-items: center;
+  width: 32px;
+  height: 16px;
+  border-radius: 50px;
+  position: relative;
+  transition: background-color 200ms ease;
+  flex-shrink: 0;
+}
+
+.toggle-switch--on {
   background: var(--success);
-  color: #fff;
+}
+
+.toggle-switch--off {
+  background: #E0E0E0;
+}
+
+.toggle-knob {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  top: 2px;
+  transition: left 200ms ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch--on .toggle-knob {
+  left: 18px;
+}
+
+.toggle-switch--off .toggle-knob {
+  left: 2px;
+}
+
+/* ── Row Actions ── */
+.btn-row-action {
+  background: none;
   border: none;
-  border-radius: 20px;
-  font-family: var(--font-family);
-  font-size: 0.8rem;
-  font-weight: 700;
+  color: var(--text-muted);
   cursor: pointer;
-  transition: background-color var(--transition-fast);
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.toggle-on:hover {
-  background: #43A047;
+.btn-row-action:hover {
+  color: var(--primary);
+  background: var(--primary-light);
 }
 
-.toggle-off {
-  padding: 4px 12px;
-  background: var(--text-muted);
-  color: #fff;
-  border: none;
-  border-radius: 20px;
-  font-family: var(--font-family);
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
+/* Cell styling enhancements */
+.td-from {
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
-.toggle-off:hover {
-  background: var(--text-secondary);
+.td-to {
+  color: var(--text-secondary);
 }
 
-/* ── Dictionary Pagination ── */
+.td-example {
+  font-style: italic;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 0; /* forces text-overflow to work in table */
+}
+
+/* ── Dictionary Pagination (Redesigned) ── */
 .dict-pagination-row td {
   padding: 0;
-  background: var(--primary-light);
+  background: #fff;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
 .dict-pagination-cell {
@@ -1030,39 +1391,72 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 12px 16px;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .page-nav-group {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.page-form {
+  margin: 0;
+  padding: 0;
+  display: inline;
 }
 
 .page-info {
   font-size: 0.85rem;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   flex: 1;
+  min-width: 120px;
 }
 
-.btn-page {
-  padding: 6px 14px;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-btn);
+.page-ellipsis {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  padding: 0 2px;
+  line-height: 28px;
+}
+
+.btn-page-pill {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  background: #fff;
+  color: var(--primary);
+  border: 1.5px solid var(--primary-surface);
+  border-radius: 8px;
   font-family: var(--font-family);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.btn-page:hover {
-  background: var(--primary-hover);
+.btn-page-pill:hover:not(:disabled) {
+  background: var(--primary-light);
+  border-color: var(--primary);
 }
 
-.btn-page:disabled {
+.btn-page-pill--active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.btn-page-pill--active:hover {
+  background: var(--primary-hover) !important;
+}
+
+.btn-page-pill:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -1117,6 +1511,173 @@ body {
   font-size: 0.95rem;
 }
 
+/* ── Dictionary Toolbar (Redesigned) ── */
+.dict-section-title {
+  margin-bottom: 24px;
+}
+
+.dict-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #fff;
+  border: 1.5px solid var(--primary-surface);
+  border-radius: 12px;
+  padding: 12px 20px;
+  margin-bottom: 20px;
+  justify-content: space-between;
+}
+
+.dict-toolbar-lang {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.dict-toolbar-search {
+  position: relative;
+  flex: 1;
+  max-width: 300px;
+  min-width: 160px;
+}
+
+.dict-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.875rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.dict-search-inline {
+  width: 100%;
+  padding-left: 30px !important;
+}
+
+.dict-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.dict-toolbar-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.dict-lang-select,
+.dict-page-size-select {
+  padding: 6px 10px;
+  border-radius: 20px;
+  border: 1.5px solid var(--primary-surface);
+  background: var(--primary-light);
+  font-family: var(--font-family);
+  font-size: 0.875rem;
+  color: var(--primary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.dict-lang-select:focus,
+.dict-page-size-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.18);
+}
+
+.btn-dict-add {
+  padding: 7px 14px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-btn);
+  font-family: var(--font-family);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn-dict-add:hover {
+  background: var(--primary-hover);
+  box-shadow: var(--shadow-btn-hover);
+}
+
+/* ── Dictionary Table Header (Redesigned) ── */
+.dict-table thead tr th {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  border-bottom: none;
+}
+
+.dict-table thead tr th:first-child {
+  border-top-left-radius: 12px;
+}
+
+.dict-table thead tr th:last-child {
+  border-top-right-radius: 12px;
+}
+
+/* Sortable column header button */
+.sort-header-form {
+  margin: 0;
+  padding: 0;
+  display: inline;
+}
+
+.sort-header-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-family: var(--font-family);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.sort-header-btn:hover {
+  color: var(--primary-light);
+}
+
+.sort-arrow {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* Actions column */
+.col-actions {
+  width: 5%;
+  text-align: center;
+}
+
+/* Row striping improvement */
+.dict-table tbody tr:nth-child(odd) td {
+  background: #fff;
+}
+
+.dict-table tbody tr:nth-child(even) td {
+  background: var(--primary-light);
+}
+
 /* ── Language Selector (Home page) ── */
 .language-group {
   text-align: left;
@@ -1150,5 +1711,122 @@ body {
 
 .dict-link a:hover {
   color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* ── Dictionary Card List (Mobile) ── */
+.dict-card {
+  background: #fff;
+  border: 1.5px solid var(--primary-surface);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.dict-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.dict-card-from {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 0.975rem;
+}
+
+.dict-card-arrow {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.dict-card-to {
+  font-weight: 700;
+  color: var(--accent-dark);
+  font-size: 0.975rem;
+  flex: 1;
+}
+
+.dict-card-edit {
+  margin-left: auto;
+}
+
+.dict-card-example {
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+
+.dict-card-toggles {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-start;
+}
+
+.dict-card-toggle-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dict-card-toggle-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Small toggle variant */
+.toggle-switch--sm {
+  width: 28px;
+  height: 14px;
+}
+
+.toggle-switch--sm .toggle-knob {
+  width: 10px;
+  height: 10px;
+  top: 2px;
+}
+
+.toggle-switch--sm.toggle-switch--on .toggle-knob {
+  left: 16px;
+}
+
+.toggle-switch--sm.toggle-switch--off .toggle-knob {
+  left: 2px;
+}
+
+/* Empty state styles */
+.dict-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.dict-empty-icon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.dict-empty-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.dict-empty-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0 0 16px;
+}
+
+.dict-clear-search {
+  color: var(--primary);
+  font-size: 0.875rem;
   text-decoration: underline;
 }

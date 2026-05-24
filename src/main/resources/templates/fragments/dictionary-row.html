@@ -4,14 +4,14 @@
 <tr th:fragment="row(wv, modes, languageCode)" th:id="${wv != null ? 'word-' + wv.word.wordId.value : 'word-error'}">
     <!-- Error state: show single error cell spanning all columns -->
     <th:block th:if="${error != null}">
-        <td th:colspan="${4 + #lists.size(modes)}" class="row-error" th:text="${error}">Error</td>
+        <td th:colspan="${5 + #lists.size(modes)}" class="row-error" th:text="${error}">Error</td>
     </th:block>
 
     <!-- Normal state -->
     <th:block th:unless="${error != null}">
-        <td th:text="${wv.word.fromWord}">from</td>
-        <td th:text="${wv.word.toWord}">to</td>
-        <td th:text="${wv.word.example}">example</td>
+        <td class="td-from" th:text="${wv.word.fromWord}">from</td>
+        <td class="td-to" th:text="${wv.word.toWord}">to</td>
+        <td class="td-example" th:text="${wv.word.example}" th:title="${wv.word.example}">example</td>
 
         <!-- Global enable/disable toggle -->
         <td class="col-toggle">
@@ -19,8 +19,12 @@
                 <input type="hidden" name="languageCode" th:value="${languageCode}">
                 <input type="hidden" name="wordId" th:value="${wv.word.wordId.value}">
                 <button type="submit"
-                        th:text="${wv.word.globalEnabled ? 'ON' : 'OFF'}"
-                        th:class="${wv.word.globalEnabled ? 'toggle-on' : 'toggle-off'}">
+                        class="toggle-switch-btn"
+                        th:attr="aria-label=${'Toggle global for ' + wv.word.fromWord},aria-checked=${wv.word.globalEnabled}"
+                        role="switch">
+                    <span th:class="${wv.word.globalEnabled ? 'toggle-switch toggle-switch--on' : 'toggle-switch toggle-switch--off'}">
+                        <span class="toggle-knob"></span>
+                    </span>
                 </button>
             </form>
         </td>
@@ -32,10 +36,26 @@
                 <input type="hidden" name="wordId" th:value="${wv.word.wordId.value}">
                 <input type="hidden" name="mode" th:value="${mode}">
                 <button type="submit"
-                        th:text="${(wv.modeEnabled[mode] ?: true) ? 'ON' : 'OFF'}"
-                        th:class="${(wv.modeEnabled[mode] ?: true) ? 'toggle-on' : 'toggle-off'}">
+                        class="toggle-switch-btn"
+                        th:attr="aria-label=${'Toggle ' + mode + ' for ' + wv.word.fromWord},aria-checked=${wv.modeEnabled[mode] ?: true}"
+                        role="switch">
+                    <span th:class="${(wv.modeEnabled[mode] ?: true) ? 'toggle-switch toggle-switch--on' : 'toggle-switch toggle-switch--off'}">
+                        <span class="toggle-knob"></span>
+                    </span>
                 </button>
             </form>
+        </td>
+
+        <!-- Actions -->
+        <td class="col-actions">
+            <div class="row-actions" th:attr="data-word-id=${wv.word.wordId.value},data-from-word=${wv.word.fromWord}">
+                <button type="button"
+                        class="btn-row-action"
+                        th:attr="aria-label=${'Edit word ' + wv.word.fromWord}"
+                        title="Edit word (coming soon)">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            </div>
         </td>
     </th:block>
 </tr>

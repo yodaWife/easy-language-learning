@@ -7,99 +7,83 @@
 <body>
 <div id="content">
     <div class="page-main">
-        <div class="dict-container">
+        <div class="dict-container"
+             th:data-sort-by="${sortBy}"
+             th:data-sort-dir="${sortDir}"
+             th:data-page-size="${pageSize}"
+             th:data-language="${currentLanguage}"
+             x-data="{ sortBy: $el.dataset.sortBy, sortDir: $el.dataset.sortDir, pageSize: $el.dataset.pageSize, languageCode: $el.dataset.language }">
 
-            <h2 class="section-title">Dictionary Management</h2>
+            <h2 class="section-title dict-section-title">📖 Dictionary Management</h2>
 
             <!-- Error banner -->
             <div th:if="${error != null}" class="banner-error" th:text="${error}"></div>
 
-            <!-- Language selector -->
-            <div th:replace="~{fragments/language-selector :: language-selector}"></div>
+            <!-- Unified Toolbar -->
+            <div class="dict-toolbar">
 
-            <!-- Controls: sort buttons + search -->
-            <!-- Alpine state seeded from server values via data-* attributes -->
-            <div class="dict-controls"
-                 th:data-sort-by="${sortBy}"
-                 th:data-sort-dir="${sortDir}"
-                 th:data-page-size="${pageSize}"
-                 x-data="{ sortBy: $el.dataset.sortBy, sortDir: $el.dataset.sortDir, pageSize: $el.dataset.pageSize }">
-                <div class="dict-sort-group">
-                    <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML" class="sort-form">
-                        <input type="hidden" name="languageCode" th:value="${currentLanguage}">
-                        <input type="hidden" name="sortBy" value="FROM">
-                        <input type="hidden" name="sortDir" value="ASC">
-                        <input type="hidden" name="search" th:value="${search}">
-                        <input type="hidden" name="page" value="0">
-                        <input type="hidden" name="pageSize" :value="pageSize">
-                        <button type="submit" @click="sortBy='FROM'; sortDir='ASC'"
-                                :class="sortBy === 'FROM' && sortDir === 'ASC' ? 'sort-btn sort-btn--active' : 'sort-btn'">FROM ↑</button>
-                    </form>
-                    <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML" class="sort-form">
-                        <input type="hidden" name="languageCode" th:value="${currentLanguage}">
-                        <input type="hidden" name="sortBy" value="FROM">
-                        <input type="hidden" name="sortDir" value="DESC">
-                        <input type="hidden" name="search" th:value="${search}">
-                        <input type="hidden" name="page" value="0">
-                        <input type="hidden" name="pageSize" :value="pageSize">
-                        <button type="submit" @click="sortBy='FROM'; sortDir='DESC'"
-                                :class="sortBy === 'FROM' && sortDir === 'DESC' ? 'sort-btn sort-btn--active' : 'sort-btn'">FROM ↓</button>
-                    </form>
-                    <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML" class="sort-form">
-                        <input type="hidden" name="languageCode" th:value="${currentLanguage}">
-                        <input type="hidden" name="sortBy" value="TO">
-                        <input type="hidden" name="sortDir" value="ASC">
-                        <input type="hidden" name="search" th:value="${search}">
-                        <input type="hidden" name="page" value="0">
-                        <input type="hidden" name="pageSize" :value="pageSize">
-                        <button type="submit" @click="sortBy='TO'; sortDir='ASC'"
-                                :class="sortBy === 'TO' && sortDir === 'ASC' ? 'sort-btn sort-btn--active' : 'sort-btn'">TO ↑</button>
-                    </form>
-                    <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML" class="sort-form">
-                        <input type="hidden" name="languageCode" th:value="${currentLanguage}">
-                        <input type="hidden" name="sortBy" value="TO">
-                        <input type="hidden" name="sortDir" value="DESC">
-                        <input type="hidden" name="search" th:value="${search}">
-                        <input type="hidden" name="page" value="0">
-                        <input type="hidden" name="pageSize" :value="pageSize">
-                        <button type="submit" @click="sortBy='TO'; sortDir='DESC'"
-                                :class="sortBy === 'TO' && sortDir === 'DESC' ? 'sort-btn sort-btn--active' : 'sort-btn'">TO ↓</button>
-                    </form>
+                <!-- Language selector -->
+                <div class="dict-toolbar-lang">
+                    <span class="dict-toolbar-label">Language:</span>
+                    <select th:if="${languages != null and languages.size() > 1}"
+                            name="languageCode"
+                            class="dict-lang-select"
+                            onchange="location.href='/dictionary?languageCode=' + encodeURIComponent(this.value)">
+                        <option th:each="lang : ${languages}"
+                                th:value="${lang}"
+                                th:text="${lang}"
+                                th:selected="${lang == currentLanguage}"></option>
+                    </select>
+                    <span th:unless="${languages != null and languages.size() > 1}"
+                          class="language-single"
+                          th:text="${currentLanguage}">EN</span>
                 </div>
 
-                <!-- Hidden shared params (no pageSize here — the select provides it) -->
-                <div id="dict-search-params" style="display:none">
-                    <input type="hidden" name="languageCode" th:value="${currentLanguage}">
-                    <input type="hidden" name="sortBy" :value="sortBy">
-                    <input type="hidden" name="sortDir" :value="sortDir">
-                    <input type="hidden" name="page" value="0">
-                </div>
-
-                <div class="dict-search-row">
+                <!-- Search field -->
+                <div class="dict-toolbar-search">
+                    <span class="dict-search-icon">🔍</span>
                     <input type="text" name="search"
                            id="dict-search"
-                           class="dict-search-input"
+                           class="dict-search-input dict-search-inline"
                            th:value="${search}"
-                           placeholder="Search words…"
+                           placeholder="Search words..."
+                           aria-label="Search dictionary words"
                            hx-get="/dictionary/rows"
                            hx-target="#dict-rows"
                            hx-swap="innerHTML"
                            hx-trigger="input delay:300ms"
-                           hx-include="#dict-search-params, [name='pageSize']">
-                    <label class="page-size-label" for="dict-page-size">Per page:</label>
+                           hx-include="#dict-hidden-params, [name='pageSize']">
+                </div>
+
+                <!-- Per-page + Add button -->
+                <div class="dict-toolbar-right">
+                    <span class="dict-toolbar-label">Show:</span>
                     <select id="dict-page-size"
                             name="pageSize"
-                            class="page-size-select"
+                            class="dict-page-size-select"
                             x-model="pageSize"
                             hx-get="/dictionary/rows"
                             hx-target="#dict-rows"
                             hx-swap="innerHTML"
                             hx-trigger="change"
-                            hx-include="#dict-search-params, #dict-search">
+                            hx-include="#dict-hidden-params, #dict-search">
+                        <option value="10">10</option>
                         <option value="20">20</option>
                         <option value="50">50</option>
                         <option value="100">100</option>
                     </select>
+                    <button type="button"
+                            class="btn-dict-add"
+                            onclick="var r=document.getElementById('dict-add-row');if(r)r.style.display='table-row'"
+                            aria-label="Add new word">+ Add</button>
+                </div>
+
+                <!-- Hidden shared params -->
+                <div id="dict-hidden-params" style="display:none">
+                    <input type="hidden" name="languageCode" th:value="${currentLanguage}">
+                    <input type="hidden" name="sortBy" :value="sortBy">
+                    <input type="hidden" name="sortDir" :value="sortDir">
+                    <input type="hidden" name="page" value="0">
                 </div>
             </div>
 
@@ -108,11 +92,46 @@
                 <table class="dict-table">
                     <thead>
                         <tr>
-                            <th class="col-from">FROM</th>
-                            <th class="col-to">TO</th>
+                            <!-- FROM header - sortable -->
+                            <th class="col-from"
+                                :aria-sort="sortBy === 'FROM' ? (sortDir === 'ASC' ? 'ascending' : 'descending') : 'none'">
+                                <button type="button" class="sort-header-btn"
+                                        @click="
+                                            const nd = sortBy === 'FROM' ? (sortDir === 'ASC' ? 'DESC' : 'ASC') : 'ASC';
+                                            sortBy = 'FROM'; sortDir = nd;
+                                            htmx.ajax('GET', '/dictionary/rows', {
+                                                target: '#dict-rows', swap: 'innerHTML',
+                                                values: { sortBy: 'FROM', sortDir: nd, languageCode,
+                                                          search: document.getElementById('dict-search')?.value || '',
+                                                          pageSize: document.getElementById('dict-page-size')?.value || '20',
+                                                          page: '0' }
+                                            })">
+                                    FROM
+                                    <span class="sort-arrow" x-text="sortBy === 'FROM' ? (sortDir === 'ASC' ? '↑' : '↓') : '↕'">↕</span>
+                                </button>
+                            </th>
+                            <!-- TO header - sortable -->
+                            <th class="col-to"
+                                :aria-sort="sortBy === 'TO' ? (sortDir === 'ASC' ? 'ascending' : 'descending') : 'none'">
+                                <button type="button" class="sort-header-btn"
+                                        @click="
+                                            const nd = sortBy === 'TO' ? (sortDir === 'ASC' ? 'DESC' : 'ASC') : 'ASC';
+                                            sortBy = 'TO'; sortDir = nd;
+                                            htmx.ajax('GET', '/dictionary/rows', {
+                                                target: '#dict-rows', swap: 'innerHTML',
+                                                values: { sortBy: 'TO', sortDir: nd, languageCode,
+                                                          search: document.getElementById('dict-search')?.value || '',
+                                                          pageSize: document.getElementById('dict-page-size')?.value || '20',
+                                                          page: '0' }
+                                            })">
+                                    TO
+                                    <span class="sort-arrow" x-text="sortBy === 'TO' ? (sortDir === 'ASC' ? '↑' : '↓') : '↕'">↕</span>
+                                </button>
+                            </th>
                             <th class="col-example">EXAMPLE</th>
                             <th class="col-toggle">GLOBAL</th>
                             <th th:each="mode : ${modes}" th:text="${mode}" class="col-toggle">MODE</th>
+                            <th class="col-actions"><!-- actions --></th>
                         </tr>
                     </thead>
                     <tbody id="dict-rows"

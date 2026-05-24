@@ -6,6 +6,7 @@ Easy Language Learning is a vocabulary practice app that runs locally in your br
 
 - [Running the app](#running-the-app)
 - [Home page](#home-page)
+- [Mobile support](#mobile-support)
 - [Dictionary management](#dictionary-management)
 - [Flashcards mode](#flashcards-mode)
 - [Match mode](#match-mode)
@@ -43,6 +44,20 @@ When you open the app you see the home page with three inputs:
 > [!NOTE]
 > If the word data is invalid or could not be loaded, the Start button is disabled. See [Data health and reload](#data-health-and-reload).
 
+On mobile, the home layout is optimized for narrow screens: mode cards stack vertically and remain easy to tap.
+
+---
+
+## Mobile support
+
+The app supports responsive layouts with a primary breakpoint at `576px`.
+
+- Compact mobile header with safe-area support for modern phones.
+- Home uses a mobile-only house icon button for quick navigation.
+- Flashcards expand to a touch-friendly full-width card.
+- Match keeps two columns visible with compact spacing, language labels, sticky progress, and a tap hint.
+- Dictionary switches to a card-style row layout for easier reading and editing.
+
 ---
 
 ## Dictionary management
@@ -51,12 +66,14 @@ Open `/dictionary` to manage the active language dictionary.
 
 You can:
 
-1. Select language.
+1. Use the unified toolbar to select language, search (with the search icon), set page size, and add a new entry.
 2. Search by FROM, TO, or EXAMPLE text.
-3. Change page size and browse pages.
-4. Sort by FROM or TO directly from table headers.
-5. Toggle a word globally.
-6. Toggle a word per mode (for example flashcards enabled, match disabled).
+3. Sort by FROM or TO directly from table headers (ascending, descending, or unsorted).
+4. Toggle a word globally and per mode using compact ON/OFF switches.
+5. Edit a row using the actions column (pencil icon).
+6. Browse with numbered pagination pills (with ellipsis for longer ranges).
+
+When no rows are available, the page shows a dedicated empty state for either an empty dictionary or no search results.
 
 Changes are persisted to dictionary CSV files and used by game modes immediately.
 
@@ -83,7 +100,7 @@ Flashcards is a pure practice mode — no scoring is tracked.
 2. A board with two columns is shown:
    - **Left column** — words in your source language.
    - **Right column** — shuffled words in the target language.
-3. **Drag a word from one column and drop it on its pair in the other column.**
+3. **Match words by drag-and-drop or tap interaction (mobile-friendly).**
    - Correct match: the pair flashes green and disappears from the board.
    - Incorrect match: the pair flashes red and returns to its original position.
 4. Once all pairs on the board are matched, a new board is generated automatically.

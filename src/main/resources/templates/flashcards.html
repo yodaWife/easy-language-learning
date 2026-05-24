@@ -6,7 +6,7 @@
 </head>
 <body>
     <div id="content">
-        <div class="page-main">
+        <div class="page-main flashcard-page">
             <div class="page-container">
                 <h2 class="section-title">📇 Flashcards</h2>
                 <p class="lang-direction" th:text="${fromLang} + ' → ' + ${toLang}">ENGLISH → HUNGARIAN</p>
@@ -18,7 +18,7 @@
 
                 <div class="flashcard-actions">
                     <button type="button"
-                            class="btn-primary-action"
+                            class="btn-primary-action w-100"
                             hx-get="/flashcards/card"
                             hx-target="#card-section"
                             hx-swap="innerHTML">
