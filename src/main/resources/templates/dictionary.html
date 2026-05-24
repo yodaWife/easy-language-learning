@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::title}, ~{::#content})}">
+<head>
+    <title>Dictionary – Easy Language Learning</title>
+</head>
+<body>
+<div id="content">
+    <div class="page-main">
+        <div class="dict-container">
+
+            <h2 class="section-title">Dictionary Management</h2>
+
+            <!-- Error banner -->
+            <div th:if="${error != null}" class="banner-error" th:text="${error}"></div>
+
+            <!-- Language selector -->
+            <div th:replace="~{fragments/language-selector :: language-selector}"></div>
+
+            <!-- Controls: sort buttons + search -->
+            <!-- Alpine state seeded from server values via data-* attributes -->
+            <div class="dict-controls"
+                 th:data-sort-by="${sortBy}"
+                 th:data-sort-dir="${sortDir}"
+                 th:data-page-size="${pageSize}"
+                 x-data="{ sortBy: $el.dataset.sortBy, sortDir: $el.dataset.sortDir, pageSize: $el.dataset.pageSize }">
+                <div class="dict-sort-group">
+                    <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML" class="sort-form">
+                        <input type="hidden" name="languageCode" th:value="${currentLanguage}">
+                        <input type="hidden" name="sortBy" value="FROM">
+                        <input type="hidden" name="sortDir" value="ASC">
+                        <input type="hidden" name="search" th:value="${search}">
+                        <input type="hidden" name="page" value="0">
+                        <input type="hidden" name="pageSize" :value="pageSize">
+                        <button type="submit" @click="sortBy='FROM'; sortDir='ASC'"
+                                :class="sortBy === 'FROM' && sortDir === 'ASC' ? 'sort-btn sort-btn--active' : 'sort-btn'">FROM ↑</button>
+                    </form>
+                    <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML" class="sort-form">
+                        <input type="hidden" name="languageCode" th:value="${currentLanguage}">
+                        <input type="hidden" name="sortBy" value="FROM">
+                        <input type="hidden" name="sortDir" value="DESC">
+                        <input type="hidden" name="search" th:value="${search}">
+                        <input type="hidden" name="page" value="0">
+                        <input type="hidden" name="pageSize" :value="pageSize">
+                        <button type="submit" @click="sortBy='FROM'; sortDir='DESC'"
+                                :class="sortBy === 'FROM' && sortDir === 'DESC' ? 'sort-btn sort-btn--active' : 'sort-btn'">FROM ↓</button>
+                    </form>
+                    <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML" class="sort-form">
+                        <input type="hidden" name="languageCode" th:value="${currentLanguage}">
+                        <input type="hidden" name="sortBy" value="TO">
+                        <input type="hidden" name="sortDir" value="ASC">
+                        <input type="hidden" name="search" th:value="${search}">
+                        <input type="hidden" name="page" value="0">
+                        <input type="hidden" name="pageSize" :value="pageSize">
+                        <button type="submit" @click="sortBy='TO'; sortDir='ASC'"
+                                :class="sortBy === 'TO' && sortDir === 'ASC' ? 'sort-btn sort-btn--active' : 'sort-btn'">TO ↑</button>
+                    </form>
+                    <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML" class="sort-form">
+                        <input type="hidden" name="languageCode" th:value="${currentLanguage}">
+                        <input type="hidden" name="sortBy" value="TO">
+                        <input type="hidden" name="sortDir" value="DESC">
+                        <input type="hidden" name="search" th:value="${search}">
+                        <input type="hidden" name="page" value="0">
+                        <input type="hidden" name="pageSize" :value="pageSize">
+                        <button type="submit" @click="sortBy='TO'; sortDir='DESC'"
+                                :class="sortBy === 'TO' && sortDir === 'DESC' ? 'sort-btn sort-btn--active' : 'sort-btn'">TO ↓</button>
+                    </form>
+                </div>
+
+                <!-- Hidden shared params (no pageSize here — the select provides it) -->
+                <div id="dict-search-params" style="display:none">
+                    <input type="hidden" name="languageCode" th:value="${currentLanguage}">
+                    <input type="hidden" name="sortBy" :value="sortBy">
+                    <input type="hidden" name="sortDir" :value="sortDir">
+                    <input type="hidden" name="page" value="0">
+                </div>
+
+                <div class="dict-search-row">
+                    <input type="text" name="search"
+                           id="dict-search"
+                           class="dict-search-input"
+                           th:value="${search}"
+                           placeholder="Search words…"
+                           hx-get="/dictionary/rows"
+                           hx-target="#dict-rows"
+                           hx-swap="innerHTML"
+                           hx-trigger="input delay:300ms"
+                           hx-include="#dict-search-params, [name='pageSize']">
+                    <label class="page-size-label" for="dict-page-size">Per page:</label>
+                    <select id="dict-page-size"
+                            name="pageSize"
+                            class="page-size-select"
+                            x-model="pageSize"
+                            hx-get="/dictionary/rows"
+                            hx-target="#dict-rows"
+                            hx-swap="innerHTML"
+                            hx-trigger="change"
+                            hx-include="#dict-search-params, #dict-search">
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="dict-table-wrapper">
+                <table class="dict-table">
+                    <thead>
+                        <tr>
+                            <th class="col-from">FROM</th>
+                            <th class="col-to">TO</th>
+                            <th class="col-example">EXAMPLE</th>
+                            <th class="col-toggle">GLOBAL</th>
+                            <th th:each="mode : ${modes}" th:text="${mode}" class="col-toggle">MODE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dict-rows"
+                           th:attr="hx-get=@{/dictionary/rows(languageCode=${currentLanguage},sortBy=${sortBy},sortDir=${sortDir},search=${search},page=${page},pageSize=${pageSize})}"
+                           hx-trigger="load"
+                           hx-swap="innerHTML">
+                        <!-- rows loaded via HTMX on page load -->
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+</body>
+</html>

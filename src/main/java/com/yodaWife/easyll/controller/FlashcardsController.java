@@ -1,5 +1,6 @@
 package com.yodawife.easyll.controller;
 
+import com.yodawife.easyll.config.DictionaryProperties;
 import com.yodawife.easyll.domain.MatchSession;
 import com.yodawife.easyll.domain.WordEntry;
 import com.yodawife.easyll.service.DataHealthService;
@@ -21,13 +22,16 @@ public class FlashcardsController {
     private final FlashcardService flashcardService;
     private final SessionStore sessionStore;
     private final DataHealthService dataHealthService;
+    private final DictionaryProperties dictionaryProperties;
 
     public FlashcardsController(FlashcardService flashcardService,
                                 SessionStore sessionStore,
-                                DataHealthService dataHealthService) {
+                                DataHealthService dataHealthService,
+                                DictionaryProperties dictionaryProperties) {
         this.flashcardService = flashcardService;
         this.sessionStore = sessionStore;
         this.dataHealthService = dataHealthService;
+        this.dictionaryProperties = dictionaryProperties;
     }
 
     @GetMapping("/flashcards")
@@ -40,21 +44,32 @@ public class FlashcardsController {
         }
 
         var snapshot = dataHealthService.snapshot();
-        if (!snapshot.wordsHealthy() || snapshot.wordData() == null) {
+        if (!snapshot.wordsHealthy()) {
             return "redirect:/";
         }
 
-        int totalCards = snapshot.wordData().words().size();
+        var languageCode = (String) httpSession.getAttribute("languageCode");
+        if (languageCode == null) {
+            languageCode = dictionaryProperties.getPrimaryLanguageCode();
+        }
+
+        var bundleOpt = snapshot.getLanguageBundle(languageCode);
+        int totalCards = bundleOpt.map(b -> b.words().size()).orElse(0);
         httpSession.setAttribute("flashcardIndex", 1);
 
-        WordEntry card = flashcardService.randomCard()
+        WordEntry card = flashcardService.randomCard(languageCode, "flashcards")
                 .orElse(null);
+
+        var fromLang = bundleOpt.flatMap(b -> Optional.ofNullable(b.metadata()))
+                .map(m -> m.fromLanguageName()).orElse(languageCode);
+        var toLang = bundleOpt.flatMap(b -> Optional.ofNullable(b.metadata()))
+                .map(m -> m.toLanguageName()).orElse("?");
 
         model.addAttribute("card", card);
         model.addAttribute("cardIndex", 1);
         model.addAttribute("totalCards", totalCards);
-        model.addAttribute("fromLang", snapshot.wordData().metadata().fromLanguageName());
-        model.addAttribute("toLang", snapshot.wordData().metadata().toLanguageName());
+        model.addAttribute("fromLang", fromLang);
+        model.addAttribute("toLang", toLang);
         return "flashcards";
     }
 
@@ -76,16 +91,21 @@ public class FlashcardsController {
         }
 
         var snapshot = dataHealthService.snapshot();
-        int totalCards = (snapshot.wordsHealthy() && snapshot.wordData() != null)
-                ? snapshot.wordData().words().size()
-                : 1;
+
+        var languageCode = (String) httpSession.getAttribute("languageCode");
+        if (languageCode == null) {
+            languageCode = dictionaryProperties.getPrimaryLanguageCode();
+        }
+
+        int totalCards = snapshot.getLanguageBundle(languageCode)
+                .map(b -> b.words().size()).orElse(1);
 
         var storedIndex = (Integer) httpSession.getAttribute("flashcardIndex");
         int currentIndex = (storedIndex == null) ? 1 : storedIndex;
         int newIndex = currentIndex >= totalCards ? 1 : currentIndex + 1;
         httpSession.setAttribute("flashcardIndex", newIndex);
 
-        WordEntry card = flashcardService.randomCard()
+        WordEntry card = flashcardService.randomCard(languageCode, "flashcards")
                 .orElse(null);
 
         model.addAttribute("card", card);

@@ -23,8 +23,9 @@ class MatchGameApplicationServiceTest {
 
     private final MatchSessionService matchSessionService = mock(MatchSessionService.class);
     private final ScoreRepository scoreRepository = mock(ScoreRepository.class);
+    private final MatchBoardGenerator matchBoardGenerator = mock(MatchBoardGenerator.class);
     private final MatchGameApplicationService service =
-            new MatchGameApplicationService(matchSessionService, scoreRepository);
+            new MatchGameApplicationService(matchSessionService, scoreRepository, matchBoardGenerator);
 
     private MatchBoard boardWithPair(WordEntry entry) {
         var pairId = MatchCard.buildPairId(entry.fromWord(), entry.toWord());
@@ -82,10 +83,10 @@ class MatchGameApplicationServiceTest {
         var board = boardWithPair(pair);
         var incorrectResult = new AttemptResult(false, false, 1);
 
-        var next = service.computeNextBoard(board, incorrectResult, "Letter", "Wrong");
+        var next = service.computeNextBoard(board, incorrectResult, "Letter", "Wrong", "hun");
 
         assertThat(next).isEqualTo(board);
-        verify(matchSessionService, never()).generateBoard();
+        verify(matchBoardGenerator, never()).generate(any(), any());
     }
 
     @Test
@@ -97,10 +98,10 @@ class MatchGameApplicationServiceTest {
         var correctResult = new AttemptResult(true, false, 1);
         var expectedPairId = MatchCard.buildPairId("Letter", "Betű");
 
-        var next = service.computeNextBoard(board, correctResult, "Letter", "Betű");
+        var next = service.computeNextBoard(board, correctResult, "Letter", "Betű", "hun");
 
         assertThat(next.matchedPairIds()).containsExactly(expectedPairId);
-        verify(matchSessionService, never()).generateBoard();
+        verify(matchBoardGenerator, never()).generate(any(), any());
     }
 
     @Test
@@ -110,12 +111,12 @@ class MatchGameApplicationServiceTest {
         var board = boardWithPair(pair);
         var correctResult = new AttemptResult(true, false, 1);
         var freshBoard = boardWithPair(new WordEntry("Stone", "Kő", ""));
-        when(matchSessionService.generateBoard()).thenReturn(freshBoard);
+        when(matchBoardGenerator.generate("hun", "match")).thenReturn(freshBoard);
 
-        var next = service.computeNextBoard(board, correctResult, "Letter", "Betű");
+        var next = service.computeNextBoard(board, correctResult, "Letter", "Betű", "hun");
 
         assertThat(next).isEqualTo(freshBoard);
-        verify(matchSessionService).generateBoard();
+        verify(matchBoardGenerator).generate("hun", "match");
     }
 
     @Test

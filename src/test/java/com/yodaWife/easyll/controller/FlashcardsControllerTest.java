@@ -133,4 +133,18 @@ class FlashcardsControllerTest {
 
         dataHealthService.reload();
     }
+
+    @Test
+    @DisplayName("GET /flashcards with languageCode in session uses that language")
+    void flashcardsPageUsesLanguageCodeFromSession() throws Exception {
+        var session = sessionStore.create(null, "flashcards");
+        var httpSession = new MockHttpSession();
+        httpSession.setAttribute("sessionId", session.getSessionId());
+        httpSession.setAttribute("languageCode", "hun");
+
+        mockMvc.perform(get("/flashcards").session(httpSession))
+                .andExpect(status().isOk())
+                .andExpect(view().name("flashcards"))
+                .andExpect(model().attributeExists("card", "fromLang", "toLang"));
+    }
 }

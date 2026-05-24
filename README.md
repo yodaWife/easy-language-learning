@@ -10,9 +10,12 @@ A local-first Spring Boot application for vocabulary practice with two interacti
 
 - **Flashcards** — flip cards to reveal translations and usage examples.
 - **Match** — drag-and-drop word pairs across two language columns; both directions supported.
+- **Dictionary Management** — browse, search, sort, paginate, and toggle word availability per mode.
+- **Multi-language dictionaries** — language bundles loaded from `data/dictionaries/{languageCode}`.
+- **Eligibility-aware gameplay** — Flashcards and Match only use words enabled for the selected mode.
 - **Per-session scoring** — live success/failure counter throughout the match game.
 - **Per-user scoring** — optional nickname-based history persisted to CSV (last 10 attempts per word pair).
-- **CSV-backed word data** — bring your own word list; no database required.
+- **CSV-backed data** — no database required.
 - **Runtime data reload** — pick up CSV changes without restarting the app.
 - **Data health page** — see parse errors and disable gameplay automatically when data is invalid.
 
@@ -50,9 +53,58 @@ Open [http://localhost:8080](http://localhost:8080).
 | Build | Gradle Kotlin DSL |
 | Tests | JUnit 5, Spring Boot Test, MockMvc, AssertJ, Mockito |
 
+## Data Layout
+
+The application uses filesystem-backed multi-language dictionaries:
+
+```text
+data/
+	dictionaries/
+		hun/
+			words.csv
+			mode-eligibility.csv
+		pl/
+			words.csv
+			mode-eligibility.csv
+```
+
+### words.csv
+
+```text
+WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
+w1;dog;pies;The dog runs.;true
+```
+
+### mode-eligibility.csv
+
+```text
+WORD_ID;MODE;ENABLED
+w1;flashcards;true
+w1;match;false
+```
+
+Eligibility rule used by games:
+
+- A word is playable only when `GLOBAL_ENABLED=true` and mode-specific eligibility is enabled.
+- Missing `WORD_ID + MODE` entry defaults to enabled.
+
+## Configuration
+
+Key properties in `src/main/resources/application.properties`:
+
+```properties
+app.dictionaries.root-path=./data/dictionaries
+app.dictionaries.primary-language-code=hun
+app.dictionaries.modes=flashcards,match
+app.scores.file-path=./scores.csv
+app.scores.write-path=./scores.csv
+```
+
+`app.words.source` is still present for legacy compatibility and diagnostics, but gameplay now uses the multi-language dictionary bundle.
+
 ## Known Constraints
 
 - Sessions are held in memory — restarting the server clears all active sessions.
 - No login or authentication for gameplay (nickname-only identity).
 - Score history is capped to the last 10 attempts per word pair per user.
-- Default word source is the bundled classpath file; set `app.words.source` in `application.properties` to use a custom file.
+- Dictionary editing writes to files under `data/dictionaries`; ensure the process has write permission.

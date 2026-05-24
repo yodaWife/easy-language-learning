@@ -1,10 +1,13 @@
 package com.yodawife.easyll.service;
 
+import com.yodawife.easyll.domain.LanguageBundle;
+import com.yodawife.easyll.domain.MultiLanguageDataBundle;
 import com.yodawife.easyll.domain.ScoreDataBundle;
 import com.yodawife.easyll.domain.WordDataBundle;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Immutable snapshot of the data loading state, tracking word and score health independently.
@@ -16,7 +19,8 @@ public record DataSnapshot(
         List<String> wordErrors,
         List<String> scoreErrors,
         @Nullable WordDataBundle wordData,
-        @Nullable ScoreDataBundle scoreData
+        @Nullable ScoreDataBundle scoreData,
+        @Nullable MultiLanguageDataBundle multiLanguageData
 ) {
     public DataSnapshot {
         wordErrors = List.copyOf(wordErrors);
@@ -29,10 +33,14 @@ public record DataSnapshot(
     }
 
     public static DataSnapshot healthy(WordDataBundle wordData, ScoreDataBundle scoreData) {
-        return new DataSnapshot(true, true, List.of(), List.of(), wordData, scoreData);
+        return new DataSnapshot(true, true, List.of(), List.of(), wordData, scoreData, null);
     }
 
     public static DataSnapshot degraded(List<String> errors) {
-        return new DataSnapshot(false, false, errors, List.of(), null, null);
+        return new DataSnapshot(false, false, errors, List.of(), null, null, null);
+    }
+
+    public Optional<LanguageBundle> getLanguageBundle(String languageCode) {
+        return multiLanguageData == null ? Optional.empty() : multiLanguageData.getBundle(languageCode);
     }
 }

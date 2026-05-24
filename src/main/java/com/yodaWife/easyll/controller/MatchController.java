@@ -1,5 +1,6 @@
 package com.yodawife.easyll.controller;
 
+import com.yodawife.easyll.config.DictionaryProperties;
 import com.yodawife.easyll.domain.AttemptResult;
 import com.yodawife.easyll.domain.MatchBoard;
 import com.yodawife.easyll.domain.MatchSession;
@@ -24,11 +25,14 @@ public class MatchController {
 
     private final SessionStore sessionStore;
     private final MatchGameApplicationService matchGameApplicationService;
+    private final DictionaryProperties dictionaryProperties;
 
     public MatchController(SessionStore sessionStore,
-                           MatchGameApplicationService matchGameApplicationService) {
+                           MatchGameApplicationService matchGameApplicationService,
+                           DictionaryProperties dictionaryProperties) {
         this.sessionStore = sessionStore;
         this.matchGameApplicationService = matchGameApplicationService;
+        this.dictionaryProperties = dictionaryProperties;
     }
 
     @GetMapping("/match")
@@ -41,7 +45,11 @@ public class MatchController {
         }
 
         MatchSession session = sessionOpt.get();
-        MatchBoard board = matchGameApplicationService.generateBoard();
+        var languageCode = (String) httpSession.getAttribute("languageCode");
+        if (languageCode == null) {
+            languageCode = dictionaryProperties.getPrimaryLanguageCode();
+        }
+        MatchBoard board = matchGameApplicationService.generateBoard(languageCode);
         httpSession.setAttribute(BOARD_ATTR, board);
 
         populateModel(model, session, board, null);
@@ -67,8 +75,13 @@ public class MatchController {
         MatchSession session = sessionOpt.get();
         MatchBoard board = (MatchBoard) httpSession.getAttribute(BOARD_ATTR);
 
+        var languageCode = (String) httpSession.getAttribute("languageCode");
+        if (languageCode == null) {
+            languageCode = dictionaryProperties.getPrimaryLanguageCode();
+        }
+
         if (board == null) {
-            board = matchGameApplicationService.generateBoard();
+            board = matchGameApplicationService.generateBoard(languageCode);
             httpSession.setAttribute(BOARD_ATTR, board);
         }
 
@@ -83,7 +96,7 @@ public class MatchController {
             return null;
         }
 
-        MatchBoard nextBoard = matchGameApplicationService.computeNextBoard(board, result, fromWord, toWord);
+        MatchBoard nextBoard = matchGameApplicationService.computeNextBoard(board, result, fromWord, toWord, languageCode);
         httpSession.setAttribute(BOARD_ATTR, nextBoard);
 
         populateModel(model, session, nextBoard, result);

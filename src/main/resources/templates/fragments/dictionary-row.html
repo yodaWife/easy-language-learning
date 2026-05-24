@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<tr th:fragment="row(wv, modes, languageCode)" th:id="${wv != null ? 'word-' + wv.word.wordId.value : 'word-error'}">
+    <!-- Error state: show single error cell spanning all columns -->
+    <th:block th:if="${error != null}">
+        <td th:colspan="${4 + #lists.size(modes)}" class="row-error" th:text="${error}">Error</td>
+    </th:block>
+
+    <!-- Normal state -->
+    <th:block th:unless="${error != null}">
+        <td th:text="${wv.word.fromWord}">from</td>
+        <td th:text="${wv.word.toWord}">to</td>
+        <td th:text="${wv.word.example}">example</td>
+
+        <!-- Global enable/disable toggle -->
+        <td class="col-toggle">
+            <form hx-post="/dictionary/toggle/global" hx-target="closest tr" hx-swap="outerHTML">
+                <input type="hidden" name="languageCode" th:value="${languageCode}">
+                <input type="hidden" name="wordId" th:value="${wv.word.wordId.value}">
+                <button type="submit"
+                        th:text="${wv.word.globalEnabled ? 'ON' : 'OFF'}"
+                        th:class="${wv.word.globalEnabled ? 'toggle-on' : 'toggle-off'}">
+                </button>
+            </form>
+        </td>
+
+        <!-- Per-mode enable/disable toggles -->
+        <td th:each="mode : ${modes}" class="col-toggle">
+            <form hx-post="/dictionary/toggle/mode" hx-target="closest tr" hx-swap="outerHTML">
+                <input type="hidden" name="languageCode" th:value="${languageCode}">
+                <input type="hidden" name="wordId" th:value="${wv.word.wordId.value}">
+                <input type="hidden" name="mode" th:value="${mode}">
+                <button type="submit"
+                        th:text="${(wv.modeEnabled[mode] ?: true) ? 'ON' : 'OFF'}"
+                        th:class="${(wv.modeEnabled[mode] ?: true) ? 'toggle-on' : 'toggle-off'}">
+                </button>
+            </form>
+        </td>
+    </th:block>
+</tr>
+</body>
+</html>

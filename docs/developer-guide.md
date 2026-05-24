@@ -31,21 +31,29 @@ graph TD
     Controllers -->|random words| FlashcardService
     Controllers -->|health state| DataHealthService
     Controllers -->|reload trigger| DataReloadApplicationService
+    Controllers -->|dictionary edits| DictionaryEditService
 
     MatchGameApplicationService --> MatchSessionService
     MatchGameApplicationService --> ScoreRepository
+    MatchGameApplicationService --> MatchBoardGenerator
 
     DataReloadApplicationService -->|DataReloadedEvent| EventBus
 
     EventBus -->|refreshes| DataHealthService
-    EventBus -->|refreshes| FlashcardService
     EventBus -->|refreshes| ScoreRepository
 
-    WordCsvParser -->|WordDataBundle| DataHealthService
+    MultiLanguageDictionaryParser -->|MultiLanguageDataBundle| DataHealthService
+    DictionaryDiscoveryService --> MultiLanguageDictionaryParser
+    WordsCsvParser -->|Language words| MultiLanguageDictionaryParser
+    ModeEligibilityCsvParser -->|Mode overrides| MultiLanguageDictionaryParser
     ScoreCsvParser -->|ScoreDataBundle| ScoreRepository
 
+    DictionaryEditService --> CsvPersistence
+    DictionaryEditService --> DictionaryWriteLock
+    DictionaryEditService --> DictionaryAuditLogService
+
     ScoreRepository -->|atomic rename| ScoreCSV[(scores.csv)]
-    WordCsvParser -->|reads| WordCSV[(dictionary.csv)]
+    MultiLanguageDictionaryParser -->|reads| DictFiles[(data/dictionaries/*)]
 
     SessionStore -->|scheduled sweep| TTLEviction[TTL Eviction]
 ```
@@ -110,67 +118,61 @@ sequenceDiagram
 
 ```
 src/main/java/com/yodawife/easyll/
-│
-├── EasyllApplication.java
-│
 ├── config/
-│   ├── MatchGameProperties.java      @ConfigurationProperties for app.match.*
-│   ├── SecurityConfig.java           Spring Security filter chain
-│   └── package-info.java
-│
+│   ├── DictionaryProperties.java     app.dictionaries.*
+│   ├── MatchGameProperties.java      app.match.*
+│   └── SecurityConfig.java
 ├── controller/
-│   ├── FlashcardsController.java     GET /flashcards, GET /flashcards/card
-│   ├── HealthController.java         GET /health/data, POST /admin/data/reload
-│   ├── HomeController.java           GET /, POST /session/start
-│   ├── MatchController.java          GET /match, POST /match/attempt, GET /match/result
-│   └── package-info.java
-│
-├── domain/                           Pure Java; no Spring, no I/O
-│   ├── AttemptResult.java            Sealed type: SUCCESS / FAILURE / ALREADY_MATCHED
-│   ├── CsvParseResult.java           Sealed type: Success<T> / Failure<T>
-│   ├── LanguageMetadata.java         Column header names from the CSV header row
-│   ├── MatchBoard.java               Current board state + matched-pair tracking
-│   ├── MatchCard.java                A single word pair on the board
-│   ├── MatchSession.java             Session lifecycle, counters, TTL timestamps
-│   ├── ScoreDataBundle.java          Parsed score file contents
-│   ├── UserWordHistory.java          FIFO S/F history for one (user, from, to) key
-│   ├── UserWordKey.java              Value type: (user, from, to)
-│   ├── WordDataBundle.java           Parsed word file contents
-│   └── WordEntry.java                Single vocabulary entry: (from, to, example)
-│
+│   ├── DictionaryController.java     /dictionary, /dictionary/rows, toggle endpoints
+│   ├── FlashcardsController.java
+│   ├── HealthController.java
+│   ├── HomeController.java
+│   └── MatchController.java
+├── domain/
+│   ├── LanguageBundle.java
+│   ├── MultiLanguageDataBundle.java
+│   ├── ModeEligibility.java
+│   ├── Word.java
+│   ├── WordId.java
+│   └── ...
 ├── repository/
-│   └── ScoreRepository.java          CSV-backed score read/write with atomic replace
-│
+│   └── ScoreRepository.java
 ├── service/
-│   ├── AttemptRecord.java            Internal DTO for attempt buffering
-│   ├── DataHealthService.java        Holds DataSnapshot; refreshes on DataReloadedEvent
-│   ├── DataReloadApplicationService.java  Triggers CSV reload; publishes DataReloadedEvent
-│   ├── DataReloadedEvent.java        Spring ApplicationEvent payload
-│   ├── DataSnapshot.java             Immutable health state + parsed data bundles
-│   ├── FlashcardService.java         Returns random words; refreshes on DataReloadedEvent
-│   ├── MatchBoardGenerator.java      Builds randomised MatchBoard instances
-│   ├── MatchGameApplicationService.java  Match use-case: attempt processing, score flush
-│   ├── MatchSessionService.java      Attempt validation and board transition logic
-│   ├── SessionStore.java             ConcurrentHashMap of sessions + scheduled TTL sweep
-│   ├── UserScoreService.java         Merges attempt records into ScoreRepository
-│   └── package-info.java
-│
+│   ├── DataHealthService.java
+│   ├── DictionaryEditService.java
+│   ├── DictionaryDiscoveryService.java
+│   ├── DictionaryWriteLock.java
+│   ├── CsvPersistence.java
+│   ├── EligibilityEvaluator.java
+│   ├── FlashcardService.java
+│   ├── MatchBoardGenerator.java
+│   └── ...
 └── validation/
-    ├── ScoreCsvParser.java           Parses scores.csv with full error collection
-    └── WordCsvParser.java            Parses dictionary.csv with full error collection
+    ├── MultiLanguageDictionaryParser.java
+    ├── WordsCsvParser.java
+    ├── ModeEligibilityCsvParser.java
+    ├── ScoreCsvParser.java
+    └── WordCsvParser.java            Legacy compatibility parser
 
 src/main/resources/
 ├── application.properties
-├── data/
-│   └── dictionary.csv               Bundled default word list
 ├── static/css/
 └── templates/
-    ├── index.html
+    ├── dictionary.html
     ├── flashcards.html
+    ├── index.html
     ├── match.html
-    ├── fragments/                   HTMX partial templates
-    ├── health/
-    └── layout/
+    ├── fragments/
+    └── health/
+
+data/
+└── dictionaries/
+    ├── hun/
+    │   ├── words.csv
+    │   └── mode-eligibility.csv
+    └── pl/
+        ├── words.csv
+        └── mode-eligibility.csv
 
 src/test/java/com/yodawife/easyll/
     controller/                      @WebMvcTest + MockMvc + spring-security-test
@@ -212,7 +214,9 @@ All properties live in `src/main/resources/application.properties`. Override per
 
 | Property | Default | Description |
 | --- | --- | --- |
-| `app.words.source` | `classpath:data/dictionary.csv` | Word CSV source. Use `classpath:` prefix for bundled files or an absolute `file:/path` for external files. |
+| `app.dictionaries.root-path` | `./data/dictionaries` | Root folder containing per-language dictionary subfolders. |
+| `app.dictionaries.primary-language-code` | `hun` | Fallback language code used when no explicit language is selected. |
+| `app.dictionaries.modes` | `flashcards,match` | Supported mode names used by dictionary toggles and eligibility checks. |
 | `app.scores.file-path` | `./scores.csv` | Score CSV read path. |
 | `app.scores.write-path` | `./scores.csv` | Score CSV write path. Can differ from the read path for staged setups; must be a filesystem path (not classpath). |
 | `app.match.max-attempts` | `30` | Successful matches required to complete a session. Minimum 1. |
@@ -221,6 +225,8 @@ All properties live in `src/main/resources/application.properties`. Override per
 | `spring.security.user.name` | `admin` | Admin username for HTTP Basic Auth on `/admin/**`. |
 | `spring.security.user.password` | `admin` | Admin password. **Change this before any non-localhost deployment.** |
 | `spring.security.user.roles` | `ADMIN` | Role granted to the admin user. |
+
+`app.words.source` remains available only for legacy compatibility and diagnostics; gameplay uses the multi-language bundle loaded from `app.dictionaries.root-path`.
 
 ---
 
@@ -233,6 +239,7 @@ Security is provided by Spring Security, configured in `SecurityConfig`.
 | Path pattern | Access |
 | --- | --- |
 | `/`, `/session/start` | Public |
+| `/dictionary`, `/dictionary/**` | Public |
 | `/flashcards`, `/flashcards/card` | Public |
 | `/match`, `/match/attempt`, `/match/result` | Public |
 | `/health/data` | Public |
@@ -250,24 +257,47 @@ Security is provided by Spring Security, configured in `SecurityConfig`.
 
 ## Data model
 
-### Word CSV (`dictionary.csv`)
+### Multi-language dictionaries
 
-Semicolon-delimited, UTF-8. First row is a metadata header — its values become the language labels in the UI.
+Each language has a dedicated folder under `data/dictionaries/{languageCode}`.
+
+#### words.csv
+
+Semicolon-delimited UTF-8, with header row.
 
 ```text
-FROM_LANG;TO_LANG;EXAMPLE
-Letter;Betű;
-Stone;Kő;A stone is heavy.
+WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
+w1;dog;pies;The dog runs.;true
 ```
 
-Parsed into `WordDataBundle` containing:
-- `LanguageMetadata` — column header strings.
-- `List<WordEntry>` — `(from, to, example?)` for every data row.
+Validation:
+- Exactly 5 columns.
+- `WORD_ID`, `FROM`, and `TO` must be non-blank.
+- `WORD_ID` must be unique within a language.
+- `GLOBAL_ENABLED` must be `true` or `false`.
 
-**Validation (all errors collected before failing):**
-- Exactly 3 columns per row.
-- FROM and TO cannot be blank.
-- Duplicate `(FROM, TO)` pairs are rejected.
+#### mode-eligibility.csv
+
+Semicolon-delimited UTF-8, with header row.
+
+```text
+WORD_ID;MODE;ENABLED
+w1;flashcards;true
+w1;match;false
+```
+
+Validation:
+- Exactly 3 columns.
+- `WORD_ID` must exist in words.csv for that language.
+- `MODE` must be non-blank.
+- `ENABLED` must be `true` or `false`.
+- `(WORD_ID, MODE)` must be unique.
+
+Missing `mode-eligibility.csv` is treated as empty (all words enabled per mode by default).
+
+Eligibility used by games:
+- `word.globalEnabled == true`
+- and mode override is enabled, or missing (defaults to enabled).
 
 ### Score CSV (`scores.csv`)
 

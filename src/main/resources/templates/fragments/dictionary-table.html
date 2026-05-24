@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="table-rows">
+    <th:block th:each="wv : ${words}">
+        <tr th:replace="~{fragments/dictionary-row :: row(${wv}, ${modes}, ${languageCode})}"></tr>
+    </th:block>
+
+    <!-- Pagination row -->
+    <tr class="dict-pagination-row">
+        <td th:colspan="${4 + #lists.size(modes)}" class="dict-pagination-cell">
+            <div class="dict-pagination">
+            <span class="page-info"
+                  th:text="'Showing page ' + (${page + 1}) + ', ' + ${words.size()} + ' of ' + ${totalWords} + ' words'">
+                Showing page 1, 0 of 0 words
+            </span>
+            <div class="page-nav-group">
+            <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML">
+                <input type="hidden" name="languageCode" th:value="${languageCode}">
+                <input type="hidden" name="sortBy" th:value="${sortBy}">
+                <input type="hidden" name="sortDir" th:value="${sortDir}">
+                <input type="hidden" name="search" th:value="${search}">
+                <input type="hidden" name="page" th:value="${page - 1}">
+                <input type="hidden" name="pageSize" th:value="${pageSize}">
+                <button type="submit" class="btn-page" th:disabled="${page == 0}">← Previous</button>
+            </form>
+            <form hx-get="/dictionary/rows" hx-target="#dict-rows" hx-swap="innerHTML">
+                <input type="hidden" name="languageCode" th:value="${languageCode}">
+                <input type="hidden" name="sortBy" th:value="${sortBy}">
+                <input type="hidden" name="sortDir" th:value="${sortDir}">
+                <input type="hidden" name="search" th:value="${search}">
+                <input type="hidden" name="page" th:value="${page + 1}">
+                <input type="hidden" name="pageSize" th:value="${pageSize}">
+                <button type="submit" class="btn-page" th:disabled="${(page + 1) * pageSize >= totalWords}">Next →</button>
+            </form>
+            </div>
+            </div>
+        </td>
+    </tr>
+</th:block>
+</body>
+</html>

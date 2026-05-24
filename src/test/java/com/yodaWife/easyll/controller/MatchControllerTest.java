@@ -226,4 +226,18 @@ class MatchControllerTest {
 
         assertThat(sessionStore.get(session.getSessionId())).isEmpty();
     }
+
+    @Test
+    @DisplayName("GET /match with languageCode in session loads board using that language")
+    void matchPageUsesLanguageCodeFromSession() throws Exception {
+        var session = sessionStore.create(null, "match");
+        var httpSession = new MockHttpSession();
+        httpSession.setAttribute("sessionId", session.getSessionId());
+        httpSession.setAttribute("languageCode", "en");
+
+        mockMvc.perform(get("/match").session(httpSession))
+                .andExpect(status().isOk())
+                .andExpect(view().name("match"))
+                .andExpect(model().attributeExists("board", "attempts", "maxAttempts"));
+    }
 }

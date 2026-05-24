@@ -33,6 +33,14 @@
                             </datalist>
                         </div>
 
+                        <div class="language-group" th:if="${languages != null and !#lists.isEmpty(languages)}">
+                            <label for="languageCode">Language</label>
+                            <select id="languageCode" name="languageCode" class="language-select">
+                                <option th:each="lang : ${languages}" th:value="${lang}" th:text="${lang}"
+                                        th:selected="${lang == primaryLanguage}"></option>
+                            </select>
+                        </div>
+
                         <div>
                             <span id="mode-label" class="mode-label-text">Choose your mode</span>
                             <div class="mode-cards" role="radiogroup" aria-labelledby="mode-label">
@@ -59,6 +67,10 @@
                         <button type="submit" class="btn-start" th:disabled="${!wordsHealthy}">
                             Start Learning →
                         </button>
+
+                        <div class="dict-link">
+                            <a th:href="@{/dictionary}">Dictionary Management</a>
+                        </div>
 
                         <p class="footer-note">Learn at your own pace 🌱</p>
                     </div>

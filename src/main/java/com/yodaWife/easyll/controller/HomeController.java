@@ -1,5 +1,6 @@
 package com.yodawife.easyll.controller;
 
+import com.yodawife.easyll.config.DictionaryProperties;
 import com.yodawife.easyll.domain.MatchSession;
 import com.yodawife.easyll.repository.ScoreRepository;
 import com.yodawife.easyll.service.DataHealthService;
@@ -20,13 +21,16 @@ public class HomeController {
     private final DataHealthService dataHealthService;
     private final SessionStore sessionStore;
     private final ScoreRepository scoreRepository;
+    private final DictionaryProperties dictionaryProperties;
 
     public HomeController(DataHealthService dataHealthService,
                           SessionStore sessionStore,
-                          ScoreRepository scoreRepository) {
+                          ScoreRepository scoreRepository,
+                          DictionaryProperties dictionaryProperties) {
         this.dataHealthService = dataHealthService;
         this.sessionStore = sessionStore;
         this.scoreRepository = scoreRepository;
+        this.dictionaryProperties = dictionaryProperties;
     }
 
     @GetMapping("/")
@@ -37,6 +41,8 @@ public class HomeController {
         model.addAttribute("wordErrors", snapshot.wordErrors());
         model.addAttribute("scoreErrors", snapshot.scoreErrors());
         model.addAttribute("nicknames", List.copyOf(scoreRepository.knownUsers()));
+        model.addAttribute("languages", dataHealthService.availableLanguages());
+        model.addAttribute("primaryLanguage", dictionaryProperties.getPrimaryLanguageCode());
         return "index";
     }
 
@@ -44,6 +50,7 @@ public class HomeController {
     public String startSession(
             @RequestParam(required = false) String nickname,
             @RequestParam String mode,
+            @RequestParam(required = false) String languageCode,
             HttpSession httpSession) {
 
         if (!dataHealthService.snapshot().wordsHealthy()) {
@@ -53,6 +60,15 @@ public class HomeController {
         if (!"flashcards".equals(mode) && !"match".equals(mode)) {
             return "redirect:/";
         }
+
+        List<String> available = dataHealthService.availableLanguages();
+        String resolvedLanguage;
+        if (languageCode == null || languageCode.isBlank() || !available.contains(languageCode)) {
+            resolvedLanguage = dictionaryProperties.getPrimaryLanguageCode();
+        } else {
+            resolvedLanguage = languageCode;
+        }
+        httpSession.setAttribute("languageCode", resolvedLanguage);
 
         MatchSession session = sessionStore.create(nickname, mode);
         httpSession.setAttribute("sessionId", session.getSessionId());

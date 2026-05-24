@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="language-selector" class="language-selector-wrapper">
+    <label for="language-select">Language</label>
+
+    <!-- Multiple languages: interactive dropdown -->
+    <select th:if="${languages != null and languages.size() > 1}"
+            id="language-select"
+            name="languageCode"
+            class="language-select"
+            onchange="location.href='/dictionary?languageCode=' + encodeURIComponent(this.value)">
+        <option th:each="lang : ${languages}"
+                th:value="${lang}"
+                th:text="${lang}"
+                th:selected="${lang == currentLanguage}">EN</option>
+    </select>
+
+    <!-- Single language or none: plain text display -->
+    <span th:unless="${languages != null and languages.size() > 1}"
+          class="language-single"
+          th:text="${currentLanguage}">EN</span>
+</div>
+</body>
+</html>

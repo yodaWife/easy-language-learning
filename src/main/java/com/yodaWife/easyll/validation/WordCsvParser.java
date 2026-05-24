@@ -22,6 +22,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * @deprecated Use {@link com.yodawife.easyll.validation.WordsCsvParser} for multi-language support.
+ */
+@Deprecated
 @Component
 public class WordCsvParser {
 

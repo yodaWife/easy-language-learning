@@ -98,4 +98,46 @@ class HomeControllerTest {
         assertThat(sessionStore.get(sessionId)).isPresent();
         assertThat(sessionStore.get(sessionId).orElseThrow().getNickname()).isNull();
     }
+
+    @Test
+    void homePageIncludesLanguagesInModel() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("languages"));
+    }
+
+    @Test
+    void homePageIncludesPrimaryLanguageInModel() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("primaryLanguage"));
+    }
+
+    @Test
+    void startSessionWithValidLanguageCodeStoresItInSession() throws Exception {
+        var mvcResult = mockMvc.perform(post("/session/start")
+                        .param("mode", "flashcards")
+                        .param("languageCode", "hun"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/flashcards"))
+                .andReturn();
+
+        var httpSession = (MockHttpSession) Objects.requireNonNull(mvcResult.getRequest().getSession(false));
+        var storedLanguage = (String) httpSession.getAttribute("languageCode");
+        assertThat(storedLanguage).isEqualTo("hun");
+    }
+
+    @Test
+    void startSessionWithInvalidLanguageCodeFallsBackToPrimary() throws Exception {
+        var mvcResult = mockMvc.perform(post("/session/start")
+                        .param("mode", "flashcards")
+                        .param("languageCode", "xx"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/flashcards"))
+                .andReturn();
+
+        var httpSession = (MockHttpSession) Objects.requireNonNull(mvcResult.getRequest().getSession(false));
+        var storedLanguage = (String) httpSession.getAttribute("languageCode");
+        assertThat(storedLanguage).isEqualTo("hun");
+    }
 }

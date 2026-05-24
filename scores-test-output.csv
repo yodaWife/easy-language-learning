@@ -1,15 +1,15 @@
-alice;Behind;Mögött;S
-alice;Short(duration);Rövid;S
+alice;Empty;Üres;S
 alice;Jawellery;Ékszer;S
-alice;Plant;Növény;S
 alice;Stamp;Bélyeg;S,S,S,S,S,S,S,S,S,S
+alice;Flat(surface);Lapos;S
 alice;Friendly;Barátságos;S,S,S,S,S,S,S,S,S,S
-alice;Stupid;Hülye;S
-alice;Tall;Magas;S
+alice;Angry;Mérges;S
+alice;Glue;Ragaszto;S
+alice;Vacuum cleaner;Porszívó;S
+alice;Means of transport;Közlekedési eszköz;S
+alice;Important;Fontos;S
 alice;Fill;Tölt;S,S,S,S,S,S,S,S,S,S
-alice;After;Után;S
-alice;Stone;Kő;S
-alice;Repair;Javítani;S
-alice;Weekday;Hétköznap;S
+alice;Completly;Teljesen;S
+alice;Slow;Lassú;S
 alice;In the middle;Középen;S,S,S,S,S,S,S,S,S,S
 alice;Sidewalk;Járda;S,S,S,S,S,S,S,S,S,S

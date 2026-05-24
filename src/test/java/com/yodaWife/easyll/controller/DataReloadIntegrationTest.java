@@ -16,6 +16,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
@@ -93,9 +94,11 @@ class DataReloadIntegrationTest {
         mockMvc.perform(post("/admin/data/reload").with(httpBasic("admin", "admin")))
                 .andExpect(status().is3xxRedirection());
 
-        mockMvc.perform(get("/"))
-                .andExpect(status().isOk())
-                .andExpect(model().attribute("wordsHealthy", false));
+        // Multi-language data keeps wordsHealthy=true; legacy CSV errors are still reported in wordErrors
+        var resultWithErrors = mockMvc.perform(get("/")).andReturn();
+        var errorsModel = Objects.requireNonNull(resultWithErrors.getModelAndView()).getModel();
+        assertThat(errorsModel.get("wordsHealthy")).isEqualTo(true);
+        assertThat((java.util.List<?>) errorsModel.get("wordErrors")).isNotEmpty();
 
         Files.writeString(WORDS_FILE, "ENGLISH;HUNGARIAN;EXAMPLE\nLetter;Betű;\nCloud;Felhő;\n");
 
@@ -104,7 +107,8 @@ class DataReloadIntegrationTest {
 
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("wordsHealthy", true));
+                .andExpect(model().attribute("wordsHealthy", true))
+                .andExpect(model().attribute("wordErrors", java.util.List.of()));
     }
 
     @Test
@@ -114,18 +118,24 @@ class DataReloadIntegrationTest {
         mockMvc.perform(post("/admin/data/reload").with(httpBasic("admin", "admin")))
                 .andExpect(status().is3xxRedirection());
 
-        mockMvc.perform(get("/health/data"))
-                .andExpect(status().isOk())
-                .andExpect(model().attribute("wordsHealthy", false));
+        // Multi-language data keeps wordsHealthy=true; legacy CSV errors are still reported in wordErrors
+        var firstResult = mockMvc.perform(get("/health/data")).andReturn();
+        var firstModel = Objects.requireNonNull(firstResult.getModelAndView()).getModel();
+        assertThat(firstModel.get("wordsHealthy")).isEqualTo(true);
+        var firstErrors = (java.util.List<?>) firstModel.get("wordErrors");
+        assertThat(firstErrors).isNotEmpty();
 
         Files.writeString(WORDS_FILE, "ENGLISH;HUNGARIAN;EXAMPLE\nLetter; ;\n");
 
         mockMvc.perform(post("/admin/data/reload").with(httpBasic("admin", "admin")))
                 .andExpect(status().is3xxRedirection());
 
-        mockMvc.perform(get("/health/data"))
-                .andExpect(status().isOk())
-                .andExpect(model().attribute("wordsHealthy", false));
+        var secondResult = mockMvc.perform(get("/health/data")).andReturn();
+        var secondModel = Objects.requireNonNull(secondResult.getModelAndView()).getModel();
+        assertThat(secondModel.get("wordsHealthy")).isEqualTo(true);
+        var secondErrors = (java.util.List<?>) secondModel.get("wordErrors");
+        assertThat(secondErrors).isNotEmpty();
+        assertThat(secondErrors).isNotEqualTo(firstErrors);
     }
 
     @Test

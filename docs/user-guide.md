@@ -6,10 +6,11 @@ Easy Language Learning is a vocabulary practice app that runs locally in your br
 
 - [Running the app](#running-the-app)
 - [Home page](#home-page)
+- [Dictionary management](#dictionary-management)
 - [Flashcards mode](#flashcards-mode)
 - [Match mode](#match-mode)
 - [Scoring](#scoring)
-- [Custom word lists](#custom-word-lists)
+- [Dictionary files](#dictionary-files)
 - [Data health and reload](#data-health-and-reload)
 - [Known limitations](#known-limitations)
 
@@ -33,13 +34,31 @@ Open [http://localhost:8080](http://localhost:8080) in your browser.
 
 ## Home page
 
-When you open the app you see the home page with two inputs:
+When you open the app you see the home page with three inputs:
 
 1. **Nickname (optional)** — type your name or choose from the list of known users. Providing a nickname enables per-user score tracking. You can play without one.
-2. **Mode** — choose **Flashcards** or **Match**, then click **Start**.
+2. **Language** — choose the active dictionary language.
+3. **Mode** — choose **Flashcards** or **Match**, then click **Start**.
 
 > [!NOTE]
 > If the word data is invalid or could not be loaded, the Start button is disabled. See [Data health and reload](#data-health-and-reload).
+
+---
+
+## Dictionary management
+
+Open `/dictionary` to manage the active language dictionary.
+
+You can:
+
+1. Select language.
+2. Search by FROM, TO, or EXAMPLE text.
+3. Change page size and browse pages.
+4. Sort by FROM or TO directly from table headers.
+5. Toggle a word globally.
+6. Toggle a word per mode (for example flashcards enabled, match disabled).
+
+Changes are persisted to dictionary CSV files and used by game modes immediately.
 
 ---
 
@@ -49,6 +68,8 @@ When you open the app you see the home page with two inputs:
 2. A card is displayed showing a word in your source language.
 3. **Click the card** to flip it — the target-language translation and an optional usage example appear on the back.
 4. Click **Next** to load a new random card.
+
+Only words enabled for the selected language and `flashcards` mode are shown.
 
 Flashcards is a pure practice mode — no scoring is tracked.
 
@@ -70,6 +91,8 @@ Flashcards is a pure practice mode — no scoring is tracked.
 
 > [!TIP]
 > Matching works in both directions — you can drag from either column.
+
+Only words enabled for the selected language and `match` mode are used.
 
 ### Live counter
 
@@ -98,42 +121,38 @@ If you provided a nickname, each attempt is saved to a persistent score file. Th
 
 ---
 
-## Custom word lists
+## Dictionary files
 
-By default the app ships with a built-in word list. You can supply your own.
+Dictionary data is loaded from folders under `data/dictionaries`.
 
-### File format
-
-Semicolon-delimited CSV, UTF-8 encoding:
+Example layout:
 
 ```text
-FROM_LANG;TO_LANG;EXAMPLE
-Letter;Betű;
-Stone;Kő;A stone is heavy.
+data/dictionaries/
+   hun/
+      words.csv
+      mode-eligibility.csv
+   pl/
+      words.csv
+      mode-eligibility.csv
 ```
 
-| Column | Required | Notes |
-| --- | --- | --- |
-| Column 1 (FROM) | Yes | Word in your source language |
-| Column 2 (TO) | Yes | Translation in the target language |
-| Column 3 (EXAMPLE) | No | Usage example; leave blank but keep the `;` delimiter |
+### words.csv format
 
-**Row 1** is the header row — its column names become the language labels displayed in the UI.
-
-**Validation rules applied at load time:**
-- Exactly 3 columns per row.
-- FROM and TO cannot be blank.
-- Duplicate (FROM, TO) pairs are rejected.
-
-### Pointing the app at your file
-
-Edit `src/main/resources/application.properties` and set:
-
-```properties
-app.words.source=file:/absolute/path/to/your/words.csv
+```text
+WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
+w1;dog;pies;The dog runs.;true
 ```
 
-Then either restart the app or use the reload button (see below) to pick up the change.
+### mode-eligibility.csv format
+
+```text
+WORD_ID;MODE;ENABLED
+w1;flashcards;true
+w1;match;false
+```
+
+If a WORD_ID/MODE pair is missing in `mode-eligibility.csv`, it defaults to enabled.
 
 ---
 
@@ -171,4 +190,4 @@ POST /admin/data/reload
 - Sessions are held in memory — restarting the app clears all active sessions.
 - No login or authentication for gameplay (nickname-only identity).
 - Score history is capped to the last 10 attempts per word pair per user.
-- The default word source is a bundled file; you need to update `app.words.source` to use a custom list.
+- Dictionary edits require file write permissions under `data/dictionaries`.

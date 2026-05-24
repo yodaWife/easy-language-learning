@@ -11,10 +11,13 @@ import java.util.random.RandomGenerator;
 public class FlashcardService {
 
     private final DataHealthService dataHealthService;
+    private final EligibilityEvaluator eligibilityEvaluator;
     private final RandomGenerator random = RandomGenerator.getDefault();
 
-    public FlashcardService(DataHealthService dataHealthService) {
+    public FlashcardService(DataHealthService dataHealthService,
+                            EligibilityEvaluator eligibilityEvaluator) {
         this.dataHealthService = dataHealthService;
+        this.eligibilityEvaluator = eligibilityEvaluator;
     }
 
     public Optional<WordEntry> randomCard() {
@@ -27,5 +30,28 @@ public class FlashcardService {
             return Optional.empty();
         }
         return Optional.of(words.get(random.nextInt(words.size())));
+    }
+
+    /**
+     * Returns a random eligible card for the given language and game mode.
+     * Falls back to the single-language path when no bundle is found for the language code.
+     *
+     * @param languageCode the language code to look up in the multi-language data bundle
+     * @param mode         the game mode used for eligibility filtering (e.g. "flashcards")
+     * @return an eligible {@link WordEntry}, or {@link Optional#empty()} when none are available
+     */
+    public Optional<WordEntry> randomCard(String languageCode, String mode) {
+        var snapshot = dataHealthService.snapshot();
+        var bundleOpt = snapshot.getLanguageBundle(languageCode);
+        if (bundleOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        var bundle = bundleOpt.get();
+        var eligible = eligibilityEvaluator.filterEligible(bundle.words(), mode, bundle.modeEligibilities());
+        if (eligible.isEmpty()) {
+            return Optional.empty();
+        }
+        var word = eligible.get(random.nextInt(eligible.size()));
+        return Optional.of(new WordEntry(word.fromWord(), word.toWord(), word.example()));
     }
 }

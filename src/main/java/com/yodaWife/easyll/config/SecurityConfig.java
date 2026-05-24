@@ -29,6 +29,7 @@ public class SecurityConfig {
                                 "/flashcards", "/flashcards/card",
                                 "/match", "/match/attempt", "/match/result",
                                 "/health/data",
+                                "/dictionary", "/dictionary/**",
                                 "/css/**", "/webjars/**"
                         ).permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")

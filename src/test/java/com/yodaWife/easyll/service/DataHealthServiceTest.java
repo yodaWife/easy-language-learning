@@ -1,5 +1,6 @@
 package com.yodawife.easyll.service;
 
+import com.yodawife.easyll.validation.MultiLanguageDictionaryParser;
 import com.yodawife.easyll.validation.ScoreCsvParser;
 import com.yodawife.easyll.validation.WordCsvParser;
 import org.junit.jupiter.api.DisplayName;
@@ -16,9 +17,10 @@ class DataHealthServiceTest {
     private final WordCsvParser wordCsvParser = mock(WordCsvParser.class);
     private final ScoreCsvParser scoreCsvParser = mock(ScoreCsvParser.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
+    private final MultiLanguageDictionaryParser multiLanguageDictionaryParser = mock(MultiLanguageDictionaryParser.class);
 
     // @PostConstruct is not invoked in plain unit tests; initial snapshot is DataSnapshot.degraded("Data not yet loaded")
-    private final DataHealthService service = new DataHealthService(wordCsvParser, scoreCsvParser, eventPublisher);
+    private final DataHealthService service = new DataHealthService(wordCsvParser, scoreCsvParser, eventPublisher, multiLanguageDictionaryParser);
 
     @Test
     @DisplayName("reportScoreWritePathError preserves wordsHealthy=false when word health was already degraded")

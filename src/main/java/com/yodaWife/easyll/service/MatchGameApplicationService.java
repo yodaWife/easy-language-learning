@@ -21,11 +21,15 @@ public class MatchGameApplicationService {
 
     private final MatchSessionService matchSessionService;
     private final ScoreRepository scoreRepository;
+    private final MatchBoardGenerator matchBoardGenerator;
     private final ConcurrentHashMap<String, List<AttemptRecord>> pendingAttempts = new ConcurrentHashMap<>();
 
-    public MatchGameApplicationService(MatchSessionService matchSessionService, ScoreRepository scoreRepository) {
+    public MatchGameApplicationService(MatchSessionService matchSessionService,
+                                       ScoreRepository scoreRepository,
+                                       MatchBoardGenerator matchBoardGenerator) {
         this.matchSessionService = matchSessionService;
         this.scoreRepository = scoreRepository;
+        this.matchBoardGenerator = matchBoardGenerator;
     }
 
     /**
@@ -35,6 +39,16 @@ public class MatchGameApplicationService {
      */
     public MatchBoard generateBoard() {
         return matchSessionService.generateBoard();
+    }
+
+    /**
+     * Generate a fresh match board for the given language, filtering by word eligibility.
+     *
+     * @param languageCode the language code to use for word selection
+     * @return a new {@link MatchBoard}
+     */
+    public MatchBoard generateBoard(String languageCode) {
+        return matchBoardGenerator.generate(languageCode, "match");
     }
 
     /**
@@ -77,13 +91,13 @@ public class MatchGameApplicationService {
      * @param toWord   the target word
      * @return the next {@link MatchBoard} to display
      */
-    public MatchBoard computeNextBoard(MatchBoard board, AttemptResult result, String fromWord, String toWord) {
+    public MatchBoard computeNextBoard(MatchBoard board, AttemptResult result, String fromWord, String toWord, String languageCode) {
         if (!result.correct()) {
             return board;
         }
         var pairId = MatchCard.buildPairId(fromWord, toWord);
         var updated = board.withMatched(pairId);
-        return updated.allMatched() ? matchSessionService.generateBoard() : updated;
+        return updated.allMatched() ? matchBoardGenerator.generate(languageCode, "match") : updated;
     }
 
     /**

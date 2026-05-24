@@ -1,67 +1,133 @@
-# Language learning app
-We are building an app that is supposed to help with any language learning
+# Easy Language Learning - Current Requirements Snapshot
 
-## General overview
-The app is a spring boot up with custom designed UI.
-When user opens the webpage he can choose from multiple ways of learning, for now only two are available "flashcards" and "match".
+This document captures the currently implemented behavior of the application.
 
-### Input
-The input to the app is database of words, for now in a form of CSV file of a format:
+## 1. Product Scope
 
+The application supports vocabulary learning through two modes:
+
+1. Flashcards
+2. Match
+
+It is local-first and file-based, with no database dependency.
+
+## 2. Core Functional Requirements
+
+### 2.1 Session start
+
+1. User can start a session with optional nickname.
+2. User selects language and learning mode on the home page.
+3. Selected language is stored in HTTP session and propagated to gameplay.
+
+### 2.2 Flashcards mode
+
+1. A random eligible word is shown.
+2. User can flip card to see translation and example.
+3. Next card loads a new eligible word for the selected language.
+4. No per-session score is tracked in this mode.
+
+### 2.3 Match mode
+
+1. Board is generated from eligible words in selected language.
+2. Correct/incorrect attempts are tracked for the session.
+3. When board is completed, next board is generated using the same selected language.
+4. Session ends after configured success target.
+
+### 2.4 Dictionary management
+
+1. Public dictionary page at /dictionary.
+2. Language selector for available valid dictionary bundles.
+3. Search, pagination, and sorting by FROM/TO.
+4. Sort behavior is available from table headers.
+5. Toggle global word enablement.
+6. Toggle per-mode enablement.
+7. Toggle changes persist to CSV files and are reflected in gameplay.
+
+### 2.5 Data health and reload
+
+1. Health page exposes word and score health states.
+2. Admin endpoint supports runtime reload of data.
+3. Gameplay availability depends on word data health.
+
+### 2.6 Score tracking
+
+1. Match attempts are recorded as success/failure.
+2. Optional nickname enables persistence in scores CSV.
+3. Per-user history keeps last 10 entries per word pair.
+
+## 3. Data Requirements
+
+### 3.1 Dictionary structure
+
+Dictionary root path contains language folders:
+
+```text
+data/dictionaries/{languageCode}/
+  words.csv
+  mode-eligibility.csv
 ```
-ENGLISH;HUNGARIAN;EXAMPLE
+
+### 3.2 words.csv schema
+
+```text
+WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
 ```
-The expected columns are 
-1. Original Language
-2. Foreign Language
-3. Example of the usage of the word
 
-This file is later called "language database" or "language file".
-For the simplicity in further documentation the original language will be called "FROM" and the foreing language will be called "TO".
-Take into consideration that eventually we may want to replace the language file with a database.
+Rules:
 
-### Match
-When 'match' is selected the user get's redirected to a page where in two columns 3 rows of words are displayed, on the left we have the "FROM" column where the word in user known language is displayed and the "TO" column where the foreign equivalents of the words are displayed.
-User's job is to drag and drop words that match "FROM"-"TO". 
-Replace the "FROM" and "TO" with names of the language presented in the header of the language file.
-The words can be matched in both directions. 
-If the words are matched correctly they flash once green and dissapear, if the matching is incorrect the words are getting back to their original positions and they once flash red.
-Matching game includes scoring that is described later in the doc.
-One session of the match includes 30 words to match, user can see same words multiple times and the words and their ordering are always selected randomly.
+1. Exactly 5 columns.
+2. WORD_ID unique per language.
+3. FROM and TO non-blank.
+4. GLOBAL_ENABLED is true or false.
 
-### Flashcards
-In this scenario a single word is displayed in the screen in the "FROM" language. When user clicks on the word the card with word flips and on the other side user can see the "TO" equivalent of the word and it's example.
-This is a practice mode and no scoring system is included.
+### 3.3 mode-eligibility.csv schema
 
-## Scoring
-There are two scoring systems within the app, per game and per user.
-
-**Per game scoring**
-When user selects mode that supports scoring his performance is tracked within the game.
-There is a clear information displayed on the UI about how many challanges were solved succesfully and how many were not.
-At the end of the match the summary of the performance is displayed with percentage of success (success+failures/sum of tries) with appropriate comment:
-- 100% score -> You did it!
-- 85-99% score -> Almost!
-- anything below 85% -> Let's practice some more!
-
-**Per user scoring**
-The app supports generic scoring system (in the future it should be reusable by other methods of learning).
-To enable scoring system the user needs to specify it's name before selecting the learning mode, this can happen by selecting one of the existing names or supplying a new one.
-For every word last 10 tries are tracked by the app where all successes and failures are counted, for now this information is not used for anything else than tracking purposes but the plan is to prepare a formula that prefers selecting words for practice that user made more mistakes with.
-Every mistake has to be counted when it occurs, example: if user matches the words incorrectly twice during one matching session then both tries should be registered.
-
-It is possible to play witout specifying user name, in this case only per game scoring is enabled, the user scoring is not available and the results are not tracked.
-
-### Scoring persistence
-For now scores are persisted in the form of csv file of a strucutre:
+```text
+WORD_ID;MODE;ENABLED
 ```
-USER;FROM;TO;HISTORY
-```
-Where FROM and TO is a pair of both original and foreign language words and HISTORY is represented as a FIFO array with max 10 elements.
-We track both original and foreign language because it is possible to support more than one language and therfore only the pair creates a complete information.
 
-The csv file with history has to be loaded at the startup of the service to asure user can select himself at the welcome page and can continue practice.
+Rules:
 
-## Traps
-- Different languages use different characters, right font needs to be use in the UI so it can support as much of alphanumeric characters as possible
-- If a word is not present in the scoring history treat it as new and create a new entry after user's first scored attempt with it.
+1. Exactly 3 columns.
+2. WORD_ID must exist in words.csv.
+3. MODE non-blank.
+4. ENABLED is true or false.
+5. (WORD_ID, MODE) unique.
+6. Missing row means default enabled for that mode.
+
+### 3.4 Eligibility rule
+
+A word is eligible in mode M when:
+
+1. GLOBAL_ENABLED = true
+2. And per-mode value for M is true, or missing.
+
+## 4. Non-Functional Requirements
+
+1. Runtime: Java 26.
+2. Framework: Spring Boot MVC + Thymeleaf + HTMX + Alpine.js.
+3. Persistence: CSV files only.
+4. Safety: atomic writes for mutable CSV updates.
+5. Concurrency: per-language write synchronization for dictionary edits.
+6. Validation: deterministic, user-visible parsing errors.
+7. Static analysis: Error Prone + NullAway in JSpecify mode.
+
+## 5. Security Requirements
+
+1. Gameplay and dictionary endpoints are public.
+2. Admin endpoints (/admin/**) require HTTP Basic authentication.
+3. Credentials are configured in application properties.
+
+## 6. Operational Constraints
+
+1. Session store is in-memory.
+2. Application process must have write permission to:
+   1. data/dictionaries (dictionary toggles)
+   2. score write path (score persistence)
+3. Dictionary availability is based on valid bundles discovered under configured root.
+
+## 7. Backward Compatibility Notes
+
+1. Legacy single-file word source property (app.words.source) is retained.
+2. Gameplay uses multi-language dictionary bundles as the authoritative source.
+3. Legacy parser health errors may still appear in diagnostics but do not override valid multi-language gameplay data.
