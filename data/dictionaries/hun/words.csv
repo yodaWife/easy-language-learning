@@ -1,96 +1,97 @@
 WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
-1;Letter;Betű;Írtam egy betűt a barátomnak.;false
-2;Silliness;Butaság;Ez nagy butaság volt!;false
-3;Stamp;Bélyeg;A levélen van egy bélyeg.;false
-4;Postcard;Képeslap;Küldök egy képeslapot Varsóból.;false
-5;Envelope;Boríték;A levél a borítékban van.;false
-6;Newspaper;Ujság;Reggel újságot olvasok.;false
-7;Glue;Ragaszto;A ragasztó az asztalon van.;false
-8;Eraser;Radír;Kérem a radírodat!;false
+1;Letter;Betű;Írtam egy betűt a barátomnak.;true
+2;Silliness;Butaság;Ez nagy butaság volt!;true
+3;Stamp;Bélyeg;A levélen van egy bélyeg.;true
+4;Postcard;Képeslap;Küldök egy képeslapot Varsóból.;true
+5;Envelope;Boríték;A levél a borítékban van.;true
+6;Newspaper;Ujság;Reggel újságot olvasok.;true
+7;Glue;Ragaszto;A ragasztó az asztalon van.;true
+8;Eraser;Radír;Kérem a radírodat!;true
 9;Vacuum cleaner;Porszívó;A porszívó hangos.;true
-10;Screws;Csavarok;Csavarok kellenek a polchoz.;false
-11;To set;beállitni;Be kell állítani a hőmérsékletet.;true
-12;Detergent;Mosószer;Mosószert veszek a boltban.;false
-13;Fill;Tölt;Töltöm a poharat vízzel.;false
+10;Screws;Csavarok;Csavarok kellenek a polchoz.;true
+11;To set;Beállitni;Be kell állítani a hőmérsékletet.;true
+12;Detergent;Mosószer;Mosószert veszek a boltban.;true
+13;Fill;Tölt;Töltöm a poharat vízzel.;true
 14;To start;Elindítni;El kell indítani a gépet.;true
-15;Bush;Bokor;A madár a bokorban van.;false
-16;Bus stop;Buszmegálló;A buszmegállónál várok.;false
-17;Cloud;Felhő;Nagy fekete felhők vannak az égen.;false
-18;Fisherman;Horgász;A horgász a tónál ül.;false
-19;Sidewalk;Járda;A gyerekek a járdán sétálnak.;false
-20;Fence;Kerités;A kert körül kerítés van.;false
-21;Stone;Kő;Nagy kő van az úton.;false
-22;Field;Mező;A tehén a mezőn legel.;false
+15;Bush;Bokor;A madár a bokorban van.;true
+16;Bus stop;Buszmegálló;A buszmegállónál várok.;true
+17;Cloud;Felhő;Nagy fekete felhők vannak az égen.;true
+18;Fisherman;Horgász;A horgász a tónál ül.;true
+19;Sidewalk;Járda;A gyerekek a járdán sétálnak.;true
+20;Fence;Kerités;A kert körül kerítés van.;true
+21;Stone;Kő;Nagy kő van az úton.;true
+22;Field;Mező;A tehén a mezőn legel.;true
 23;Tower;Torony;A torony nagyon magas.;true
 24;Temple;Templom;A templom a városközpontban van.;true
-25;Hallway;Előszoba;A cipők az előszobában vannak.;false
+25;Hallway;Előszoba;A cipők az előszobában vannak.;true
 26;To move;Költözni;Hamarosan új lakásba költözünk.;true
-27;All;Összes;Az összes könyvet elolvastam.;false
-28;Angry;Mérges;Mérges vagyok, mert késtél.;false
-29;Interests me;Érdekel;Nagyon érdekel a magyar kultúra.;false
+27;All;Összes;Az összes könyvet elolvastam.;true
+28;Angry;Mérges;Mérges vagyok, mert késtél.;true
+29;Interests me;Érdekel;Nagyon érdekel a magyar kultúra.;true
 30;To arrive;Megérkezni;Mikor érkezel meg Budapestre?;true
 31;To tell(a story);Elmesélni;Elmesélte a kalandját.;true
-32;Morning;Délelőtt;Délelőtt dolgozom otthon.;false
-33;Plant;Növény;Ez a növény sok vizet kap.;false
-34;Adult;Felnőtt;Ez a film csak felnőtteknek szól.;false
-35;Suit;Öltöny;Az apám öltönyt visel a munkában.;false
+32;Morning;Délelőtt;Délelőtt dolgozom otthon.;true
+33;Plant;Növény;Ez a növény sok vizet kap.;true
+34;Adult;Felnőtt;Ez a film csak felnőtteknek szól.;true
+35;Suit;Öltöny;Az apám öltönyt visel a munkában.;true
 36;Tie;Nyakkendő;Piros nyakkendőt viselek ma.;true
-37;Pants;Nadrág;Az új nadrágomat vettem fel.;false
+37;Pants;Nadrág;Az új nadrágomat vettem fel.;true
 38;West;Nyugat;Nyugat felé haladunk.;true
-39;East;Kelet;A nap keleten kel fel.;false
-40;North;Észak;Északon hideg a tél.;false
-41;South;Dél;Délen melegebb az időjárás.;false
-42;Before;Előtt;Az ülés előtt kávét iszom.;false
-43;After;Után;Munka után hazamegyek.;false
-44;Behind;Mögött;A macska az asztal mögött van.;false
-45;Beside;Mellett;Mellettem ül a barátom.;false
+39;East;Kelet;A nap keleten kel fel.;true
+40;North;Észak;Északon hideg a tél.;true
+41;South;Dél;Délen melegebb az időjárás.;true
+42;Before;Előtt;Az ülés előtt kávét iszom.;true
+43;After;Után;Munka után hazamegyek.;true
+44;Behind;Mögött;A macska az asztal mögött van.;true
+45;Beside;Mellett;Mellettem ül a barátom.;true
 46;Weekday;Hétköznap;Hétköznapokon korán kelek.;true
-47;Important;Fontos;Fontos a jó egészség.;false
-48;Flat(surface);Lapos;Az asztal teteje lapos.;false
-49;In the middle;Középen;A lámpa középen lóg.;false
+47;Important;Fontos;Fontos a jó egészség.;true
+48;Flat(surface);Lapos;Az asztal teteje lapos.;true
+49;In the middle;Középen;A lámpa középen lóg.;true
 50;To stay;Maradni;Ma este itthon maradok.;true
-51;Disadventage;Hátrány;Ennek a tervnek van hátránya.;false
-52;Advantage;Előny;A lakás előnye a nagy kert.;false
-53;Friendly;Barátságos;A szomszédaim nagyon barátságosak.;false
-54;Bracelet;Karperec;Szép karperecet kaptam ajándékba.;false
-55;Kind;Kedves;Nagyon kedves vagy!;false
-56;Short(height);Alacsony;A húgom alacsony és szőke.;false
-57;Long(height);Magas;A bátyám nagyon magas.;false
-58;Old;Öreg;Az öreg kutya alszik a fotelban.;false
+51;Disadventage;Hátrány;Ennek a tervnek van hátránya.;true
+52;Advantage;Előny;A lakás előnye a nagy kert.;true
+53;Friendly;Barátságos;A szomszédaim nagyon barátságosak.;true
+54;Bracelet;Karperec;Szép karperecet kaptam ajándékba.;true
+55;Kind;Kedves;Nagyon kedves vagy!;true
+56;Short(height);Alacsony;A húgom alacsony és szőke.;true
+57;Long(height);Magas;A bátyám nagyon magas.;true
+58;Old;Öreg;Az öreg kutya alszik a fotelban.;true
 59;Young;Fiatal;A tanárnőnk fiatal és vidám.;true
 60;Younger sister;Húg;A húgom hat éves.;true
-61;Sister;Nővér;A nővérem Bécsben lakik.;false
-62;Older Sister;Néne;A nénémet Annának hívják.;false
+61;Sister;Nővér;A nővérem Bécsben lakik.;true
+62;Older Sister;Néne;A nénémet Annának hívják.;true
 63;Younger brother;Öcs;Az öcsém focizni szeret.;true
-64;Older brother;Báty;A bátyám mérnök.;false
-65;Brother;Fivér;Két fivérem van.;false
+64;Older brother;Báty;A bátyám mérnök.;true
+65;Brother;Fivér;Két fivérem van.;true
 66;Usually;Általában;Általában busszal megyek dolgozni.;true
-67;Rarely;Ritkán;Ritkán eszem húst.;false
-68;Jawellery;Ékszer;Az ékszer a fiókban van.;false
-69;Occupation;Foglalkozás;Mi a foglalkozásod?;false
-70;Means of transport;Közlekedési eszköz;A busz olcsó közlekedési eszköz.;false
+67;Rarely;Ritkán;Ritkán eszem húst.;true
+68;Jawellery;Ékszer;Az ékszer a fiókban van.;true
+69;Occupation;Foglalkozás;Mi a foglalkozásod?;true
+70;Means of transport;Közlekedési eszköz;A busz olcsó közlekedési eszköz.;true
 71;Tram;Villamos;A villamossal megyek a centrumba.;true
-72;Engineer;Mérnök;A mérnök tervezi az épületet.;false
-73;Pear;Körte;Éhes vagyok, eszek egy körtét.;false
-74;Old(thing);Régi;Ez egy régi fénykép.;false
-75;Slow;Lassú;A teknős nagyon lassú.;false
-76;Empty;Üres;A pohár üres, tölts bele vizet!;false
-77;Full;Tele;A táskám tele van könyvekkel.;false
-78;Short(duration);Rövid;A film rövid volt.;false
-79;Long(duration);Hosszú;Hosszú nap volt ma.;false
-80;Rectangle;Téglalap;Az ajtó téglalap alakú.;false
-81;Circle;Kör;Rajzolj egy kört!;false
+72;Engineer;Mérnök;A mérnök tervezi az épületet.;true
+73;Pear;Körte;Éhes vagyok, eszek egy körtét.;true
+74;Old(thing);Régi;Ez egy régi fénykép.;true
+75;Slow;Lassú;A teknős nagyon lassú.;true
+76;Empty;Üres;A pohár üres, tölts bele vizet!;true
+77;Full;Tele;A táskám tele van könyvekkel.;true
+78;Short(duration);Rövid;A film rövid volt.;true
+79;Long(duration);Hosszú;Hosszú nap volt ma.;true
+80;Rectangle;Téglalap;Az ajtó téglalap alakú.;true
+81;Circle;Kör;Rajzolj egy kört!;true
 82;Triangle;Háromszög;A háromszögnek három sarka van.;true
-83;Square;Négyzet;A négyzetnek négy egyforma oldala van.;false
-84;Garage;Garázs;Az autó a garázsban van.;false
-85;Repair;Javítani;Meg kell javítani a biciklit.;false
+83;Square;Négyzet;A négyzetnek négy egyforma oldala van.;true
+84;Garage;Garázs;Az autó a garázsban van.;true
+85;Repair;Javítani;Meg kell javítani a biciklit.;true
 86;Tall;Magas;A magas épület a városközpontban van.;true
-87;Spend(time);Tölteni;Szívesen töltöm itt az időt.;false
+87;Spend(time);Tölteni;Szívesen töltöm itt az időt.;true
 88;To care;Törődni;Törődsz a növényeiddel?;true
 89;To look for(search);Keresni;A kulcsomat keresem mindenhol.;true
-90;Huge amount;Rengeteg;Rengeteg munka vár rám.;false
-91;Sad;Szomorú;Szomorú vagyok, mert elmész.;false
-92;Completly;Teljesen;Teljesen igazad van!;false
-93;Clever;Okos;Az okos diák sokat tanul.;false
-94;Stupid;Hülye;Ne légy olyan hülye!;false
-95;Busy;Elfoglalt;Ma nagyon elfoglalt vagyok.;false
+90;Huge amount;Rengeteg;Rengeteg munka vár rám.;true
+91;Sad;Szomorú;Szomorú vagyok, mert elmész.;true
+92;Completly;Teljesen;Teljesen igazad van!;true
+93;Clever;Okos;Az okos diák sokat tanul.;true
+94;Stupid;Hülye;Ne légy olyan hülye!;true
+95;Busy;Elfoglalt;Ma nagyon elfoglalt vagyok.;true
+21cc6de8-058a-41f5-984c-8c64201caec2;Calm;Nyugalom;;true

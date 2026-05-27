@@ -48,14 +48,150 @@
 
         <!-- Actions -->
         <td class="col-actions">
-            <div class="row-actions" th:attr="data-word-id=${wv.word.wordId.value},data-from-word=${wv.word.fromWord}">
+            <div class="row-actions">
                 <button type="button"
                         class="btn-row-action"
-                        th:attr="aria-label=${'Edit word ' + wv.word.fromWord}"
-                        title="Edit word (coming soon)">
+                        th:attr="hx-get=${'/dictionary/row/edit?languageCode=' + languageCode + '&wordId=' + wv.word.wordId.value},aria-label=${'Edit ' + wv.word.fromWord}"
+                        hx-target="closest tr"
+                        hx-swap="outerHTML">
                     <i class="bi bi-pencil"></i>
                 </button>
             </div>
+        </td>
+    </th:block>
+</tr>
+
+<tr th:fragment="row-edit" th:id="${wv != null ? 'word-' + wv.word.wordId.value : 'word-error'}" class="row-editing">
+    <!-- Error state -->
+    <th:block th:if="${error != null}">
+        <td th:colspan="${5 + #lists.size(modes)}" class="row-error" th:text="${error}">Error</td>
+    </th:block>
+
+    <!-- Edit state -->
+    <th:block th:unless="${error != null}">
+        <td class="td-from">
+            <input type="text" class="dict-edit-input"
+                   th:id="'edit-from-' + ${wv.word.wordId.value}"
+                   name="fromWord"
+                   th:value="${wv.word.fromWord}"
+                   required maxlength="200">
+        </td>
+        <td class="td-to">
+            <input type="text" class="dict-edit-input"
+                   th:id="'edit-to-' + ${wv.word.wordId.value}"
+                   name="toWord"
+                   th:value="${wv.word.toWord}"
+                   required maxlength="200">
+        </td>
+        <td class="td-example">
+            <input type="text" class="dict-edit-input"
+                   th:id="'edit-ex-' + ${wv.word.wordId.value}"
+                   name="example"
+                   th:value="${wv.word.example}"
+                   maxlength="500">
+        </td>
+
+        <!-- Global toggle (stays interactive) -->
+        <td class="col-toggle">
+            <form hx-post="/dictionary/toggle/global" hx-target="closest tr" hx-swap="outerHTML">
+                <input type="hidden" name="languageCode" th:value="${languageCode}">
+                <input type="hidden" name="wordId" th:value="${wv.word.wordId.value}">
+                <button type="submit" class="toggle-switch-btn"
+                        th:attr="aria-label=${'Toggle global for ' + wv.word.fromWord},aria-checked=${wv.word.globalEnabled}"
+                        role="switch">
+                    <span th:class="${wv.word.globalEnabled ? 'toggle-switch toggle-switch--on' : 'toggle-switch toggle-switch--off'}">
+                        <span class="toggle-knob"></span>
+                    </span>
+                </button>
+            </form>
+        </td>
+
+        <!-- Per-mode toggles (stay interactive) -->
+        <td th:each="mode : ${modes}" class="col-toggle">
+            <form hx-post="/dictionary/toggle/mode" hx-target="closest tr" hx-swap="outerHTML">
+                <input type="hidden" name="languageCode" th:value="${languageCode}">
+                <input type="hidden" name="wordId" th:value="${wv.word.wordId.value}">
+                <input type="hidden" name="mode" th:value="${mode}">
+                <button type="submit" class="toggle-switch-btn"
+                        th:attr="aria-label=${'Toggle ' + mode + ' for ' + wv.word.fromWord},aria-checked=${wv.modeEnabled[mode] ?: true}"
+                        role="switch">
+                    <span th:class="${(wv.modeEnabled[mode] ?: true) ? 'toggle-switch toggle-switch--on' : 'toggle-switch toggle-switch--off'}">
+                        <span class="toggle-knob"></span>
+                    </span>
+                </button>
+            </form>
+        </td>
+
+        <!-- Save / Cancel -->
+        <td class="col-actions">
+            <form th:id="'edit-form-' + ${wv.word.wordId.value}"
+                  hx-post="/dictionary/edit"
+                  hx-target="closest tr"
+                  hx-swap="outerHTML"
+                  th:attr="hx-include=${'#edit-from-' + wv.word.wordId.value + ',#edit-to-' + wv.word.wordId.value + ',#edit-ex-' + wv.word.wordId.value}">
+                <input type="hidden" name="languageCode" th:value="${languageCode}">
+                <input type="hidden" name="wordId" th:value="${wv.word.wordId.value}">
+                <div class="row-actions">
+                    <button type="submit" class="btn-row-action btn-row-save" aria-label="Save changes">
+                        <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button type="button" class="btn-row-action btn-row-cancel"
+                            th:attr="hx-get=${'/dictionary/row?languageCode=' + languageCode + '&wordId=' + wv.word.wordId.value}"
+                            hx-target="closest tr"
+                            hx-swap="outerHTML"
+                            aria-label="Cancel edit">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </form>
+        </td>
+    </th:block>
+</tr>
+
+<tr th:fragment="row-new" id="word-new" class="row-editing">
+    <!-- Error state -->
+    <th:block th:if="${error != null}">
+        <td th:colspan="${5 + #lists.size(modes)}" class="row-error" th:text="${error}">Error</td>
+    </th:block>
+
+    <!-- New word inputs -->
+    <th:block th:unless="${error != null}">
+        <td class="td-from">
+            <input type="text" class="dict-edit-input" id="new-from" name="fromWord"
+                   placeholder="From word" required maxlength="200" autofocus>
+        </td>
+        <td class="td-to">
+            <input type="text" class="dict-edit-input" id="new-to" name="toWord"
+                   placeholder="To word" required maxlength="200">
+        </td>
+        <td class="td-example">
+            <input type="text" class="dict-edit-input" id="new-ex" name="example"
+                   placeholder="Example (optional)" maxlength="500">
+        </td>
+
+        <!-- Toggle columns: not applicable for unsaved word -->
+        <td class="col-toggle"></td>
+        <td th:each="mode : ${modes}" class="col-toggle"></td>
+
+        <!-- Save / Cancel -->
+        <td class="col-actions">
+            <form id="add-form"
+                  hx-post="/dictionary/add"
+                  hx-target="closest tr"
+                  hx-swap="outerHTML"
+                  hx-include="#new-from,#new-to,#new-ex">
+                <input type="hidden" name="languageCode" th:value="${languageCode}">
+                <div class="row-actions">
+                    <button type="submit" class="btn-row-action btn-row-save" aria-label="Save new word">
+                        <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button type="button" class="btn-row-action btn-row-cancel"
+                            onclick="this.closest('tr').remove()"
+                            aria-label="Cancel add">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </form>
         </td>
     </th:block>
 </tr>

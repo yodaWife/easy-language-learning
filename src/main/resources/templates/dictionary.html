@@ -74,7 +74,16 @@
                     </select>
                     <button type="button"
                             class="btn-dict-add"
-                            onclick="var r=document.getElementById('dict-add-row');if(r)r.style.display='table-row'"
+                            th:attr="data-lang=${currentLanguage}"
+                            onclick="
+                                if (document.getElementById('word-new')) {
+                                    document.querySelector('#word-new .dict-edit-input')?.focus();
+                                    return;
+                                }
+                                htmx.ajax('GET', '/dictionary/row/new?languageCode=' + encodeURIComponent(this.dataset.lang), {
+                                    target: '#dict-rows', swap: 'afterbegin'
+                                });
+                            "
                             aria-label="Add new word">+ Add</button>
                 </div>
 

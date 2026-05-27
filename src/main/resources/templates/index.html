@@ -15,22 +15,21 @@
             <div class="page-container">
                 <form th:action="@{/session/start}" method="post">
                     <div class="welcome-card">
+                        <a th:href="@{/dictionary}" class="dict-icon-btn" aria-label="Dictionary Management">
+                            <i class="bi bi-book"></i>
+                        </a>
                         <h1 class="welcome-title">Welcome!</h1>
                         <p class="welcome-subtitle">Start your language journey today</p>
 
-                        <div class="nickname-group">
-                            <label for="nickname">Nickname</label>
-                            <span class="nickname-hint">(optional — enables score tracking)</span>
-                            <input type="text"
-                                   id="nickname"
-                                   name="nickname"
-                                   class="nickname-input"
-                                   placeholder="Leave blank to play anonymously"
-                                   th:list="${nicknames != null ? 'nickname-suggestions' : ''}"
-                                   autocomplete="off">
-                            <datalist id="nickname-suggestions">
-                                <option th:each="n : ${nicknames}" th:value="${n}"></option>
-                            </datalist>
+                        <input type="hidden" id="nickname" name="nickname" value="">
+
+                        <div class="nickname-pills" id="nickname-pills">
+                            <button type="button" class="nickname-pill"
+                                    th:each="n : ${nicknames}"
+                                    th:text="${n}"
+                                    th:data-name="${n}"></button>
+                            <button type="button" class="nickname-pill nickname-pill-new"
+                                    id="nickname-new-btn" aria-label="New player">+</button>
                         </div>
 
                         <div class="language-group" th:if="${languages != null and !#lists.isEmpty(languages)}">
@@ -42,87 +41,106 @@
                         </div>
 
                         <div>
-                            <span id="mode-label" class="mode-label-text">Choose your mode</span>
-                            <div class="mode-cards" role="radiogroup" aria-labelledby="mode-label">
-                                <div class="mode-card flashcard-card selected"
-                                     role="radio"
-                                     aria-checked="true"
-                                     tabindex="0"
-                                     data-value="flashcards">
+                            <span id="mode-label" class="mode-label-text">Choose your game</span>
+                            <div class="mode-cards" role="group" aria-labelledby="mode-label">
+                                <button type="submit" name="mode" value="flashcards"
+                                        class="mode-card flashcard-card"
+                                        th:disabled="${!wordsHealthy}">
                                     <span class="mode-icon">📇</span>
                                     <span class="mode-name">Flashcards</span>
-                                </div>
-                                <div class="mode-card match-card"
-                                     role="radio"
-                                     aria-checked="false"
-                                     tabindex="-1"
-                                     data-value="match">
+                                </button>
+                                <button type="submit" name="mode" value="match"
+                                        class="mode-card match-card"
+                                        th:disabled="${!wordsHealthy}">
                                     <span class="mode-icon">🎯</span>
                                     <span class="mode-name">Match Game</span>
-                                </div>
+                                </button>
                             </div>
-                            <input type="hidden" name="mode" id="mode-input" value="flashcards">
                         </div>
 
-                        <button type="submit" class="btn-start" th:disabled="${!wordsHealthy}">
-                            Start Learning →
-                        </button>
-
-                        <div class="dict-link">
-                            <a th:href="@{/dictionary}">Dictionary Management</a>
-                        </div>
 
                         <p class="footer-note">Learn at your own pace 🌱</p>
                     </div>
                 </form>
+
+                <div id="nickname-modal" class="nickname-modal-overlay">
+                    <div class="nickname-modal-dialog">
+                        <p class="nickname-modal-title">New player</p>
+                        <input type="text" id="nickname-modal-input" class="nickname-input"
+                               placeholder="Enter nickname..." maxlength="30" autocomplete="off">
+                        <div class="nickname-modal-actions">
+                            <button type="button" id="nickname-modal-cancel" class="nickname-modal-btn-cancel">Cancel</button>
+                            <button type="button" id="nickname-modal-accept" class="nickname-modal-btn-accept">Add</button>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                (function() {
+                    var hiddenInput = document.getElementById('nickname');
+                    var pillsContainer = document.getElementById('nickname-pills');
+                    var newBtn = document.getElementById('nickname-new-btn');
+                    var modal = document.getElementById('nickname-modal');
+                    var modalInput = document.getElementById('nickname-modal-input');
+                    var modalAccept = document.getElementById('nickname-modal-accept');
+                    var modalCancel = document.getElementById('nickname-modal-cancel');
+
+                    function selectPill(pill) {
+                        pillsContainer.querySelectorAll('.nickname-pill:not(.nickname-pill-new)').forEach(function(p) {
+                            p.classList.remove('active');
+                        });
+                        pill.classList.add('active');
+                        hiddenInput.value = pill.dataset.name;
+                    }
+
+                    function attachPill(pill) {
+                        pill.addEventListener('click', function() { selectPill(this); });
+                    }
+
+                    pillsContainer.querySelectorAll('.nickname-pill:not(.nickname-pill-new)').forEach(attachPill);
+
+                    newBtn.addEventListener('click', function() {
+                        modalInput.value = '';
+                        modal.classList.add('is-open');
+                        modalInput.focus();
+                    });
+
+                    function closeModal() { modal.classList.remove('is-open'); }
+
+                    function acceptModal() {
+                        var name = modalInput.value.trim();
+                        if (!name) return;
+                        var existing = null;
+                        pillsContainer.querySelectorAll('.nickname-pill:not(.nickname-pill-new)').forEach(function(p) {
+                            if (p.dataset.name === name) existing = p;
+                        });
+                        if (existing) { selectPill(existing); closeModal(); return; }
+                        var pill = document.createElement('button');
+                        pill.type = 'button';
+                        pill.className = 'nickname-pill';
+                        pill.textContent = name;
+                        pill.dataset.name = name;
+                        attachPill(pill);
+                        pillsContainer.insertBefore(pill, newBtn);
+                        selectPill(pill);
+                        closeModal();
+                    }
+
+                    modalAccept.addEventListener('click', acceptModal);
+                    modalCancel.addEventListener('click', closeModal);
+                    modalInput.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') { e.preventDefault(); acceptModal(); }
+                        if (e.key === 'Escape') { closeModal(); }
+                    });
+                    modal.addEventListener('click', function(e) {
+                        if (e.target === modal) closeModal();
+                    });
+                })();
+                </script>
             </div>
         </div>
 
-        <script>
-        (function() {
-            var cards = document.querySelectorAll('.mode-card');
-            var modeInput = document.getElementById('mode-input');
 
-            function selectCard(card) {
-                cards.forEach(function(c) {
-                    c.classList.remove('selected');
-                    c.setAttribute('aria-checked', 'false');
-                    c.setAttribute('tabindex', '-1');
-                });
-                card.classList.add('selected');
-                card.setAttribute('aria-checked', 'true');
-                card.setAttribute('tabindex', '0');
-                modeInput.value = card.getAttribute('data-value');
-            }
-
-            cards.forEach(function(card) {
-                card.addEventListener('click', function() {
-                    selectCard(card);
-                });
-                card.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        selectCard(card);
-                    }
-                    // Roving tabindex arrow keys
-                    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        var idx = Array.from(cards).indexOf(card);
-                        var next = cards[(idx + 1) % cards.length];
-                        next.focus();
-                        selectCard(next);
-                    }
-                    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        var idx = Array.from(cards).indexOf(card);
-                        var prev = cards[(idx - 1 + cards.length) % cards.length];
-                        prev.focus();
-                        selectCard(prev);
-                    }
-                });
-            });
-        })();
-        </script>
     </div>
 </body>
 </html>

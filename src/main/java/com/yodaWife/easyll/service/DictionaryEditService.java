@@ -16,6 +16,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Handles dictionary toggle operations (global and mode-scoped) with per-language write locking,
@@ -183,6 +184,134 @@ public class DictionaryEditService {
         }
 
         return new DictionaryOperationResult.Success<>(updatedEligibility);
+    }
+
+    /**
+     * Updates the text content (fromWord, toWord, example) of a word and persists the change atomically.
+     *
+     * @param languageCode the BCP-47 language code identifying the dictionary
+     * @param wordId       the identifier of the word to edit
+     * @param newFromWord  new source-language word (must not be blank)
+     * @param newToWord    new target-language word (must not be blank)
+     * @param newExample   new usage example (may be empty)
+     * @return {@link DictionaryOperationResult.Success} carrying the updated {@link Word},
+     *         or {@link DictionaryOperationResult.Failure} with a descriptive message on any error
+     */
+    public DictionaryOperationResult<Word> editWord(String languageCode, WordId wordId,
+                                                    String newFromWord, String newToWord, String newExample) {
+        if (!isEditableRootPath()) {
+            return new DictionaryOperationResult.Failure<>(
+                    "Dictionary editing requires a filesystem root path; current app.dictionaries.root-path is classpath-based");
+        }
+
+        var bundleOpt = dataHealthService.snapshot().getLanguageBundle(languageCode);
+        if (bundleOpt.isEmpty()) {
+            return new DictionaryOperationResult.Failure<>("Language not found: " + languageCode);
+        }
+
+        var bundle = bundleOpt.get();
+        var wordOpt = bundle.words().stream()
+                .filter(w -> w.wordId().equals(wordId))
+                .findFirst();
+
+        if (wordOpt.isEmpty()) {
+            return new DictionaryOperationResult.Failure<>("Word not found: " + wordId.value());
+        }
+
+        var word = wordOpt.get();
+        var updatedWord = new Word(word.wordId(), newFromWord.trim(), newToWord.trim(),
+                newExample == null ? "" : newExample.trim(), word.globalEnabled());
+
+        var updatedWords = bundle.words().stream()
+                .map(w -> w.wordId().equals(wordId) ? updatedWord : w)
+                .toList();
+
+        try {
+            var wordsPath = resolveLanguagePath(languageCode, WORDS_CSV);
+            dictionaryWriteLock.executeWithLock(languageCode, LOCK_TIMEOUT_MS, () -> {
+                try {
+                    csvPersistence.writeWords(wordsPath, updatedWords);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+                auditLogService.logWordEdit(languageCode, wordId, word, updatedWord);
+                dataHealthService.reload();
+            });
+        } catch (DictionaryWriteLock.DictionaryLockTimeoutException e) {
+            return new DictionaryOperationResult.Failure<>("Dictionary is busy, please try again");
+        } catch (UncheckedIOException e) {
+            log.warn("Failed to write words CSV for language '{}': {}", languageCode, e.getMessage());
+            var cause = e.getCause();
+            return new DictionaryOperationResult.Failure<>("Failed to save changes: " +
+                    String.valueOf(cause != null ? cause.getMessage() : e.getMessage()));
+        } catch (IOException e) {
+            log.warn("Failed to resolve path for language '{}': {}", languageCode, e.getMessage());
+            return new DictionaryOperationResult.Failure<>("Failed to save changes: " + String.valueOf(e.getMessage()));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return new DictionaryOperationResult.Failure<>("Operation interrupted");
+        }
+
+        return new DictionaryOperationResult.Success<>(updatedWord);
+    }
+
+    /**
+     * Adds a new word to the dictionary for the given language and persists the change atomically.
+     * A fresh UUID-based {@link WordId} is generated; the word is globally enabled by default.
+     *
+     * @param languageCode the BCP-47 language code identifying the dictionary
+     * @param fromWord     source-language word (must not be blank)
+     * @param toWord       target-language word (must not be blank)
+     * @param example      optional usage example (may be empty)
+     * @return {@link DictionaryOperationResult.Success} carrying the new {@link Word},
+     *         or {@link DictionaryOperationResult.Failure} with a descriptive message on any error
+     */
+    public DictionaryOperationResult<Word> addWord(String languageCode, String fromWord, String toWord, String example) {
+        if (!isEditableRootPath()) {
+            return new DictionaryOperationResult.Failure<>(
+                    "Dictionary editing requires a filesystem root path; current app.dictionaries.root-path is classpath-based");
+        }
+
+        var bundleOpt = dataHealthService.snapshot().getLanguageBundle(languageCode);
+        if (bundleOpt.isEmpty()) {
+            return new DictionaryOperationResult.Failure<>("Language not found: " + languageCode);
+        }
+
+        var bundle = bundleOpt.get();
+        var newWordId = new WordId(UUID.randomUUID().toString());
+        var newWord = new Word(newWordId, fromWord.trim(), toWord.trim(),
+                example == null ? "" : example.trim(), true);
+
+        var updatedWords = new ArrayList<>(bundle.words());
+        updatedWords.add(newWord);
+
+        try {
+            var wordsPath = resolveLanguagePath(languageCode, WORDS_CSV);
+            dictionaryWriteLock.executeWithLock(languageCode, LOCK_TIMEOUT_MS, () -> {
+                try {
+                    csvPersistence.writeWords(wordsPath, updatedWords);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+                auditLogService.logWordAdd(languageCode, newWordId, newWord);
+                dataHealthService.reload();
+            });
+        } catch (DictionaryWriteLock.DictionaryLockTimeoutException e) {
+            return new DictionaryOperationResult.Failure<>("Dictionary is busy, please try again");
+        } catch (UncheckedIOException e) {
+            log.warn("Failed to write words CSV for language '{}': {}", languageCode, e.getMessage());
+            var cause = e.getCause();
+            return new DictionaryOperationResult.Failure<>("Failed to save changes: " +
+                    String.valueOf(cause != null ? cause.getMessage() : e.getMessage()));
+        } catch (IOException e) {
+            log.warn("Failed to resolve path for language '{}': {}", languageCode, e.getMessage());
+            return new DictionaryOperationResult.Failure<>("Failed to save changes: " + String.valueOf(e.getMessage()));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return new DictionaryOperationResult.Failure<>("Operation interrupted");
+        }
+
+        return new DictionaryOperationResult.Success<>(newWord);
     }
 
     /**

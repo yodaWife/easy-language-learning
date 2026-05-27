@@ -29,6 +29,8 @@ public class DictionaryController {
     private static final int MIN_PAGE_SIZE = 1;
     private static final int MAX_PAGE_SIZE = 100;
     private static final String FRAGMENT_ROW = "fragments/dictionary-row :: row";
+    private static final String FRAGMENT_ROW_EDIT = "fragments/dictionary-row :: row-edit";
+    private static final String FRAGMENT_ROW_NEW = "fragments/dictionary-row :: row-new";
     private static final String ATTR_WORD = "wv";
     private static final String ATTR_MODES = "modes";
     private static final String ATTR_LANGUAGE_CODE = "languageCode";
@@ -143,7 +145,7 @@ public class DictionaryController {
         var result = dictionaryEditService.toggleModeEnabled(languageCode, typedWordId, mode);
 
         switch (result) {
-            case DictionaryOperationResult.Success<ModeEligibility> ignored -> {
+            case DictionaryOperationResult.Success<ModeEligibility> _ -> {
                 var snapshot = dataHealthService.snapshot();
                 var bundleOpt = snapshot.getLanguageBundle(languageCode);
                 if (bundleOpt.isEmpty()) {
@@ -170,6 +172,138 @@ public class DictionaryController {
         }
 
         return FRAGMENT_ROW;
+    }
+
+    @GetMapping("/dictionary/row")
+    public String dictionaryRow(
+            @RequestParam String languageCode,
+            @RequestParam String wordId,
+            Model model) {
+        populateSingleRowModel(model, languageCode, wordId);
+        return FRAGMENT_ROW;
+    }
+
+    @GetMapping("/dictionary/row/new")
+    public String newWordRow(
+            @RequestParam String languageCode,
+            Model model) {
+        model.addAttribute(ATTR_MODES, dictionaryProperties.getModes());
+        model.addAttribute(ATTR_LANGUAGE_CODE, languageCode);
+        return FRAGMENT_ROW_NEW;
+    }
+
+    @PostMapping("/dictionary/add")
+    public String addWord(
+            @RequestParam String languageCode,
+            @RequestParam(defaultValue = "") String fromWord,
+            @RequestParam(defaultValue = "") String toWord,
+            @RequestParam(defaultValue = "") String example,
+            Model model) {
+        var modes = dictionaryProperties.getModes();
+        model.addAttribute(ATTR_MODES, modes);
+        model.addAttribute(ATTR_LANGUAGE_CODE, languageCode);
+
+        if (languageCode.isBlank()) {
+            model.addAttribute(ATTR_ERROR, "Invalid request: languageCode must not be blank");
+            return FRAGMENT_ROW_NEW;
+        }
+
+        if (fromWord.isBlank() || toWord.isBlank()) {
+            model.addAttribute(ATTR_ERROR, "From and To words must not be blank");
+            return FRAGMENT_ROW_NEW;
+        }
+
+        var result = dictionaryEditService.addWord(languageCode, fromWord, toWord, example);
+        return switch (result) {
+            case DictionaryOperationResult.Success<Word> s -> {
+                var eligibilities = dataHealthService.snapshot()
+                        .getLanguageBundle(languageCode)
+                        .map(LanguageBundle::modeEligibilities)
+                        .orElse(List.of());
+                model.addAttribute(ATTR_WORD, new WordViewModel(s.value(), eligibilities, modes));
+                yield FRAGMENT_ROW;
+            }
+            case DictionaryOperationResult.Failure<Word> f -> {
+                log.warn("addWord failed for language={}: {}", languageCode, f.errorMessage());
+                model.addAttribute(ATTR_ERROR, f.errorMessage());
+                yield FRAGMENT_ROW_NEW;
+            }
+        };
+    }
+
+    @GetMapping("/dictionary/row/edit")
+    public String dictionaryRowEdit(
+            @RequestParam String languageCode,
+            @RequestParam String wordId,
+            Model model) {
+        populateSingleRowModel(model, languageCode, wordId);
+        return FRAGMENT_ROW_EDIT;
+    }
+
+    @PostMapping("/dictionary/edit")
+    public String editWord(
+            @RequestParam String languageCode,
+            @RequestParam String wordId,
+            @RequestParam String fromWord,
+            @RequestParam String toWord,
+            @RequestParam(defaultValue = "") String example,
+            Model model) {
+        var modes = dictionaryProperties.getModes();
+        model.addAttribute(ATTR_MODES, modes);
+        model.addAttribute(ATTR_LANGUAGE_CODE, languageCode);
+
+        if (languageCode.isBlank() || wordId.isBlank()) {
+            model.addAttribute(ATTR_ERROR, "Invalid request: languageCode and wordId must not be blank");
+            return FRAGMENT_ROW;
+        }
+
+        if (fromWord.isBlank() || toWord.isBlank()) {
+            model.addAttribute(ATTR_ERROR, "From and To words must not be blank");
+            populateSingleRowModel(model, languageCode, wordId);
+            return FRAGMENT_ROW_EDIT;
+        }
+
+        var typedWordId = new WordId(wordId);
+        var result = dictionaryEditService.editWord(languageCode, typedWordId, fromWord, toWord, example);
+
+        switch (result) {
+            case DictionaryOperationResult.Success<Word> s -> {
+                var eligibilities = dataHealthService.snapshot()
+                        .getLanguageBundle(languageCode)
+                        .map(LanguageBundle::modeEligibilities)
+                        .orElse(List.of());
+                model.addAttribute(ATTR_WORD, new WordViewModel(s.value(), eligibilities, modes));
+            }
+            case DictionaryOperationResult.Failure<Word> f -> {
+                log.warn("editWord failed for language={}, wordId={}: {}", languageCode, wordId, f.errorMessage());
+                model.addAttribute(ATTR_ERROR, f.errorMessage());
+                dataHealthService.snapshot().getLanguageBundle(languageCode).ifPresent(lb ->
+                        lb.words().stream()
+                                .filter(w -> w.wordId().equals(typedWordId))
+                                .findFirst()
+                                .ifPresent(w -> model.addAttribute(
+                                        ATTR_WORD, new WordViewModel(w, lb.modeEligibilities(), modes))));
+            }
+        }
+
+        return FRAGMENT_ROW;
+    }
+
+    private void populateSingleRowModel(Model model, String languageCode, String wordId) {
+        var modes = dictionaryProperties.getModes();
+        model.addAttribute(ATTR_MODES, modes);
+        model.addAttribute(ATTR_LANGUAGE_CODE, languageCode);
+        var typedWordId = new WordId(wordId);
+        var found = dataHealthService.snapshot().getLanguageBundle(languageCode)
+                .flatMap(lb -> lb.words().stream()
+                        .filter(w -> w.wordId().equals(typedWordId))
+                        .findFirst()
+                        .map(w -> new WordViewModel(w, lb.modeEligibilities(), modes)));
+        if (found.isPresent()) {
+            model.addAttribute(ATTR_WORD, found.get());
+        } else {
+            model.addAttribute(ATTR_ERROR, "Word not found: " + wordId);
+        }
     }
 
     private void populateModel(Model model, String effectiveLang, String sortBy, String sortDir,

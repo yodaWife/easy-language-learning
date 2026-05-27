@@ -6,25 +6,26 @@
 </head>
 <body>
     <div id="content">
-        <div class="page-main flashcard-page">
+        <div class="page-main">
             <div class="page-container">
-                <h2 class="section-title">📇 Flashcards</h2>
-                <p class="lang-direction" th:text="${fromLang} + ' → ' + ${toLang}">ENGLISH → HUNGARIAN</p>
+                <div class="welcome-card">
+                    <h2 class="section-title">📇 Flashcards</h2>
+                    <p class="match-hint-text">Tap or click the card to reveal the translation</p>
 
-                <div id="card-section">
-                    <div th:if="${card == null}" class="banner-error">No cards available.</div>
-                    <div th:if="${card != null}" th:replace="~{fragments/card :: card}"></div>
-                </div>
+                    <div id="card-section">
+                        <div th:if="${card == null}" class="banner-error">No cards available.</div>
+                        <div th:if="${card != null}" th:replace="~{fragments/card :: card}"></div>
+                    </div>
 
-                <div class="flashcard-actions">
-                    <button type="button"
-                            class="btn-primary-action w-100"
-                            hx-get="/flashcards/card"
-                            hx-target="#card-section"
-                            hx-swap="innerHTML">
-                        Next Card →
-                    </button>
-                    <a th:href="@{/}" class="back-home-link">← Back to Home</a>
+                    <div class="flashcard-actions">
+                        <button type="button"
+                                class="btn-primary-action w-100"
+                                hx-get="/flashcards/card"
+                                hx-target="#card-section"
+                                hx-swap="innerHTML">
+                            Next Card →
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -6,21 +6,27 @@
 </head>
 <body>
     <div id="content">
-        <div class="page-main match-game-page">
+        <div class="page-main">
             <div class="match-container">
-                <h2 class="section-title">🎯 Match Game</h2>
-
-                <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-                <div id="board-container"
-                     hx-on::after-request="htmx.process(document.getElementById('board-container'))">
-                    <div th:replace="~{fragments/board :: board}"></div>
-                </div>
-
-                <div class="match-footer">
+                <div class="game-card">
+                    <h2 class="section-title">🎯 Match Game</h2>
                     <p class="match-hint-text d-none d-sm-block">Drag a word or tap to select &amp; match</p>
                     <p class="match-hint-text d-sm-none">Tap a word on each side to match</p>
-                    <a th:href="@{/}" class="back-home-link">← Back to Home</a>
+
+                    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+                    <div id="board-container"
+                         hx-on::after-request="htmx.process(document.getElementById('board-container'))">
+                        <div th:replace="~{fragments/board :: board}"></div>
+                    </div>
                 </div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        var card = document.querySelector('.game-card');
+                        if (card) {
+                            card.style.minHeight = card.offsetHeight + 'px';
+                        }
+                    });
+                </script>
             </div>
         </div>
     </div>

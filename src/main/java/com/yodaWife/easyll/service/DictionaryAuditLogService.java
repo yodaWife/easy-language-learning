@@ -41,4 +41,36 @@ public class DictionaryAuditLogService {
         log.info("[DICT-AUDIT] language={} wordId={} mode={} field=modeEnabled old={} new={} timestamp={}",
                 languageCode, wordId.value(), mode, oldValue, newValue, Instant.now());
     }
+
+    /**
+     * Logs an edit of the text fields (fromWord, toWord, example) of a word.
+     *
+     * @param languageCode the language the word belongs to
+     * @param wordId       the identifier of the word
+     * @param oldWord      the word before editing
+     * @param newWord      the word after editing
+     */
+    public void logWordEdit(String languageCode, WordId wordId, com.yodawife.easyll.domain.Word oldWord,
+                            com.yodawife.easyll.domain.Word newWord) {
+        log.info("[DICT-AUDIT] language={} wordId={} action=edit from={}→{} to={}→{} example={}→{} timestamp={}",
+                languageCode, wordId.value(),
+                oldWord.fromWord(), newWord.fromWord(),
+                oldWord.toWord(), newWord.toWord(),
+                oldWord.example(), newWord.example(),
+                Instant.now());
+    }
+
+    /**
+     * Logs the addition of a new word.
+     *
+     * @param languageCode the language the word was added to
+     * @param wordId       the identifier assigned to the new word
+     * @param newWord      the newly created word
+     */
+    public void logWordAdd(String languageCode, WordId wordId, com.yodawife.easyll.domain.Word newWord) {
+        log.info("[DICT-AUDIT] language={} wordId={} action=add from={} to={} example={} timestamp={}",
+                languageCode, wordId.value(),
+                newWord.fromWord(), newWord.toWord(), newWord.example(),
+                Instant.now());
+    }
 }

@@ -125,33 +125,13 @@ body {
 }
 
 .match-container {
-  max-width: 900px;
+  max-width: 600px;
   margin: 0 auto;
   padding: 0 16px;
 }
 
-/* ── Match Game Page Layout (pinned footer) ── */
-.match-game-page {
-  min-height: calc(100vh - 60px);
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 0;
-}
-
-.match-game-page .match-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.match-game-page #board-container {
-  flex: 1;
-}
-
 .match-footer {
-  margin-top: auto;
-  padding: 16px 0 24px;
-  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  padding: 16px 0 8px;
   text-align: center;
 }
 
@@ -159,15 +139,27 @@ body {
   font-size: 0.8rem;
   color: var(--text-muted);
   font-style: italic;
+  text-align: center;
   margin: 0 0 8px;
 }
 
 /* ── Welcome Card ── */
-.welcome-card {
+.welcome-card,
+.game-card {
   background: var(--card-bg);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
+}
+
+.welcome-card {
+  position: relative;
   padding: 40px 32px 32px;
+  text-align: center;
+}
+
+.game-card {
+  padding: 32px;
+}
   text-align: center;
 }
 
@@ -186,26 +178,21 @@ body {
 
 /* ── Nickname Field ── */
 .nickname-group {
-  text-align: left;
-  margin-bottom: 28px;
-}
-
-.nickname-group label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 4px;
-  color: var(--text-primary);
-}
-
-.nickname-group .nickname-hint {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 8px;
 }
 
+.nickname-group label {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .nickname-input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: 10px 14px;
   border-radius: var(--radius-input);
   border: 1.5px solid var(--primary-surface);
@@ -226,6 +213,129 @@ body {
   border-color: var(--primary);
   background: #fff;
   box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.18);
+}
+
+/* ── Nickname Pills ── */
+.nickname-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+  justify-content: flex-start;
+}
+
+.nickname-pill {
+  padding: 4px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--primary-surface);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.nickname-pill:hover {
+  background: var(--primary-surface);
+  border-color: var(--primary);
+}
+
+.nickname-pill.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.nickname-pill-new {
+  border-style: dashed;
+  background: transparent;
+  color: var(--text-muted);
+  border-color: var(--text-muted);
+  font-size: 1rem;
+  padding: 2px 10px;
+}
+
+.nickname-pill-new:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* ── New Nickname Modal ── */
+.nickname-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.nickname-modal-overlay.is-open {
+  display: flex;
+}
+
+.nickname-modal-dialog {
+  background: var(--card-bg);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card-hover);
+  padding: 28px 24px 20px;
+  width: 100%;
+  max-width: 320px;
+  margin: 16px;
+}
+
+.nickname-modal-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+  text-align: left;
+}
+
+.nickname-modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+.nickname-modal-btn-cancel {
+  padding: 8px 16px;
+  border: 1.5px solid var(--primary-surface);
+  border-radius: var(--radius-btn);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.nickname-modal-btn-cancel:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.nickname-modal-btn-accept {
+  padding: 8px 20px;
+  border: none;
+  border-radius: var(--radius-btn);
+  background: var(--primary);
+  color: #fff;
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.nickname-modal-btn-accept:hover {
+  background: var(--primary-hover);
 }
 
 /* ── Mode Selection Cards ── */
@@ -256,7 +366,12 @@ body {
   cursor: pointer;
   transition: transform var(--transition-normal), opacity var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
   user-select: none;
-  opacity: 0.7;
+  opacity: 1;
+}
+
+button.mode-card {
+  font-family: var(--font-family);
+  padding: 0;
 }
 
 .mode-card .mode-icon {
@@ -531,15 +646,18 @@ body {
 /* ── Match Game ── */
 .match-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   column-gap: 32px;
   margin-bottom: 24px;
 }
 
 .match-col {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: 60px;
   gap: 12px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* Match column labels */
@@ -564,17 +682,21 @@ body {
 /* Source cards (left column) */
 .source-card {
   background: var(--primary-light);
-  border: 1.5px solid var(--primary-surface);
+  border: 2px solid var(--primary-surface);
   border-radius: 12px;
-  padding: 14px 24px;
+  padding: 6px 20px;
   color: var(--primary);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   text-align: center;
+  overflow-wrap: break-word;
+  word-break: break-word;
   cursor: grab;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast), opacity var(--transition-fast);
   user-select: none;
-  min-height: 44px;
+  height: 60px;
+  flex: 0 0 60px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -588,25 +710,28 @@ body {
 
 .source-card.selected {
   background: var(--primary-surface);
-  border: 2.5px solid var(--primary);
-  transform: scale(1.02);
+  border: 2px solid var(--primary);
   box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
 }
 
 /* Target cards (right column) */
 .target-card {
   background: var(--accent-light);
-  border: 1.5px solid var(--accent);
+  border: 2px solid var(--accent);
   border-radius: 12px;
-  padding: 14px 24px;
+  padding: 6px 20px;
   color: var(--accent-dark);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   text-align: center;
+  overflow-wrap: break-word;
+  word-break: break-word;
   cursor: pointer;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast), opacity var(--transition-fast);
   user-select: none;
-  min-height: 44px;
+  height: 60px;
+  flex: 0 0 60px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -620,8 +745,7 @@ body {
 
 .target-card.selected {
   background: #FFE57F;
-  border: 2.5px solid var(--accent-dark);
-  transform: scale(1.02);
+  border: 2px solid var(--accent-dark);
   box-shadow: 0 4px 12px rgba(191, 86, 0, 0.25);
 }
 
@@ -712,7 +836,7 @@ body {
 .match-progress-sticky {
   position: sticky;
   top: 0;
-  background: var(--surface);
+  background: var(--card-bg);
   z-index: 10;
   padding: 8px 0;
 }
@@ -937,17 +1061,14 @@ body {
     padding-bottom: 24px;
   }
 
-  /* Match game page: re-apply pinned layout for mobile (header is 50px on mobile) */
-  .match-game-page {
-    min-height: calc(100vh - 50px);
-    padding-bottom: 0;
+  /* Match game page mobile */
+  .match-container {
+    padding: 0 12px;
   }
 
-  /* Flashcard page mobile */
-  .flashcard-page .page-container {
-    background: transparent;
-    box-shadow: none;
-    padding: 0 12px;
+  /* Game card mobile */
+  .game-card {
+    padding: 20px 16px;
   }
 
   .flashcard-scene {
@@ -993,24 +1114,19 @@ body {
 
   .source-card,
   .target-card {
+    height: auto;
+    flex: 0 0 auto;
+    min-height: 44px;
     padding: 10px 12px;
     font-size: 0.8125rem; /* 13px */
   }
 
   .match-col {
+    grid-auto-rows: auto;
     gap: 10px;
   }
 
-  /* Selected state more prominent on mobile */
-  .source-card.selected {
-    border-width: 3px;
-    transform: scale(1.03);
-  }
-
-  .target-card.selected {
-    border-width: 3px;
-    transform: scale(1.03);
-  }
+  /* Selected state on mobile: color-only change, same width as default */
 
   /* Dictionary mobile */
   .dict-toolbar {
@@ -1356,6 +1472,44 @@ body {
   background: var(--primary-light);
 }
 
+.btn-row-save {
+  color: var(--primary) !important;
+}
+
+.btn-row-save:hover {
+  background: var(--primary-light) !important;
+  color: var(--primary-dark, var(--primary)) !important;
+}
+
+.btn-row-cancel:hover {
+  background: #fee2e2 !important;
+  color: #c62828 !important;
+}
+
+/* ── Inline Row Editing ── */
+tr.row-editing {
+  background: var(--primary-light);
+}
+
+.dict-edit-input {
+  width: 100%;
+  padding: 5px 8px;
+  border-radius: var(--radius-input);
+  border: 1.5px solid var(--primary-surface);
+  background: #fff;
+  font-family: var(--font-family);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  min-width: 0;
+}
+
+.dict-edit-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.15);
+}
+
 /* Cell styling enhancements */
 .td-from {
   font-weight: 600;
@@ -1680,38 +1834,43 @@ body {
 
 /* ── Language Selector (Home page) ── */
 .language-group {
-  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 20px;
 }
 
 .language-group label {
-  display: block;
+  flex-shrink: 0;
   font-weight: 600;
-  margin-bottom: 4px;
   color: var(--text-primary);
 }
 
 .language-group .language-select {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 /* ── Dictionary Management Link ── */
-.dict-link {
-  text-align: center;
-  margin-top: 12px;
-}
-
-.dict-link a {
+.dict-icon-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
   color: var(--primary);
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 1.4rem;
   text-decoration: none;
-  transition: color var(--transition-fast);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
-.dict-link a:hover {
+.dict-icon-btn:hover {
+  background: var(--primary-light);
   color: var(--primary-hover);
-  text-decoration: underline;
 }
 
 /* ── Dictionary Card List (Mobile) ── */

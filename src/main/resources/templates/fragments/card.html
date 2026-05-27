@@ -3,14 +3,6 @@
 <body>
 <div th:fragment="card">
 
-    <div class="progress-track"
-         role="progressbar"
-         th:attr="aria-valuenow=${cardIndex}, aria-valuemin=1, aria-valuemax=${totalCards}">
-        <div class="progress-fill"
-             th:style="'width: ' + ${#numbers.formatDecimal(cardIndex * 100.0 / totalCards, 1, 0)} + '%'"></div>
-    </div>
-    <p class="card-counter" th:text="'Card ' + ${cardIndex} + ' / ' + ${totalCards}">Card 1 / 30</p>
-
     <div class="flashcard-scene"
          x-data="{ flipped: false }"
          @click="flipped = !flipped">
@@ -29,7 +21,6 @@
             </div>
         </div>
 
-        <p class="flip-hint" x-show="!flipped">👆 Tap to reveal</p>
     </div>
 
 </div>
