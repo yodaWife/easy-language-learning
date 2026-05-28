@@ -6,7 +6,7 @@ import java.util.List;
 
 public class UserWordHistory {
 
-    private static final int MAX_HISTORY = 10;
+    public static final int MAX_HISTORY = 12;
 
     private final Deque<String> history;
 

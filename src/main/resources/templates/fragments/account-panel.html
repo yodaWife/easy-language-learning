@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="panel" id="account-panel-content">
+
+    <!-- Current status header -->
+    <div class="account-panel-header">
+        <th:block th:if="${activeUser != null and activeUser.signedIn()}">
+            <p class="account-panel-title">Signed in as <strong th:text="${activeUser.displayName()}">Name</strong></p>
+        </th:block>
+        <th:block th:unless="${activeUser != null and activeUser.signedIn()}">
+            <p class="account-panel-title">Choose your player</p>
+        </th:block>
+    </div>
+
+    <!-- Existing users -->
+    <div class="account-panel-users" th:if="${users != null and !#lists.isEmpty(users)}">
+        <th:block th:each="u : ${users}">
+            <form hx-post="/account/sign-in"
+                  hx-target="#account-status-fragment"
+                  hx-swap="outerHTML"
+                  hx-on::after-request="document.getElementById('account-modal').classList.remove('is-open')">
+                <input type="hidden" name="displayName" th:value="${u.displayName()}">
+                <button type="submit"
+                        class="account-pill"
+                        th:classappend="${activeUser != null and activeUser.signedIn() and activeUser.userId() == u.userId() ? ' account-pill--active' : ''}"
+                        th:text="${u.displayName()}">User</button>
+            </form>
+        </th:block>
+    </div>
+
+    <!-- New user form -->
+    <div class="account-panel-new">
+        <form hx-post="/account/sign-in"
+              hx-target="#account-status-fragment"
+              hx-swap="outerHTML"
+              hx-on::after-request="document.getElementById('account-modal').classList.remove('is-open')"
+              id="account-new-form">
+            <input type="text"
+                   id="account-new-input"
+                   name="displayName"
+                   class="account-new-input"
+                   placeholder="New player name..."
+                   maxlength="30"
+                   autocomplete="off">
+            <button type="submit" class="account-new-btn">Add &amp; Sign in</button>
+        </form>
+    </div>
+
+    <!-- Sign out (only if signed in) -->
+    <div class="account-panel-signout" th:if="${activeUser != null and activeUser.signedIn()}">
+        <form hx-post="/account/sign-out"
+              hx-target="#account-status-fragment"
+              hx-swap="outerHTML"
+              hx-on::after-request="document.getElementById('account-modal').classList.remove('is-open')">
+            <button type="submit" class="account-signout-btn">
+                <i class="bi bi-box-arrow-left"></i> Sign out
+            </button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

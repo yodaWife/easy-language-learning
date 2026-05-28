@@ -37,6 +37,10 @@ class DataReloadIntegrationTest {
     private static final Path MODE_ELIGIBILITY_FILE;
     private static final Path SCORES_FILE;
 
+    // Stable test user IDs (UUID format, required by new ScoreMigrationService detection)
+    static final String ALICE_USER_ID   = "00000000-0000-0000-0000-000000000001";
+    static final String NEWUSER_USER_ID = "00000000-0000-0000-0000-000000000002";
+
     static {
         try {
             TEMP_DIR = Files.createTempDirectory("easyll-reload-it-");
@@ -47,7 +51,9 @@ class DataReloadIntegrationTest {
 
             Files.createDirectories(HUN_DIR);
             writeValidDictionary();
-            Files.writeString(SCORES_FILE, "alice;Letter;Betű;S\n");
+            // Use new-format score data: userId;pairId;mode;history
+            // pairId="w1" matches the wordId in the test dictionary
+            Files.writeString(SCORES_FILE, ALICE_USER_ID + ";w1;match;S\n");
         } catch (IOException e) {
             throw new RuntimeException("Failed to initialize test files", e);
         }
@@ -57,8 +63,11 @@ class DataReloadIntegrationTest {
     static void registerProperties(DynamicPropertyRegistry registry) {
         registry.add("app.dictionaries.root-path", () -> TEMP_DIR.toString());
         registry.add("app.dictionaries.primary-language-code", () -> "hun");
-        registry.add("app.scores.file-path", () -> SCORES_FILE.toString());
+        registry.add("app.scores.file-path",  () -> SCORES_FILE.toString());
         registry.add("app.scores.write-path", () -> SCORES_FILE.toString());
+        // Isolate account storage per test run so CsvAccountRepository does not touch the
+        // shared dev users.csv file.
+        registry.add("app.accounts.file-path", () -> TEMP_DIR.resolve("users.csv").toString());
     }
 
     @Autowired
@@ -73,22 +82,25 @@ class DataReloadIntegrationTest {
     void resetToValidData() throws Exception {
         mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
         writeValidDictionary();
-        Files.writeString(SCORES_FILE, "alice;Letter;Betű;S\n");
+        // New-format score data: userId;pairId;mode;history
+        Files.writeString(SCORES_FILE, ALICE_USER_ID + ";w1;match;S\n");
         mockMvc.perform(post("/admin/data/reload").with(httpBasic("admin", "admin"))).andReturn();
     }
 
     @Test
     @DisplayName("knownUsers reflects latest score CSV data after a successful reload")
     void knownUsersUpdatesAfterSuccessfulReload() throws Exception {
-        assertThat(scoreRepository.knownUsers()).contains("alice");
+        // knownUsers() returns stable userId UUIDs (not display names) in the new model
+        assertThat(scoreRepository.knownUsers()).contains(ALICE_USER_ID);
 
-        Files.writeString(SCORES_FILE, "newuser;Stone;Kő;F\n");
+        // Replace with a different user's score entry (new-format)
+        Files.writeString(SCORES_FILE, NEWUSER_USER_ID + ";w2;match;F\n");
 
         mockMvc.perform(post("/admin/data/reload").with(httpBasic("admin", "admin")))
                 .andExpect(status().is3xxRedirection());
 
-        assertThat(scoreRepository.knownUsers()).contains("newuser");
-        assertThat(scoreRepository.knownUsers()).doesNotContain("alice");
+        assertThat(scoreRepository.knownUsers()).contains(NEWUSER_USER_ID);
+        assertThat(scoreRepository.knownUsers()).doesNotContain(ALICE_USER_ID);
     }
 
     @Test

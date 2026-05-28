@@ -42,7 +42,7 @@ class HomeControllerTest {
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("index"))
-                .andExpect(model().attributeExists("wordsHealthy", "scoresHealthy", "wordErrors", "scoreErrors", "nicknames"));
+                .andExpect(model().attributeExists("wordsHealthy", "scoresHealthy", "wordErrors", "scoreErrors", "activeUser", "users"));
     }
 
     @Test
@@ -72,7 +72,6 @@ class HomeControllerTest {
     @Test
     void startSessionWithNicknameIncludesItInSession() throws Exception {
         var mvcResult = mockMvc.perform(post("/session/start")
-                        .param("nickname", "alice")
                         .param("mode", "match"))
                 .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/match"))
@@ -82,7 +81,7 @@ class HomeControllerTest {
         String sessionId = (String) Objects.requireNonNull(httpSession.getAttribute("sessionId"));
         assertThat(sessionId).isNotBlank();
         assertThat(sessionStore.get(sessionId)).isPresent();
-        assertThat(sessionStore.get(sessionId).orElseThrow().getNickname()).isEqualTo("alice");
+        assertThat(sessionStore.get(sessionId).orElseThrow().getUserId()).isNull();
     }
 
     @Test
@@ -96,7 +95,7 @@ class HomeControllerTest {
         MockHttpSession httpSession = (MockHttpSession) Objects.requireNonNull(mvcResult.getRequest().getSession(false));
         String sessionId = (String) Objects.requireNonNull(httpSession.getAttribute("sessionId"));
         assertThat(sessionStore.get(sessionId)).isPresent();
-        assertThat(sessionStore.get(sessionId).orElseThrow().getNickname()).isNull();
+        assertThat(sessionStore.get(sessionId).orElseThrow().getUserId()).isNull();
     }
 
     @Test

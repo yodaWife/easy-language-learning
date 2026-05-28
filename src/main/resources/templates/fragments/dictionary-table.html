@@ -8,7 +8,7 @@
 
     <!-- Empty state: no results for search -->
     <tr th:if="${words.isEmpty() and (search != null and !search.isEmpty())}" class="dict-empty-row">
-        <td th:colspan="${5 + #lists.size(modes)}" class="dict-empty-cell">
+        <td th:colspan="${(progressEnabled ? 6 : 5) + #lists.size(modes)}" class="dict-empty-cell">
             <div class="dict-empty-state">
                 <span class="dict-empty-icon">🔍</span>
                 <p class="dict-empty-title" th:text="'No words match \'' + ${search} + '\''">No words match 'xyz'</p>
@@ -24,7 +24,7 @@
 
     <!-- Empty state: empty dictionary -->
     <tr th:if="${words.isEmpty() and (search == null or search.isEmpty()) and totalWords == 0}" class="dict-empty-row">
-        <td th:colspan="${5 + #lists.size(modes)}" class="dict-empty-cell">
+        <td th:colspan="${(progressEnabled ? 6 : 5) + #lists.size(modes)}" class="dict-empty-cell">
             <div class="dict-empty-state">
                 <span class="dict-empty-icon">📝</span>
                 <p class="dict-empty-title">Your dictionary is empty</p>
@@ -35,7 +35,7 @@
 
     <!-- Pagination row -->
     <tr class="dict-pagination-row">
-        <td th:colspan="${5 + #lists.size(modes)}" class="dict-pagination-cell"
+        <td th:colspan="${(progressEnabled ? 6 : 5) + #lists.size(modes)}" class="dict-pagination-cell"
             th:with="
                 totalPages=${totalWords == 0 ? 1 : (totalWords + pageSize - 1) / pageSize},
                 startPage=${page > 2 ? page - 2 : 0},
@@ -124,7 +124,7 @@
 
     <!-- Mobile card list (shown via CSS on small screens) -->
     <tr class="dict-mobile-cards-row">
-        <td th:colspan="${5 + #lists.size(modes)}" class="dict-mobile-cards-cell">
+        <td th:colspan="${(progressEnabled ? 6 : 5) + #lists.size(modes)}" class="dict-mobile-cards-cell">
             <div class="dict-cards-list">
                 <th:block th:each="wv : ${words}">
                     <div class="dict-card"
@@ -188,6 +188,10 @@
                                     </button>
                                 </form>
                             </div>
+                        </div>
+                        <div th:if="${progressEnabled and wv.progressPercent != null}" class="dict-card-progress">
+                            <span class="dict-card-progress-label">Progress:</span>
+                            <span class="dict-card-progress-value" th:text="${wv.progressPercent + '%'}">0%</span>
                         </div>
                     </div>
                 </th:block>

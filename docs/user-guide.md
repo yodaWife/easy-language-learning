@@ -6,6 +6,7 @@ Easy Language Learning is a vocabulary practice app that runs locally in your br
 
 - [Running the app](#running-the-app)
 - [Home page](#home-page)
+- [Account and player selection](#account-and-player-selection)
 - [Mobile support](#mobile-support)
 - [Dictionary management](#dictionary-management)
 - [Flashcards mode](#flashcards-mode)
@@ -35,16 +36,42 @@ Open [http://localhost:8080](http://localhost:8080) in your browser.
 
 ## Home page
 
-When you open the app you see the home page with three inputs:
+When you open the app you see the home page with:
 
-1. **Nickname (optional)** — type your name or choose from the list of known users. Providing a nickname enables per-user score tracking. You can play without one.
-2. **Language** — choose the active dictionary language.
-3. **Mode** — choose **Flashcards** or **Match**, then click **Start**.
+1. **Language** — choose the active dictionary language.
+2. **Mode** — choose **Flashcards** or **Match**, then click **Start**.
+3. **Account status** in the top-right menu — shows either your signed-in player name or **Guest**.
 
 > [!NOTE]
 > If the word data is invalid or could not be loaded, the Start button is disabled. See [Data health and reload](#data-health-and-reload).
 
 On mobile, the home layout is optimized for narrow screens: mode cards stack vertically and remain easy to tap.
+
+---
+
+## Account and player selection
+
+Use the person icon in the top-right menu (next to the dictionary icon) to open the account panel.
+
+### Sign in
+
+1. Click the person icon.
+2. Choose an existing player from the list, or type a new name in the input.
+3. Submit to sign in.
+
+If the typed name does not exist yet, the app creates a new player automatically and signs in.
+
+### Sign out
+
+1. Click the person icon.
+2. Click **Sign out**.
+
+### Guest mode vs signed-in mode
+
+- **Guest mode**: all game features work without signing in; match results are available for the active session only.
+- **Signed-in mode**: your match attempt history is persisted and available across browser sessions.
+
+The active account stays selected across page reloads while the browser session is still active.
 
 ---
 
@@ -73,6 +100,8 @@ You can:
 5. Edit a row using the actions column (pencil icon).
 6. Browse with numbered pagination pills (with ellipsis for longer ranges).
 
+When you are signed in, the dictionary table includes an additional **PROGRESS** column with your success percentage per word pair. In guest mode, this column is hidden.
+
 When no rows are available, the page shows a dedicated empty state for either an empty dictionary or no search results.
 
 Changes are persisted to dictionary CSV files and used by game modes immediately.
@@ -96,7 +125,7 @@ Flashcards is a pure practice mode — no scoring is tracked.
 
 ### How it works
 
-1. Select **Match** on the home page (with or without a nickname) and click **Start**.
+1. Select **Match** on the home page (as Guest or signed in) and click **Start**.
 2. A board with two columns is shown:
    - **Left column** — words in your source language.
    - **Right column** — shuffled words in the target language.
@@ -129,14 +158,21 @@ Every match attempt is counted. When you reach 30 successes the session ends and
 | 85–99% | Almost! |
 | Below 85% | Let's practice some more! |
 
-### Per-user scoring
+### Guest and signed-in scoring
 
-If you provided a nickname, each attempt is saved to a persistent score file. The app records **S** (success) or **F** (failure) for every attempt, keeping the **last 10 entries per word pair**. This history is used to track your long-term progress.
+- **Guest**: attempts affect only the live session counters and end-of-session result.
+- **Signed-in**: each attempt is saved to persistent score history.
+
+For signed-in users, the app records **S** (success) or **F** (failure) for every attempt, keeping the **last 12 entries per word pair**. This history powers long-term progress.
+
+### Progress column
+
+The dictionary **PROGRESS** column is visible only for signed-in users and shows the percentage of correct attempts based on the stored history window.
 
 By default, score history is stored at `data/scores/scores.csv`.
 
 > [!NOTE]
-> Playing without a nickname still gives you the per-session result. Your attempts are simply not saved between sessions.
+> Playing as Guest still gives you the per-session result. Your attempts are simply not saved between sessions.
 
 ---
 
@@ -160,7 +196,7 @@ data/dictionaries/
 
 ```text
 WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
-w1;dog;pies;The dog runs.;true
+90eadc73-ef0e-3efe-a5f3-e2ecd0b76d28;Letter;Betű;Írtam egy betűt a barátomnak.;true
 ```
 
 ### mode-eligibility.csv format
@@ -207,6 +243,6 @@ POST /admin/data/reload
 ## Known limitations
 
 - Sessions are held in memory — restarting the app clears all active sessions.
-- No login or authentication for gameplay (nickname-only identity).
-- Score history is capped to the last 10 attempts per word pair per user.
+- Gameplay account selection has no password-based authentication.
+- Score history is capped to the last 12 attempts per word pair per user.
 - Dictionary edits require file write permissions under `data/dictionaries`.

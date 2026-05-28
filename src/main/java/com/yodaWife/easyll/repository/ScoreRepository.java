@@ -1,7 +1,7 @@
 package com.yodawife.easyll.repository;
 
+import com.yodawife.easyll.domain.ScoreKey;
 import com.yodawife.easyll.domain.UserWordHistory;
-import com.yodawife.easyll.domain.UserWordKey;
 import com.yodawife.easyll.service.DataHealthService;
 import com.yodawife.easyll.service.DataReloadedEvent;
 import com.yodawife.easyll.service.UserScoreService;
@@ -19,9 +19,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 
 @Repository
 public class ScoreRepository {
@@ -33,10 +37,10 @@ public class ScoreRepository {
     private final Path scorePath;
 
     // Mutable working copy of histories; lazily initialised from snapshot
-    private @Nullable Map<UserWordKey, UserWordHistory> histories = null;
+    private @Nullable Map<ScoreKey, UserWordHistory> histories = null;
 
     // Tracks what was last loaded from a snapshot, to detect truly in-flight keys
-    private @Nullable Map<UserWordKey, UserWordHistory> lastSnapshotHistories = null;
+    private @Nullable Map<ScoreKey, UserWordHistory> lastSnapshotHistories = null;
 
     public ScoreRepository(DataHealthService dataHealthService,
                            UserScoreService userScoreService,
@@ -100,7 +104,7 @@ public class ScoreRepository {
         }
     }
 
-    private synchronized Map<UserWordKey, UserWordHistory> histories() {
+    private synchronized Map<ScoreKey, UserWordHistory> histories() {
         ensureInitialised();
         return Objects.requireNonNull(histories);
     }
@@ -108,13 +112,13 @@ public class ScoreRepository {
     /**
      * Append a match attempt result for the given user/word pair.
      *
-     * @param user     nickname (must not be null)
-     * @param fromWord FROM word
-     * @param toWord   TO word
-     * @param result   "S" or "F"
+     * @param userId user identifier (UUID string)
+     * @param pairId word-pair identifier (dictionary word ID)
+     * @param mode   game mode (e.g. "match", "flashcards")
+     * @param result "S" or "F"
      */
-    public synchronized void appendAttempt(String user, String fromWord, String toWord, String result) {
-        userScoreService.append(histories(), user, fromWord, toWord, result);
+    public synchronized void appendAttempt(String userId, String pairId, String mode, String result) {
+        userScoreService.append(histories(), new ScoreKey(userId, pairId, mode), result);
     }
 
     /**
@@ -122,7 +126,7 @@ public class ScoreRepository {
      * Uses temp-file + Files.move(ATOMIC_MOVE) to prevent corruption.
      */
     public synchronized void flush() {
-        Map<UserWordKey, UserWordHistory> currentHistories = histories();
+        Map<ScoreKey, UserWordHistory> currentHistories = histories();
         Path targetPath = scorePath;
         Path tempPath = targetPath.resolveSibling(targetPath.getFileName() + ".tmp");
 
@@ -134,12 +138,12 @@ public class ScoreRepository {
             }
 
             try (BufferedWriter writer = Files.newBufferedWriter(tempPath, StandardCharsets.UTF_8)) {
-                for (Map.Entry<UserWordKey, UserWordHistory> entry : currentHistories.entrySet()) {
-                    UserWordKey key = entry.getKey();
+                for (Map.Entry<ScoreKey, UserWordHistory> entry : currentHistories.entrySet()) {
+                    ScoreKey key = entry.getKey();
                     UserWordHistory history = entry.getValue();
-                    writer.write(escape(key.user()) + ";" +
-                                 escape(key.fromWord()) + ";" +
-                                 escape(key.toWord()) + ";" +
+                    writer.write(escape(key.userId()) + ";" +
+                                 escape(key.pairId()) + ";" +
+                                 escape(key.mode())   + ";" +
                                  history.encoded());
                     writer.newLine();
                 }
@@ -164,12 +168,34 @@ public class ScoreRepository {
         return value == null ? "" : value.replace(";", "_");
     }
 
-    /** Expose current known user nicknames for autocomplete. */
-    public synchronized java.util.Set<String> knownUsers() {
-        Map<UserWordKey, UserWordHistory> currentHistories = histories();
-        var users = new java.util.TreeSet<String>();
-        currentHistories.keySet().forEach(k -> users.add(k.user()));
-        return java.util.Collections.unmodifiableSet(users);
+    /** Expose current known user IDs for lookup. */
+    public synchronized Set<String> knownUsers() {
+        var users = new TreeSet<String>();
+        histories().keySet().forEach(k -> users.add(k.userId()));
+        return Collections.unmodifiableSet(users);
+    }
+
+    /**
+     * Return a map of pairId → history entries for the given user, across all modes.
+     * The list for each pairId is aggregated from all modes (combined view).
+     *
+     * @param userId the user identifier
+     * @return a map of pairId → list of S/F history entries (may be empty if no data for user)
+     */
+    public synchronized Map<String, List<String>> getHistoriesForUser(String userId) {
+        Map<String, List<String>> result = new java.util.LinkedHashMap<>();
+        for (var entry : histories().entrySet()) {
+            if (entry.getKey().userId().equals(userId)) {
+                String pairId = entry.getKey().pairId();
+                // Merge entries from multiple modes for the same pairId
+                result.merge(pairId, new java.util.ArrayList<>(entry.getValue().entries()),
+                        (existing, incoming) -> {
+                            existing.addAll(incoming);
+                            return existing;
+                        });
+            }
+        }
+        return java.util.Collections.unmodifiableMap(result);
     }
 
     /**

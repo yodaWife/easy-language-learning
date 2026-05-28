@@ -1,8 +1,8 @@
 package com.yodawife.easyll.repository;
 
 import com.yodawife.easyll.domain.ScoreDataBundle;
+import com.yodawife.easyll.domain.ScoreKey;
 import com.yodawife.easyll.domain.UserWordHistory;
-import com.yodawife.easyll.domain.UserWordKey;
 import com.yodawife.easyll.service.DataHealthService;
 import com.yodawife.easyll.service.DataReloadedEvent;
 import com.yodawife.easyll.service.DataSnapshot;
@@ -52,14 +52,14 @@ class ScoreRepositoryTest {
         Path scoreFile = tempDir().resolve("scores.csv");
         ScoreRepository repo = buildRepository(scoreFile);
 
-        repo.appendAttempt("alice", "Letter", "Betű", "S");
-        repo.appendAttempt("alice", "Letter", "Betű", "F");
+        repo.appendAttempt("user-1", "pair-abc", "match", "S");
+        repo.appendAttempt("user-1", "pair-abc", "match", "F");
         repo.flush();
 
         assertThat(scoreFile).exists();
         List<String> lines = Files.readAllLines(scoreFile);
         assertThat(lines).hasSize(1);
-        assertThat(lines.getFirst()).isEqualTo("alice;Letter;Betű;S,F");
+        assertThat(lines.getFirst()).isEqualTo("user-1;pair-abc;match;S,F");
     }
 
     @Test
@@ -68,12 +68,12 @@ class ScoreRepositoryTest {
         Files.writeString(scoreFile, "old;data;here;S\n");
 
         ScoreRepository repo = buildRepository(scoreFile);
-        repo.appendAttempt("bob", "Stone", "Kő", "S");
+        repo.appendAttempt("user-1", "pair-abc", "match", "S");
         repo.flush();
 
         List<String> lines = Files.readAllLines(scoreFile);
         assertThat(lines).hasSize(1);
-        assertThat(lines.getFirst()).startsWith("bob;Stone;Kő;S");
+        assertThat(lines.getFirst()).startsWith("user-1;pair-abc;match;S");
     }
 
     @Test
@@ -82,7 +82,7 @@ class ScoreRepositoryTest {
         Path scoreFile = tempDir().resolve("subdir/scores.csv");
         ScoreRepository repo = buildRepository(scoreFile);
 
-        repo.appendAttempt("alice", "A", "B", "S");
+        repo.appendAttempt("user-1", "pair-abc", "match", "S");
         // Should not throw — creates parent directory automatically
         repo.flush();
 
@@ -94,9 +94,9 @@ class ScoreRepositoryTest {
         Path scoreFile = tempDir().resolve("scores.csv");
         ScoreRepository repo = buildRepository(scoreFile);
 
-        repo.appendAttempt("alice", "A", "B", "S");
-        repo.appendAttempt("bob",   "A", "B", "F");
-        repo.appendAttempt("alice", "C", "D", "S");
+        repo.appendAttempt("alice", "pair-abc", "match", "S");
+        repo.appendAttempt("bob",   "pair-abc", "match", "F");
+        repo.appendAttempt("alice", "pair-xyz", "match", "S");
 
         assertThat(repo.knownUsers()).containsExactly("alice", "bob"); // TreeSet → sorted
     }
@@ -111,7 +111,7 @@ class ScoreRepositoryTest {
         UserScoreService userScoreService = new UserScoreService();
 
         ScoreRepository repo = new ScoreRepository(mockHealth, userScoreService, tempDir().toString());
-        repo.appendAttempt("alice", "A", "B", "S");
+        repo.appendAttempt("user-1", "pair-abc", "match", "S");
         repo.flush();
 
         verify(mockHealth).reportRuntimeError(org.mockito.ArgumentMatchers.contains("Failed to flush score CSV"));
@@ -126,7 +126,7 @@ class ScoreRepositoryTest {
         var scoreDataBefore = mock(ScoreDataBundle.class);
         when(snapshotBefore.healthy()).thenReturn(true);
         when(snapshotBefore.scoreData()).thenReturn(scoreDataBefore);
-        var aliceKey = new UserWordKey("alice", "Letter", "Betű");
+        var aliceKey = new ScoreKey("alice", "pair-abc", "match");
         when(scoreDataBefore.histories()).thenReturn(Map.of(aliceKey, new UserWordHistory(List.of("S"))));
         when(mockHealth.snapshot()).thenReturn(snapshotBefore);
 
@@ -140,7 +140,7 @@ class ScoreRepositoryTest {
         var scoreDataAfter = mock(ScoreDataBundle.class);
         when(snapshotAfter.healthy()).thenReturn(true);
         when(snapshotAfter.scoreData()).thenReturn(scoreDataAfter);
-        var newUserKey = new UserWordKey("newuser", "Stone", "Kő");
+        var newUserKey = new ScoreKey("newuser", "pair-xyz", "match");
         when(scoreDataAfter.histories()).thenReturn(Map.of(newUserKey, new UserWordHistory(List.of("F"))));
         when(mockHealth.snapshot()).thenReturn(snapshotAfter);
 
@@ -166,7 +166,7 @@ class ScoreRepositoryTest {
         repo.knownUsers(); // trigger ensureInitialised → empty histories
 
         // In-flight entry for "charlie" — never in any snapshot
-        repo.appendAttempt("charlie", "A", "B", "S");
+        repo.appendAttempt("charlie", "pair-abc", "match", "S");
         assertThat(repo.knownUsers()).containsExactly("charlie");
 
         // New snapshot also does NOT include charlie
@@ -192,7 +192,7 @@ class ScoreRepositoryTest {
         var initialScoreData = mock(ScoreDataBundle.class);
         when(initialSnapshot.healthy()).thenReturn(true);
         when(initialSnapshot.scoreData()).thenReturn(initialScoreData);
-        var aliceKey = new UserWordKey("alice", "Letter", "Betű");
+        var aliceKey = new ScoreKey("alice", "pair-abc", "match");
         when(initialScoreData.histories()).thenReturn(Map.of(aliceKey, new UserWordHistory(List.of("S"))));
         when(mockHealth.snapshot()).thenReturn(initialSnapshot);
 
@@ -201,7 +201,7 @@ class ScoreRepositoryTest {
         repo.knownUsers(); // trigger ensureInitialised → alice:[S]
 
         // In-flight update: append "F" for alice → alice:[S,F] in memory, not yet flushed
-        repo.appendAttempt("alice", "Letter", "Betű", "F");
+        repo.appendAttempt("alice", "pair-abc", "match", "F");
 
         // New snapshot still has alice:[S] (not yet reflecting the unflushed update)
         var reloadSnapshot = mock(DataSnapshot.class);
@@ -216,7 +216,7 @@ class ScoreRepositoryTest {
         // Assert - alice's in-flight [S,F] is preserved (differs from snapshot [S])
         repo.flush();
         var lines = Files.readAllLines(scoreFile);
-        assertThat(lines).anyMatch(line -> line.equals("alice;Letter;Betű;S,F"));
+        assertThat(lines).anyMatch(line -> line.equals("alice;pair-abc;match;S,F"));
     }
 
     @Test
@@ -235,7 +235,7 @@ class ScoreRepositoryTest {
         // New snapshot introduces bob:[F]
         var reloadSnapshot = mock(DataSnapshot.class);
         var reloadScoreData = mock(ScoreDataBundle.class);
-        var bobKey = new UserWordKey("bob", "Stone", "Kő");
+        var bobKey = new ScoreKey("bob", "pair-abc", "match");
         when(reloadSnapshot.scoreData()).thenReturn(reloadScoreData);
         when(reloadScoreData.histories()).thenReturn(Map.of(bobKey, new UserWordHistory(List.of("F"))));
         when(mockHealth.snapshot()).thenReturn(reloadSnapshot);
@@ -254,7 +254,7 @@ class ScoreRepositoryTest {
         var mockHealth = mock(DataHealthService.class);
         var snapshot = mock(DataSnapshot.class);
         var scoreData = mock(ScoreDataBundle.class);
-        var aliceKey = new UserWordKey("alice", "Letter", "Betű");
+        var aliceKey = new ScoreKey("alice", "pair-abc", "match");
         when(snapshot.scoreData()).thenReturn(scoreData);
         when(scoreData.histories()).thenReturn(Map.of(aliceKey, new UserWordHistory(List.of("S"))));
         when(mockHealth.snapshot()).thenReturn(snapshot);
@@ -278,7 +278,7 @@ class ScoreRepositoryTest {
         var initialScoreData = mock(ScoreDataBundle.class);
         when(initialSnapshot.healthy()).thenReturn(true);
         when(initialSnapshot.scoreData()).thenReturn(initialScoreData);
-        var aliceKey = new UserWordKey("alice", "Letter", "Betű");
+        var aliceKey = new ScoreKey("alice", "pair-abc", "match");
         when(initialScoreData.histories()).thenReturn(Map.of(aliceKey, new UserWordHistory(List.of("S"))));
         when(mockHealth.snapshot()).thenReturn(initialSnapshot);
 

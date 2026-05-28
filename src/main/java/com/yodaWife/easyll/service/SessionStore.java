@@ -33,8 +33,8 @@ public class SessionStore {
         this.clock = clock;
     }
 
-    public MatchSession create(@Nullable String nickname, String mode) {
-        var session = new MatchSession(nickname, mode, matchGameProperties.getMaxAttempts());
+    public MatchSession create(@Nullable String userId, String mode) {
+        var session = new MatchSession(userId, mode, matchGameProperties.getMaxAttempts());
         sessions.put(session.getSessionId(), session);
         return session;
     }

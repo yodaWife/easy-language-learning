@@ -5,9 +5,12 @@ import com.yodawife.easyll.domain.MatchBoard;
 import com.yodawife.easyll.domain.MatchCard;
 import com.yodawife.easyll.domain.MatchSession;
 import com.yodawife.easyll.repository.ScoreRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -19,17 +22,22 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Service
 public class MatchGameApplicationService {
 
+    private static final Logger log = LoggerFactory.getLogger(MatchGameApplicationService.class);
+
     private final MatchSessionService matchSessionService;
     private final ScoreRepository scoreRepository;
     private final MatchBoardGenerator matchBoardGenerator;
+    private final DataHealthService dataHealthService;
     private final ConcurrentHashMap<String, List<AttemptRecord>> pendingAttempts = new ConcurrentHashMap<>();
 
     public MatchGameApplicationService(MatchSessionService matchSessionService,
                                        ScoreRepository scoreRepository,
-                                       MatchBoardGenerator matchBoardGenerator) {
+                                       MatchBoardGenerator matchBoardGenerator,
+                                       DataHealthService dataHealthService) {
         this.matchSessionService = matchSessionService;
         this.scoreRepository = scoreRepository;
         this.matchBoardGenerator = matchBoardGenerator;
+        this.dataHealthService = dataHealthService;
     }
 
     /**
@@ -72,9 +80,9 @@ public class MatchGameApplicationService {
      * @param toWord    the target word
      * @param result    the result of the attempt
      */
-    public void recordAttempt(String sessionId, String fromWord, String toWord, AttemptResult result) {
+    public void recordAttempt(String sessionId, String fromWord, String toWord, String languageCode, AttemptResult result) {
         pendingAttempts.computeIfAbsent(sessionId, k -> new CopyOnWriteArrayList<>())
-                .add(new AttemptRecord(fromWord, toWord, result.correct()));
+                .add(new AttemptRecord(fromWord, toWord, languageCode, result.correct()));
     }
 
     /**
@@ -109,16 +117,43 @@ public class MatchGameApplicationService {
      */
     public String finaliseSession(MatchSession session) {
         var sessionId = session.getSessionId();
-        var attempts = pendingAttempts.remove(sessionId);
-        var nickname = session.getNickname();
-        if (nickname != null && attempts != null) {
+        var attempts  = pendingAttempts.remove(sessionId);
+        var userId    = session.getUserId();
+        var mode      = session.getMode();
+        if (userId != null && attempts != null) {
+            var nonNullUserId = userId;
+            int persisted = 0;
             for (var attempt : attempts) {
-                scoreRepository.appendAttempt(nickname, attempt.fromWord(), attempt.toWord(),
-                        attempt.correct() ? "S" : "F");
+                var pairIdOpt = resolvePairId(attempt.fromWord(), attempt.toWord(), attempt.languageCode());
+                if (pairIdOpt.isPresent()) {
+                    scoreRepository.appendAttempt(nonNullUserId, pairIdOpt.get(), mode,
+                            attempt.correct() ? "S" : "F");
+                    persisted++;
+                } else {
+                    log.warn("Could not resolve pairId for ({}, {}, {}); attempt not persisted.",
+                            attempt.fromWord(), attempt.toWord(), attempt.languageCode());
+                }
+            }
+            int skipped = attempts.size() - persisted;
+            if (skipped > 0) {
+                log.warn("Session {}: {} of {} attempts could not be persisted (pairId unresolvable). "
+                        + "This can happen if words were removed from the dictionary during gameplay.",
+                        sessionId, skipped, attempts.size());
+            } else {
+                log.info("Session {}: all {} attempts persisted successfully.", sessionId, attempts.size());
             }
             scoreRepository.flush();
         }
         return matchSessionService.resultMessage(session);
+    }
+
+    private Optional<String> resolvePairId(String fromWord, String toWord, String languageCode) {
+        return dataHealthService.snapshot()
+                .getLanguageBundle(languageCode)
+                .flatMap(lb -> lb.words().stream()
+                        .filter(w -> w.fromWord().equals(fromWord) && w.toWord().equals(toWord))
+                        .findFirst()
+                        .map(w -> w.wordId().value()));
     }
 
     /**

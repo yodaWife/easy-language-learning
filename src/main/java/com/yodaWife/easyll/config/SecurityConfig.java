@@ -30,6 +30,7 @@ public class SecurityConfig {
                                 "/match", "/match/attempt", "/match/result",
                                 "/health/data",
                                 "/dictionary", "/dictionary/**",
+                                "/account/**",
                                 "/css/**", "/webjars/**"
                         ).permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")

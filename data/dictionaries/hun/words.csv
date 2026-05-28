@@ -1,97 +1,104 @@
 WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
-1;Letter;Betű;Írtam egy betűt a barátomnak.;true
-2;Silliness;Butaság;Ez nagy butaság volt!;true
-3;Stamp;Bélyeg;A levélen van egy bélyeg.;true
-4;Postcard;Képeslap;Küldök egy képeslapot Varsóból.;true
-5;Envelope;Boríték;A levél a borítékban van.;true
-6;Newspaper;Ujság;Reggel újságot olvasok.;true
-7;Glue;Ragaszto;A ragasztó az asztalon van.;true
-8;Eraser;Radír;Kérem a radírodat!;true
-9;Vacuum cleaner;Porszívó;A porszívó hangos.;true
-10;Screws;Csavarok;Csavarok kellenek a polchoz.;true
-11;To set;Beállitni;Be kell állítani a hőmérsékletet.;true
-12;Detergent;Mosószer;Mosószert veszek a boltban.;true
-13;Fill;Tölt;Töltöm a poharat vízzel.;true
-14;To start;Elindítni;El kell indítani a gépet.;true
-15;Bush;Bokor;A madár a bokorban van.;true
-16;Bus stop;Buszmegálló;A buszmegállónál várok.;true
-17;Cloud;Felhő;Nagy fekete felhők vannak az égen.;true
-18;Fisherman;Horgász;A horgász a tónál ül.;true
-19;Sidewalk;Járda;A gyerekek a járdán sétálnak.;true
-20;Fence;Kerités;A kert körül kerítés van.;true
-21;Stone;Kő;Nagy kő van az úton.;true
-22;Field;Mező;A tehén a mezőn legel.;true
-23;Tower;Torony;A torony nagyon magas.;true
-24;Temple;Templom;A templom a városközpontban van.;true
-25;Hallway;Előszoba;A cipők az előszobában vannak.;true
-26;To move;Költözni;Hamarosan új lakásba költözünk.;true
-27;All;Összes;Az összes könyvet elolvastam.;true
-28;Angry;Mérges;Mérges vagyok, mert késtél.;true
-29;Interests me;Érdekel;Nagyon érdekel a magyar kultúra.;true
-30;To arrive;Megérkezni;Mikor érkezel meg Budapestre?;true
-31;To tell(a story);Elmesélni;Elmesélte a kalandját.;true
-32;Morning;Délelőtt;Délelőtt dolgozom otthon.;true
-33;Plant;Növény;Ez a növény sok vizet kap.;true
-34;Adult;Felnőtt;Ez a film csak felnőtteknek szól.;true
-35;Suit;Öltöny;Az apám öltönyt visel a munkában.;true
-36;Tie;Nyakkendő;Piros nyakkendőt viselek ma.;true
-37;Pants;Nadrág;Az új nadrágomat vettem fel.;true
-38;West;Nyugat;Nyugat felé haladunk.;true
-39;East;Kelet;A nap keleten kel fel.;true
-40;North;Észak;Északon hideg a tél.;true
-41;South;Dél;Délen melegebb az időjárás.;true
-42;Before;Előtt;Az ülés előtt kávét iszom.;true
-43;After;Után;Munka után hazamegyek.;true
-44;Behind;Mögött;A macska az asztal mögött van.;true
-45;Beside;Mellett;Mellettem ül a barátom.;true
-46;Weekday;Hétköznap;Hétköznapokon korán kelek.;true
-47;Important;Fontos;Fontos a jó egészség.;true
-48;Flat(surface);Lapos;Az asztal teteje lapos.;true
-49;In the middle;Középen;A lámpa középen lóg.;true
-50;To stay;Maradni;Ma este itthon maradok.;true
-51;Disadventage;Hátrány;Ennek a tervnek van hátránya.;true
-52;Advantage;Előny;A lakás előnye a nagy kert.;true
-53;Friendly;Barátságos;A szomszédaim nagyon barátságosak.;true
-54;Bracelet;Karperec;Szép karperecet kaptam ajándékba.;true
-55;Kind;Kedves;Nagyon kedves vagy!;true
-56;Short(height);Alacsony;A húgom alacsony és szőke.;true
-57;Long(height);Magas;A bátyám nagyon magas.;true
-58;Old;Öreg;Az öreg kutya alszik a fotelban.;true
-59;Young;Fiatal;A tanárnőnk fiatal és vidám.;true
-60;Younger sister;Húg;A húgom hat éves.;true
-61;Sister;Nővér;A nővérem Bécsben lakik.;true
-62;Older Sister;Néne;A nénémet Annának hívják.;true
-63;Younger brother;Öcs;Az öcsém focizni szeret.;true
-64;Older brother;Báty;A bátyám mérnök.;true
-65;Brother;Fivér;Két fivérem van.;true
-66;Usually;Általában;Általában busszal megyek dolgozni.;true
-67;Rarely;Ritkán;Ritkán eszem húst.;true
-68;Jawellery;Ékszer;Az ékszer a fiókban van.;true
-69;Occupation;Foglalkozás;Mi a foglalkozásod?;true
-70;Means of transport;Közlekedési eszköz;A busz olcsó közlekedési eszköz.;true
-71;Tram;Villamos;A villamossal megyek a centrumba.;true
-72;Engineer;Mérnök;A mérnök tervezi az épületet.;true
-73;Pear;Körte;Éhes vagyok, eszek egy körtét.;true
-74;Old(thing);Régi;Ez egy régi fénykép.;true
-75;Slow;Lassú;A teknős nagyon lassú.;true
-76;Empty;Üres;A pohár üres, tölts bele vizet!;true
-77;Full;Tele;A táskám tele van könyvekkel.;true
-78;Short(duration);Rövid;A film rövid volt.;true
-79;Long(duration);Hosszú;Hosszú nap volt ma.;true
-80;Rectangle;Téglalap;Az ajtó téglalap alakú.;true
-81;Circle;Kör;Rajzolj egy kört!;true
-82;Triangle;Háromszög;A háromszögnek három sarka van.;true
-83;Square;Négyzet;A négyzetnek négy egyforma oldala van.;true
-84;Garage;Garázs;Az autó a garázsban van.;true
-85;Repair;Javítani;Meg kell javítani a biciklit.;true
-86;Tall;Magas;A magas épület a városközpontban van.;true
-87;Spend(time);Tölteni;Szívesen töltöm itt az időt.;true
-88;To care;Törődni;Törődsz a növényeiddel?;true
-89;To look for(search);Keresni;A kulcsomat keresem mindenhol.;true
-90;Huge amount;Rengeteg;Rengeteg munka vár rám.;true
-91;Sad;Szomorú;Szomorú vagyok, mert elmész.;true
-92;Completly;Teljesen;Teljesen igazad van!;true
-93;Clever;Okos;Az okos diák sokat tanul.;true
-94;Stupid;Hülye;Ne légy olyan hülye!;true
-95;Busy;Elfoglalt;Ma nagyon elfoglalt vagyok.;true
-21cc6de8-058a-41f5-984c-8c64201caec2;Calm;Nyugalom;;true
+90eadc73-ef0e-3efe-a5f3-e2ecd0b76d28;Letter;Betű;Írtam egy betűt a barátomnak.;true
+2a82c407-efb7-3a9d-95da-dde99ed08e2b;Silliness;Butaság;Ez nagy butaság volt!;true
+566a1ed7-f5dc-369d-bd25-132c303c8cba;Stamp;Bélyeg;A levélen van egy bélyeg.;true
+3c8a6f58-1c14-3e99-ae6c-a3b122c028de;Postcard;Képeslap;Küldök egy képeslapot Varsóból.;true
+f03bf429-657b-3b4c-97f0-34d65975d383;Envelope;Boríték;A levél a borítékban van.;true
+22accea7-e84c-393f-87b4-664b70ec7a4d;Newspaper;Ujság;Reggel újságot olvasok.;true
+13a65e21-c19d-3a08-aff1-559fa1dbb629;Glue;Ragaszto;A ragasztó az asztalon van.;true
+c0a24c2c-db9d-351d-8897-982b53a8b41a;Eraser;Radír;Kérem a radírodat!;true
+d566ff15-d5ed-31c5-bbc4-3677ab872d07;Vacuum cleaner;Porszívó;A porszívó hangos.;true
+e8c037a6-175e-36a6-985f-978d30828f9e;Screws;Csavarok;Csavarok kellenek a polchoz.;true
+80127852-b294-3058-951d-23f818f714c2;To set;Beállitni;Be kell állítani a hőmérsékletet.;true
+d1f36b1a-8fc3-3e53-9117-64e7773e936e;Detergent;Mosószer;Mosószert veszek a boltban.;true
+0fe5ef25-7d03-3825-8105-5ad576c00238;Fill;Tölt;Töltöm a poharat vízzel.;true
+6901ba11-9361-328d-93e8-c37b2c0474bb;To start;Elindítni;El kell indítani a gépet.;true
+8420d6e2-1fbd-35c7-9e9d-e0c928b15e2c;Bush;Bokor;A madár a bokorban van.;true
+69690c3b-3517-383b-9cf2-ca35b92123fa;Bus stop;Buszmegálló;A buszmegállónál várok.;true
+adb8668b-71b7-3746-af23-30aba242e733;Cloud;Felhő;Nagy fekete felhők vannak az égen.;true
+e24d8200-13d9-3829-83d7-684f6352ac47;Fisherman;Horgász;A horgász a tónál ül.;true
+12e8fcde-6ab4-34e5-ae3d-c1e144ccba83;Sidewalk;Járda;A gyerekek a járdán sétálnak.;true
+b249266d-47a4-3bea-872d-f67e21a98ded;Fence;Kerités;A kert körül kerítés van.;true
+62f6e492-f20d-3665-96ba-7b43058f8fc6;Stone;Kő;Nagy kő van az úton.;true
+a43d599a-369f-3dc5-872e-d6837e9e13bd;Field;Mező;A tehén a mezőn legel.;true
+187ef81d-8596-3dba-a39b-6da1acc2546d;Tower;Torony;A torony nagyon magas.;true
+b2cc98c7-35d8-31bd-ade9-9645e9674d62;Temple;Templom;A templom a városközpontban van.;true
+9fcd9ee0-e725-3f29-ac86-107f8ce13a2a;Hallway;Előszoba;A cipők az előszobában vannak.;true
+52029424-0eac-32aa-8406-1126298746ea;To move;Költözni;Hamarosan új lakásba költözünk.;true
+489854be-c5d2-33e1-b8a4-36f68a04be49;All;Összes;Az összes könyvet elolvastam.;true
+bbb69792-db92-33d0-a83a-59d752926a66;Angry;Mérges;Mérges vagyok, mert késtél.;true
+8480316b-912e-3b8b-a1d6-1440ed38ebfc;Interests me;Érdekel;Nagyon érdekel a magyar kultúra.;true
+c5670897-1433-3306-a125-8e9e1397b7cc;To arrive;Megérkezni;Mikor érkezel meg Budapestre?;true
+778ca962-1b4a-3297-aa18-75294714b01b;To tell(a story);Elmesélni;Elmesélte a kalandját.;true
+a3358077-603d-3d5b-8083-a115ec9181d6;Morning;Délelőtt;Délelőtt dolgozom otthon.;true
+fa94fe86-5024-31cc-ad92-a5ccd174bb1b;Plant;Növény;Ez a növény sok vizet kap.;true
+e35568fd-ce2a-35b8-a05c-6aeeb0e13c5b;Adult;Felnőtt;Ez a film csak felnőtteknek szól.;true
+4588509e-5c5e-34c5-a511-939483258639;Suit;Öltöny;Az apám öltönyt visel a munkában.;true
+da8bebd4-3770-3117-83a8-7a517d933c83;Tie;Nyakkendő;Piros nyakkendőt viselek ma.;true
+83217b91-ac6a-3505-9d0f-5e061b7204b3;Pants;Nadrág;Az új nadrágomat vettem fel.;true
+ee2ab4ac-b015-39d8-a51e-8cc90d52908c;West;Nyugat;Nyugat felé haladunk.;true
+bc4888c5-6302-39e9-9b9b-bf16a0f9ef7d;East;Kelet;A nap keleten kel fel.;true
+c8f3ad38-b700-31f1-a065-879c265c29bc;North;Észak;Északon hideg a tél.;true
+2f2a6db3-7da1-3a69-8f06-63e83ad6743c;South;Dél;Délen melegebb az időjárás.;true
+1d9910a3-3a4a-306d-9821-5b0f9698cd12;Before;Előtt;Az ülés előtt kávét iszom.;true
+c2f2c23a-c7c7-3c40-9694-52f87ae63413;After;Után;Munka után hazamegyek.;true
+97645ea2-d30f-3349-8bca-8cf57d913395;Behind;Mögött;A macska az asztal mögött van.;true
+bc607a20-f85a-3e88-a417-4e9efe6b5181;Beside;Mellett;Mellettem ül a barátom.;true
+aaf8b622-1ac2-304b-8d35-6bb0918b1b52;Weekday;Hétköznap;Hétköznapokon korán kelek.;true
+1f6dc86c-e893-37dd-9a5c-75f44215ebf3;Important;Fontos;Fontos a jó egészség.;true
+ab722005-450a-3cd1-bedc-f6c462e62337;Flat(surface);Lapos;Az asztal teteje lapos.;true
+47202802-1b3a-366d-b894-c9fc13bddb52;In the middle;Középen;A lámpa középen lóg.;true
+25317773-0ea0-3c5b-9da5-a393e129ac51;To stay;Maradni;Ma este itthon maradok.;true
+61892ff7-b52b-347e-ad1a-1a07e87aed09;Disadventage;Hátrány;Ennek a tervnek van hátránya.;true
+82a4421b-ce03-35c6-b1f3-b1bca1a1df7d;Advantage;Előny;A lakás előnye a nagy kert.;true
+ad480e9e-db83-3bd8-a5fd-2d4d080ebe4f;Friendly;Barátságos;A szomszédaim nagyon barátságosak.;true
+4da5ea2b-a8b0-3c2b-bc1e-4395815266fb;Bracelet;Karperec;Szép karperecet kaptam ajándékba.;true
+62d2775a-b489-31c4-9ec2-b8039396b9da;Kind;Kedves;Nagyon kedves vagy!;true
+8453ce8a-5f48-3f79-8b80-ab45194782a0;Short(height);Alacsony;A húgom alacsony és szőke.;true
+01057ce9-599c-35bb-a462-466aaedd14f8;Long(height);Magas;A bátyám nagyon magas.;true
+673afcba-63b8-315f-8d3b-791e4e499116;Old;Öreg;Az öreg kutya alszik a fotelban.;true
+1c7ecc57-7a22-3a3c-b764-5220a8f5a2d6;Young;Fiatal;A tanárnőnk fiatal és vidám.;true
+1db66d9c-1815-329a-9b54-c43643be62e3;Younger sister;Húg;A húgom hat éves.;true
+788f84b2-887e-3ff0-b73d-5e262ac43250;Sister;Nővér;A nővérem Bécsben lakik.;true
+55f54068-c908-3ee5-9f1e-dcb34b3fbf6b;Older Sister;Néne;A nénémet Annának hívják.;true
+61bb31a4-0603-3426-aa4e-4d4afa8395ca;Younger brother;Öcs;Az öcsém focizni szeret.;true
+a2320d57-7495-3d74-a73f-02555e73c36b;Older brother;Báty;A bátyám mérnök.;true
+882d710a-3e78-331a-be4a-b1d1e8a12da0;Brother;Fivér;Két fivérem van.;true
+b9d9e6c9-9116-3fde-a5e1-de77c46e30e4;Usually;Általában;Általában busszal megyek dolgozni.;true
+78270911-4a65-3b50-a0ab-efd9283d0d3d;Rarely;Ritkán;Ritkán eszem húst.;true
+752451f8-8d30-3fd3-be6b-26dc74af09d2;Jawellery;Ékszer;Az ékszer a fiókban van.;true
+6cb7ad4f-df13-3ce1-9895-841212243600;Occupation;Foglalkozás;Mi a foglalkozásod?;true
+a3febea3-1ee5-3013-ae5c-bcf82daf7c12;Means of transport;Közlekedési eszköz;A busz olcsó közlekedési eszköz.;true
+02b906ad-7a5e-33ed-981f-0578f3a69d68;Tram;Villamos;A villamossal megyek a centrumba.;true
+adf137e3-0293-3c3b-bfba-5007695d5a5d;Engineer;Mérnök;A mérnök tervezi az épületet.;true
+3e10e6c5-01e8-3725-9ac1-d1808c442fca;Pear;Körte;Éhes vagyok, eszek egy körtét.;true
+3905bd92-7882-3115-bc02-1bee106806a7;Old(thing);Régi;Ez egy régi fénykép.;true
+aa2bbe3d-7db4-36bc-9a11-220ef35a66c7;Slow;Lassú;A teknős nagyon lassú.;true
+b7a0bb09-fdfc-3b0b-988f-bef454ceada8;Empty;Üres;A pohár üres, tölts bele vizet!;true
+032d8ca7-2f6d-3dc0-9c74-d974bc64d321;Full;Tele;A táskám tele van könyvekkel.;true
+1b428934-f8b7-3f84-b1de-e79b15c40a66;Short(duration);Rövid;A film rövid volt.;true
+ab489605-ed4c-39ec-b1b4-4da62d710a73;Long(duration);Hosszú;Hosszú nap volt ma.;true
+33197143-dc86-3755-a750-b7a159700b41;Rectangle;Téglalap;Az ajtó téglalap alakú.;true
+b5f35945-882c-3404-8f0a-40c078125ed5;Circle;Kör;Rajzolj egy kört!;true
+71ca08f4-6266-3786-a038-1347f0daab18;Triangle;Háromszög;A háromszögnek három sarka van.;true
+efb5439c-8f8a-3149-a4bc-558c92f51836;Square;Négyzet;A négyzetnek négy egyforma oldala van.;true
+ef4c428e-c88f-3ff1-bebd-5828636f6514;Garage;Garázs;Az autó a garázsban van.;true
+95c88bc8-13ff-312c-bc71-fec6131ac2ec;Repair;Javítani;Meg kell javítani a biciklit.;true
+c1e68fa0-3081-3821-8c75-44a2644432f6;Tall;Magas;A magas épület a városközpontban van.;true
+7c8fe68d-ba44-3ef6-9366-75afc49581ed;Spend(time);Tölteni;Szívesen töltöm itt az időt.;true
+e26f6e56-206a-3cce-b75f-51bb264077bb;To care;Törődni;Törődsz a növényeiddel?;true
+80cc6fe9-0b87-3df1-a5e8-3f50b9cc4b23;To look for(search);Keresni;A kulcsomat keresem mindenhol.;true
+15c1c593-367b-35f4-8a81-9bfce69f61c9;Huge amount;Rengeteg;Rengeteg munka vár rám.;true
+2d3c6260-023b-3e2f-88af-30f8937cfec4;Sad;Szomorú;Szomorú vagyok, mert elmész.;true
+a5650f02-35ad-3e94-b9c1-335b1d66cb4d;Completly;Teljesen;Teljesen igazad van!;true
+0cef1f56-8f47-313d-b6e4-f82f53b6181f;Clever;Okos;Az okos diák sokat tanul.;true
+b4bfabfa-07d3-3595-84ce-c3573b90a0f3;Stupid;Hülye;Ne légy olyan hülye!;true
+0e2ebc62-a9aa-34b5-8fd1-bdc8f51f2118;Busy;Elfoglalt;Ma nagyon elfoglalt vagyok.;true
+59a194c3-3a24-35db-8736-3091ebf3973c;Peace;Nyugalom;Szeretem a nyugalmat.;true
+2501e378-ed72-372c-b682-cafca8f79946;Tent;Sátor;A sátor a kempingben van.;true
+2ef829be-7282-346f-b797-056b14178624;Traffic;Forgalom;A forgalom nagyon sűrű a városban.;true
+43ab4cd6-900f-3df3-a652-9537e85bb977;Request;Kérelem;Kérem, segíts nekem!;true
+664af1f9-1307-37bb-af7b-c96bbadf8afa;Client;Ügyfél;Az ügyfél elégedett a szolgáltatással.;true
+fb9551cb-8ca6-368b-8969-11a49fe3c2b9;Bouquet;Csokor;Vettem egy csokor virágot.;true
+de09589c-e917-3569-a2da-8da95b0ec841;Painting;Festmény;Ez a festmény nagyon szép.;true
+ad9c8e1b-7a0c-3e5f-8c9b-1a2e5f4b6c3d;Each other;Egymás;Szeretjük egymást.;true

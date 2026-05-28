@@ -4,11 +4,11 @@
 <tr th:fragment="row(wv, modes, languageCode)" th:id="${wv != null ? 'word-' + wv.word.wordId.value : 'word-error'}">
     <!-- Error state: show single error cell spanning all columns -->
     <th:block th:if="${error != null}">
-        <td th:colspan="${5 + #lists.size(modes)}" class="row-error" th:text="${error}">Error</td>
+        <td th:colspan="${(progressEnabled ? 6 : 5) + #lists.size(modes)}" class="row-error" th:text="${error}">Error</td>
     </th:block>
 
     <!-- Normal state -->
-    <th:block th:unless="${error != null}">
+    <th:block th:if="${error == null and wv != null}">
         <td class="td-from" th:text="${wv.word.fromWord}">from</td>
         <td class="td-to" th:text="${wv.word.toWord}">to</td>
         <td class="td-example" th:text="${wv.word.example}" th:title="${wv.word.example}">example</td>
@@ -46,9 +46,26 @@
             </form>
         </td>
 
+        <!-- Progress (signed-in users only) -->
+        <td th:if="${progressEnabled}" class="col-progress">
+            <th:block th:if="${wv.progressPercent != null}">
+                <div class="progress-cell">
+                    <div class="progress-track progress-track--sm"
+                         role="progressbar"
+                         th:attr="aria-valuenow=${wv.progressPercent},aria-valuemin=0,aria-valuemax=100">
+                        <div class="progress-fill"
+                             th:style="'width:' + ${wv.progressPercent} + '%'"></div>
+                    </div>
+                    <span class="progress-label" th:text="${wv.progressPercent + '%'}">0%</span>
+                </div>
+            </th:block>
+            <th:block th:unless="${wv.progressPercent != null}">
+                <span class="progress-label progress-label--none">—</span>
+            </th:block>
+        </td>
+
         <!-- Actions -->
         <td class="col-actions">
-            <div class="row-actions">
                 <button type="button"
                         class="btn-row-action"
                         th:attr="hx-get=${'/dictionary/row/edit?languageCode=' + languageCode + '&wordId=' + wv.word.wordId.value},aria-label=${'Edit ' + wv.word.fromWord}"
@@ -56,7 +73,6 @@
                         hx-swap="outerHTML">
                     <i class="bi bi-pencil"></i>
                 </button>
-            </div>
         </td>
     </th:block>
 </tr>
@@ -64,7 +80,7 @@
 <tr th:fragment="row-edit" th:id="${wv != null ? 'word-' + wv.word.wordId.value : 'word-error'}" class="row-editing">
     <!-- Error state -->
     <th:block th:if="${error != null}">
-        <td th:colspan="${5 + #lists.size(modes)}" class="row-error" th:text="${error}">Error</td>
+        <td th:colspan="${(progressEnabled ? 6 : 5) + #lists.size(modes)}" class="row-error" th:text="${error}">Error</td>
     </th:block>
 
     <!-- Edit state -->
@@ -122,6 +138,9 @@
             </form>
         </td>
 
+        <!-- Progress column placeholder -->
+        <td th:if="${progressEnabled}" class="col-progress"></td>
+
         <!-- Save / Cancel -->
         <td class="col-actions">
             <form th:id="'edit-form-' + ${wv.word.wordId.value}"
@@ -172,6 +191,7 @@
         <!-- Toggle columns: not applicable for unsaved word -->
         <td class="col-toggle"></td>
         <td th:each="mode : ${modes}" class="col-toggle"></td>
+        <td th:if="${progressEnabled}" class="col-progress"></td>
 
         <!-- Save / Cancel -->
         <td class="col-actions">

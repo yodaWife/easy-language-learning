@@ -15,22 +15,26 @@
             <div class="page-container">
                 <form th:action="@{/session/start}" method="post">
                     <div class="welcome-card">
-                        <a th:href="@{/dictionary}" class="dict-icon-btn" aria-label="Dictionary Management">
-                            <i class="bi bi-book"></i>
-                        </a>
+                        <div class="home-icons-row">
+                            <a th:href="@{/dictionary}" class="home-icon-btn" aria-label="Dictionary Management">
+                                <i class="bi bi-book"></i>
+                            </a>
+                            <button type="button"
+                                    class="home-icon-btn"
+                                    id="account-icon-btn"
+                                    aria-label="User account"
+                                    hx-get="/account/panel"
+                                    hx-target="#account-modal-content"
+                                    hx-swap="innerHTML"
+                                    hx-trigger="click"
+                                    onclick="document.getElementById('account-modal').classList.add('is-open')">
+                                <i class="bi bi-person-circle"></i>
+                            </button>
+                        </div>
                         <h1 class="welcome-title">Welcome!</h1>
                         <p class="welcome-subtitle">Start your language journey today</p>
 
-                        <input type="hidden" id="nickname" name="nickname" value="">
-
-                        <div class="nickname-pills" id="nickname-pills">
-                            <button type="button" class="nickname-pill"
-                                    th:each="n : ${nicknames}"
-                                    th:text="${n}"
-                                    th:data-name="${n}"></button>
-                            <button type="button" class="nickname-pill nickname-pill-new"
-                                    id="nickname-new-btn" aria-label="New player">+</button>
-                        </div>
+                        <div th:replace="~{fragments/account-status :: status}"></div>
 
                         <div class="language-group" th:if="${languages != null and !#lists.isEmpty(languages)}">
                             <label for="languageCode">Language</label>
@@ -63,77 +67,25 @@
                     </div>
                 </form>
 
-                <div id="nickname-modal" class="nickname-modal-overlay">
-                    <div class="nickname-modal-dialog">
-                        <p class="nickname-modal-title">New player</p>
-                        <input type="text" id="nickname-modal-input" class="nickname-input"
-                               placeholder="Enter nickname..." maxlength="30" autocomplete="off">
-                        <div class="nickname-modal-actions">
-                            <button type="button" id="nickname-modal-cancel" class="nickname-modal-btn-cancel">Cancel</button>
-                            <button type="button" id="nickname-modal-accept" class="nickname-modal-btn-accept">Add</button>
+                <!-- Account Modal -->
+                <div id="account-modal" class="account-modal-overlay">
+                    <div class="account-modal-dialog">
+                        <button type="button"
+                                class="account-modal-close"
+                                aria-label="Close"
+                                onclick="document.getElementById('account-modal').classList.remove('is-open')">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                        <div id="account-modal-content">
+                            <!-- Loaded via HTMX when account icon is clicked -->
                         </div>
                     </div>
                 </div>
 
                 <script>
                 (function() {
-                    var hiddenInput = document.getElementById('nickname');
-                    var pillsContainer = document.getElementById('nickname-pills');
-                    var newBtn = document.getElementById('nickname-new-btn');
-                    var modal = document.getElementById('nickname-modal');
-                    var modalInput = document.getElementById('nickname-modal-input');
-                    var modalAccept = document.getElementById('nickname-modal-accept');
-                    var modalCancel = document.getElementById('nickname-modal-cancel');
-
-                    function selectPill(pill) {
-                        pillsContainer.querySelectorAll('.nickname-pill:not(.nickname-pill-new)').forEach(function(p) {
-                            p.classList.remove('active');
-                        });
-                        pill.classList.add('active');
-                        hiddenInput.value = pill.dataset.name;
-                    }
-
-                    function attachPill(pill) {
-                        pill.addEventListener('click', function() { selectPill(this); });
-                    }
-
-                    pillsContainer.querySelectorAll('.nickname-pill:not(.nickname-pill-new)').forEach(attachPill);
-
-                    newBtn.addEventListener('click', function() {
-                        modalInput.value = '';
-                        modal.classList.add('is-open');
-                        modalInput.focus();
-                    });
-
-                    function closeModal() { modal.classList.remove('is-open'); }
-
-                    function acceptModal() {
-                        var name = modalInput.value.trim();
-                        if (!name) return;
-                        var existing = null;
-                        pillsContainer.querySelectorAll('.nickname-pill:not(.nickname-pill-new)').forEach(function(p) {
-                            if (p.dataset.name === name) existing = p;
-                        });
-                        if (existing) { selectPill(existing); closeModal(); return; }
-                        var pill = document.createElement('button');
-                        pill.type = 'button';
-                        pill.className = 'nickname-pill';
-                        pill.textContent = name;
-                        pill.dataset.name = name;
-                        attachPill(pill);
-                        pillsContainer.insertBefore(pill, newBtn);
-                        selectPill(pill);
-                        closeModal();
-                    }
-
-                    modalAccept.addEventListener('click', acceptModal);
-                    modalCancel.addEventListener('click', closeModal);
-                    modalInput.addEventListener('keydown', function(e) {
-                        if (e.key === 'Enter') { e.preventDefault(); acceptModal(); }
-                        if (e.key === 'Escape') { closeModal(); }
-                    });
-                    modal.addEventListener('click', function(e) {
-                        if (e.target === modal) closeModal();
+                    document.getElementById('account-modal').addEventListener('click', function(e) {
+                        if (e.target === this) this.classList.remove('is-open');
                     });
                 })();
                 </script>

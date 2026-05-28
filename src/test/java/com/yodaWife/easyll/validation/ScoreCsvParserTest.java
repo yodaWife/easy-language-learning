@@ -2,7 +2,7 @@ package com.yodawife.easyll.validation;
 
 import com.yodawife.easyll.domain.CsvParseResult;
 import com.yodawife.easyll.domain.ScoreDataBundle;
-import com.yodawife.easyll.domain.UserWordKey;
+import com.yodawife.easyll.domain.ScoreKey;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -51,13 +51,13 @@ class ScoreCsvParserTest {
     @Test
     void validScoreFileLoadsSuccessfully() throws IOException {
         Path file = tempDir().resolve("scores.csv");
-        Files.writeString(file, "alice;Letter;Betű;S,F,S\n");
+        Files.writeString(file, "user-1;pair-abc;match;S,F,S\n");
         ScoreCsvParser parser = parserFor(file.toString());
 
         CsvParseResult<ScoreDataBundle> result = parser.parse();
         assertThat(result).isInstanceOf(CsvParseResult.Success.class);
         ScoreDataBundle bundle = ((CsvParseResult.Success<ScoreDataBundle>) result).value();
-        UserWordKey key = new UserWordKey("alice", "Letter", "Betű");
+        ScoreKey key = new ScoreKey("user-1", "pair-abc", "match");
         assertThat(bundle.histories()).containsKey(key);
         assertThat(Objects.requireNonNull(bundle.histories().get(key)).entries()).containsExactly("S", "F", "S");
     }
@@ -65,7 +65,7 @@ class ScoreCsvParserTest {
     @Test
     void invalidHistorySymbolReturnsFailure() throws IOException {
         Path file = tempDir().resolve("scores.csv");
-        Files.writeString(file, "alice;Letter;Betű;S,X,F\n");
+        Files.writeString(file, "user-1;pair-abc;match;S,X,F\n");
         ScoreCsvParser parser = parserFor(file.toString());
 
         CsvParseResult<ScoreDataBundle> result = parser.parse();
@@ -77,7 +77,7 @@ class ScoreCsvParserTest {
     @Test
     void emptyHistorySymbolReturnsFailure() throws IOException {
         Path file = tempDir().resolve("scores.csv");
-        Files.writeString(file, "alice;Letter;Betű;S,,F\n");
+        Files.writeString(file, "user-1;pair-abc;match;S,,F\n");
         ScoreCsvParser parser = parserFor(file.toString());
 
         CsvParseResult<ScoreDataBundle> result = parser.parse();
@@ -89,7 +89,7 @@ class ScoreCsvParserTest {
     @Test
     void blankHistoryReturnsFailure() throws IOException {
         Path file = tempDir().resolve("scores.csv");
-        Files.writeString(file, "alice;Letter;Betű;\n");
+        Files.writeString(file, "user-1;pair-abc;match;\n");
         ScoreCsvParser parser = parserFor(file.toString());
 
         CsvParseResult<ScoreDataBundle> result = parser.parse();
@@ -101,7 +101,7 @@ class ScoreCsvParserTest {
     @Test
     void wrongColumnCountReturnsFailure() throws IOException {
         Path file = tempDir().resolve("scores.csv");
-        Files.writeString(file, "alice;Letter\n");
+        Files.writeString(file, "user-1;pair-abc\n");
         ScoreCsvParser parser = parserFor(file.toString());
 
         CsvParseResult<ScoreDataBundle> result = parser.parse();
@@ -114,8 +114,8 @@ class ScoreCsvParserTest {
         Path file = tempDir().resolve("scores.csv");
         Files.writeString(file,
                 """
-                alice;Letter;Betű;S,F
-                alice;Letter;Betű;S
+                user-1;pair-abc;match;S,F
+                user-1;pair-abc;match;S
                 """);
         var parser = parserFor(file.toString());
 
@@ -126,9 +126,9 @@ class ScoreCsvParserTest {
         assertThat(errors).hasSize(1);
         assertThat(errors.getFirst())
                 .contains("row 2")
-                .contains("alice")
-                .contains("Letter")
-                .contains("Betű");
+                .contains("user-1")
+                .contains("pair-abc")
+                .contains("match");
     }
 
     @Test
@@ -137,10 +137,10 @@ class ScoreCsvParserTest {
         Path file = tempDir().resolve("scores.csv");
         Files.writeString(file,
                 """
-                alice;Letter;Betű;S
-                bob;Cat;Macska;F
-                alice;Letter;Betű;F
-                bob;Cat;Macska;S
+                user-1;pair-abc;match;S
+                user-2;pair-xyz;match;F
+                user-1;pair-abc;match;F
+                user-2;pair-xyz;match;S
                 """);
         var parser = parserFor(file.toString());
 
@@ -149,7 +149,7 @@ class ScoreCsvParserTest {
         assertThat(result).isInstanceOf(CsvParseResult.Failure.class);
         var errors = ((CsvParseResult.Failure<ScoreDataBundle>) result).errors();
         assertThat(errors).hasSize(2);
-        assertThat(errors).anyMatch(e -> e.contains("row 3") && e.contains("alice") && e.contains("Letter") && e.contains("Betű"));
-        assertThat(errors).anyMatch(e -> e.contains("row 4") && e.contains("bob") && e.contains("Cat") && e.contains("Macska"));
+        assertThat(errors).anyMatch(e -> e.contains("row 3") && e.contains("user-1") && e.contains("pair-abc"));
+        assertThat(errors).anyMatch(e -> e.contains("row 4") && e.contains("user-2") && e.contains("pair-xyz"));
     }
 }

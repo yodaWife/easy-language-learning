@@ -28,21 +28,21 @@ class MatchSessionTest {
     @Test
     void blankNicknameIsStoredAsNull() {
         MatchSession session = new MatchSession("  ", "flashcards");
-        assertThat(session.getNickname()).isNull();
-        assertThat(session.hasNickname()).isFalse();
+        assertThat(session.getUserId()).isNull();
+        assertThat(session.hasUserId()).isFalse();
     }
 
     @Test
     void nullNicknameIsStoredAsNull() {
         MatchSession session = new MatchSession(null, "flashcards");
-        assertThat(session.getNickname()).isNull();
+        assertThat(session.getUserId()).isNull();
     }
 
     @Test
     void nicknameIsTrimmed() {
         MatchSession session = new MatchSession("  bob  ", "match");
-        assertThat(session.getNickname()).isEqualTo("bob");
-        assertThat(session.hasNickname()).isTrue();
+        assertThat(session.getUserId()).isEqualTo("bob");
+        assertThat(session.hasUserId()).isTrue();
     }
 
     @Test

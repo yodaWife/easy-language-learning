@@ -1,15 +1,20 @@
 package com.yodawife.easyll.service;
 
 import com.yodawife.easyll.domain.AttemptResult;
+import com.yodawife.easyll.domain.LanguageBundle;
 import com.yodawife.easyll.domain.MatchBoard;
 import com.yodawife.easyll.domain.MatchCard;
 import com.yodawife.easyll.domain.MatchSession;
+import com.yodawife.easyll.domain.Word;
 import com.yodawife.easyll.domain.WordEntry;
+import com.yodawife.easyll.domain.WordId;
 import com.yodawife.easyll.repository.ScoreRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,8 +29,20 @@ class MatchGameApplicationServiceTest {
     private final MatchSessionService matchSessionService = mock(MatchSessionService.class);
     private final ScoreRepository scoreRepository = mock(ScoreRepository.class);
     private final MatchBoardGenerator matchBoardGenerator = mock(MatchBoardGenerator.class);
+    private final DataHealthService mockDataHealthService = mock(DataHealthService.class);
     private final MatchGameApplicationService service =
-            new MatchGameApplicationService(matchSessionService, scoreRepository, matchBoardGenerator);
+            new MatchGameApplicationService(matchSessionService, scoreRepository, matchBoardGenerator, mockDataHealthService);
+
+    @BeforeEach
+    void setupDataHealthMock() {
+        var mockSnapshot = mock(DataSnapshot.class);
+        when(mockDataHealthService.snapshot()).thenReturn(mockSnapshot);
+        var lb = mock(LanguageBundle.class);
+        when(mockSnapshot.getLanguageBundle("hun")).thenReturn(Optional.of(lb));
+        var word1 = new Word(new WordId("pair-abc"), "Letter", "Betű", "", true);
+        var word2 = new Word(new WordId("pair-xyz"), "Stone", "Kő", "", true);
+        when(lb.words()).thenReturn(List.of(word1, word2));
+    }
 
     private MatchBoard boardWithPair(WordEntry entry) {
         var pairId = MatchCard.buildPairId(entry.fromWord(), entry.toWord());
@@ -125,12 +142,12 @@ class MatchGameApplicationServiceTest {
         var session = new MatchSession("alice", "match");
         when(matchSessionService.resultMessage(session)).thenReturn("Done!");
 
-        service.recordAttempt(session.getSessionId(), "Letter", "Betű", new AttemptResult(true, false, 1));
-        service.recordAttempt(session.getSessionId(), "Stone", "Kő", new AttemptResult(false, false, 2));
+        service.recordAttempt(session.getSessionId(), "Letter", "Betű", "hun", new AttemptResult(true, false, 1));
+        service.recordAttempt(session.getSessionId(), "Stone", "Kő", "hun", new AttemptResult(false, false, 2));
         service.finaliseSession(session);
 
-        verify(scoreRepository).appendAttempt("alice", "Letter", "Betű", "S");
-        verify(scoreRepository).appendAttempt("alice", "Stone", "Kő", "F");
+        verify(scoreRepository).appendAttempt("alice", "pair-abc", "match", "S");
+        verify(scoreRepository).appendAttempt("alice", "pair-xyz", "match", "F");
         verify(scoreRepository).flush();
     }
 
@@ -139,15 +156,15 @@ class MatchGameApplicationServiceTest {
     void finaliseSessionPersistsScoresAndReturnsMessageWhenNicknamePresent() {
         var session = new MatchSession("alice", "match");
         for (int i = 0; i < 10; i++) session.recordSuccess();
-        service.recordAttempt(session.getSessionId(), "Letter", "Betű", new AttemptResult(true, false, 1));
-        service.recordAttempt(session.getSessionId(), "Stone", "Kő", new AttemptResult(false, false, 2));
+        service.recordAttempt(session.getSessionId(), "Letter", "Betű", "hun", new AttemptResult(true, false, 1));
+        service.recordAttempt(session.getSessionId(), "Stone", "Kő", "hun", new AttemptResult(false, false, 2));
         when(matchSessionService.resultMessage(session)).thenReturn("You did it!");
 
         var message = service.finaliseSession(session);
 
         assertThat(message).isEqualTo("You did it!");
-        verify(scoreRepository).appendAttempt("alice", "Letter", "Betű", "S");
-        verify(scoreRepository).appendAttempt("alice", "Stone", "Kő", "F");
+        verify(scoreRepository).appendAttempt("alice", "pair-abc", "match", "S");
+        verify(scoreRepository).appendAttempt("alice", "pair-xyz", "match", "F");
         verify(scoreRepository).flush();
     }
 
@@ -156,7 +173,7 @@ class MatchGameApplicationServiceTest {
     void finaliseSessionSkipsScorePersistenceWhenNoNickname() {
         var session = new MatchSession(null, "match");
         for (int i = 0; i < 10; i++) session.recordSuccess();
-        service.recordAttempt(session.getSessionId(), "Letter", "Betű", new AttemptResult(true, false, 1));
+        service.recordAttempt(session.getSessionId(), "Letter", "Betű", "hun", new AttemptResult(true, false, 1));
         when(matchSessionService.resultMessage(session)).thenReturn("You did it!");
 
         var message = service.finaliseSession(session);

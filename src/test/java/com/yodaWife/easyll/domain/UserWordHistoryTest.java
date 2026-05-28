@@ -26,19 +26,19 @@ class UserWordHistoryTest {
     }
 
     @Test
-    void fifoCapAt10() {
+    void fifoCapAt12() {
         UserWordHistory h = new UserWordHistory();
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < 14; i++) {
             h.append("S");
         }
-        assertThat(h.entries()).hasSize(10);
+        assertThat(h.entries()).hasSize(12);
     }
 
     @Test
     void fifoEvictsOldestFirst() {
-        UserWordHistory h = new UserWordHistory(List.of("F", "F", "F", "F", "F", "F", "F", "F", "F", "F")); // 10 F's
+        UserWordHistory h = new UserWordHistory(List.of("F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F", "F")); // 12 F's
         h.append("S"); // should evict first F
-        assertThat(h.entries()).hasSize(10);
+        assertThat(h.entries()).hasSize(12);
         assertThat(h.entries().getLast()).isEqualTo("S");
         assertThat(h.entries().getFirst()).isEqualTo("F");
     }

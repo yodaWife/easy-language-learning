@@ -10,7 +10,7 @@ public class MatchSession {
     public static final int DEFAULT_MAX_ATTEMPTS = 30;
 
     private final String sessionId;
-    private final @Nullable String nickname;
+    private final @Nullable String userId;
     private final String mode;
     private final int maxAttempts;
     private final Instant createdAt;
@@ -19,13 +19,13 @@ public class MatchSession {
     private int successes;
     private int failures;
 
-    public MatchSession(@Nullable String nickname, String mode) {
-        this(nickname, mode, DEFAULT_MAX_ATTEMPTS);
+    public MatchSession(@Nullable String userId, String mode) {
+        this(userId, mode, DEFAULT_MAX_ATTEMPTS);
     }
 
-    public MatchSession(@Nullable String nickname, String mode, int maxAttempts) {
+    public MatchSession(@Nullable String userId, String mode, int maxAttempts) {
         this.sessionId = UUID.randomUUID().toString();
-        this.nickname = (nickname == null || nickname.isBlank()) ? null : nickname.trim();
+        this.userId = (userId == null || userId.isBlank()) ? null : userId.trim();
         this.mode = mode;
         this.maxAttempts = maxAttempts;
         this.createdAt = Instant.now();
@@ -36,7 +36,7 @@ public class MatchSession {
     }
 
     public String getSessionId() { return sessionId; }
-    public @Nullable String getNickname() { return nickname; }
+    public @Nullable String getUserId() { return userId; }
     public String getMode() { return mode; }
     public int getMaxAttempts() { return maxAttempts; }
     public Instant createdAt() { return createdAt; }
@@ -47,7 +47,7 @@ public class MatchSession {
 
     public void touch(Instant now) { this.lastAccessedAt = now; }
 
-    public boolean hasNickname() { return nickname != null; }
+    public boolean hasUserId() { return userId != null; }
     public boolean isComplete() { return successes >= maxAttempts; }
 
     public void recordSuccess() {

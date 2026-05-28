@@ -14,17 +14,24 @@
   --success: #66BB6A;
   --error: #E53935;
   --surface: #F9FBF2;
+  --surface-hover: #EFF5E8;
   --card-bg: #FFFFFF;
+  --bg: #F9FBF2;
   --text-primary: #333333;
+  --text: #333333;
   --text-secondary: #666666;
   --text-muted: #999999;
+  --border: #E0E0E0;
 
   --font-family: 'Nunito', 'Segoe UI', Arial, sans-serif;
   --radius-card: 16px;
   --radius-btn: 12px;
   --radius-input: 8px;
+  --radius-lg: 16px;
+  --radius-sm: 6px;
   --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.06);
   --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.14);
   --shadow-btn-hover: 0 6px 16px rgba(46, 125, 50, 0.25);
   --transition-fast: 200ms ease-in-out;
   --transition-normal: 300ms ease-in-out;
@@ -1988,4 +1995,253 @@ tr.row-editing {
   color: var(--primary);
   font-size: 0.875rem;
   text-decoration: underline;
+}
+
+/* ── Account Icon Button (Home) ── */
+.home-icons-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.home-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.home-icon-btn:hover,
+.home-icon-btn:focus-visible {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  outline: none;
+}
+
+/* ── Account Status (welcome card) ── */
+.account-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  margin-bottom: 0.75rem;
+}
+.account-status--signed-in {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+.account-status--guest {
+  background: #f5f5f5;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.account-status-icon {
+  font-size: 0.95rem;
+}
+.account-status-name {
+  font-weight: 600;
+}
+
+/* ── Account Modal ── */
+.account-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+.account-modal-overlay.is-open {
+  display: flex;
+}
+.account-modal-dialog {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 1.5rem;
+  width: min(90vw, 360px);
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+.account-modal-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+}
+.account-modal-close:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+/* ── Account Panel (inside modal) ── */
+.account-panel-header {
+  margin-bottom: 1rem;
+}
+.account-panel-title {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+.account-panel-users {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.account-pill {
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.account-pill:hover {
+  background: var(--primary-light, #e8f0fe);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.account-pill--active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.account-panel-new {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.account-panel-new form {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+.account-new-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0.65rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  background: var(--bg);
+  color: var(--text);
+}
+.account-new-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.account-new-btn {
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  border: none;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.account-new-btn:hover {
+  background: var(--primary-dark, #1a56db);
+}
+.account-panel-signout {
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+}
+.account-signout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.account-signout-btn:hover {
+  background: #fff3f3;
+  border-color: #e53935;
+  color: #e53935;
+}
+
+/* ── Dictionary Progress Column ── */
+.col-progress {
+  width: 7rem;
+  text-align: center;
+  white-space: nowrap;
+}
+.progress-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+.progress-track--sm {
+  width: 4.5rem;
+  height: 6px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-track--sm .progress-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 999px;
+  transition: width 0.3s;
+}
+.progress-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.progress-label--none {
+  color: var(--text-subtle, #bdbdbd);
+}
+.dict-card-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+.dict-card-progress-label {
+  font-weight: 600;
+}
+.dict-card-progress-value {
+  font-weight: 700;
+  color: var(--primary);
 }

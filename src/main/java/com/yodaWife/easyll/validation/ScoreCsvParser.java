@@ -2,8 +2,8 @@ package com.yodawife.easyll.validation;
 
 import com.yodawife.easyll.domain.CsvParseResult;
 import com.yodawife.easyll.domain.ScoreDataBundle;
+import com.yodawife.easyll.domain.ScoreKey;
 import com.yodawife.easyll.domain.UserWordHistory;
-import com.yodawife.easyll.domain.UserWordKey;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -52,7 +52,6 @@ public class ScoreCsvParser {
 
         Path scoreFilePath = Path.of(scoreSource);
         if (!Files.exists(scoreFilePath)) {
-            // Missing file is not an error — return empty history
             return new CsvParseResult.Success<>(ScoreDataBundle.empty());
         }
 
@@ -65,8 +64,8 @@ public class ScoreCsvParser {
 
     private CsvParseResult<ScoreDataBundle> parseFromReader(Reader reader) {
         List<String> errors = new ArrayList<>();
-        Map<UserWordKey, UserWordHistory> histories = new HashMap<>();
-        Set<UserWordKey> seenKeys = new HashSet<>();
+        Map<ScoreKey, UserWordHistory> histories = new HashMap<>();
+        Set<ScoreKey> seenKeys = new HashSet<>();
 
         try (CSVParser csvParser = CSVFormat.DEFAULT
                      .builder()
@@ -86,21 +85,21 @@ public class ScoreCsvParser {
                     continue;
                 }
 
-                String user = record.get(0);
-                String fromWord = record.get(1);
-                String toWord = record.get(2);
+                String userId = record.get(0);
+                String pairId = record.get(1);
+                String mode = record.get(2);
                 String historyRaw = record.get(3);
 
-                if (user.isBlank()) {
-                    errors.add("Score row " + rowNumber + ": USER is empty");
+                if (userId.isBlank()) {
+                    errors.add("Score row " + rowNumber + ": USER_ID is empty");
                     continue;
                 }
-                if (fromWord.isBlank()) {
-                    errors.add("Score row " + rowNumber + ": FROM word is empty");
+                if (pairId.isBlank()) {
+                    errors.add("Score row " + rowNumber + ": PAIR_ID is empty");
                     continue;
                 }
-                if (toWord.isBlank()) {
-                    errors.add("Score row " + rowNumber + ": TO word is empty");
+                if (mode.isBlank()) {
+                    errors.add("Score row " + rowNumber + ": MODE is empty");
                     continue;
                 }
                 if (historyRaw.isBlank()) {
@@ -128,14 +127,15 @@ public class ScoreCsvParser {
                 if (rowHasError) {
                     continue;
                 }
-                // Enforce max 10 — keep last 10 (FIFO means oldest are first)
-                if (historyEntries.size() > 10) {
-                    historyEntries = historyEntries.subList(historyEntries.size() - 10, historyEntries.size());
+                // Enforce max 12 — keep last 12 (FIFO means oldest are first)
+                if (historyEntries.size() > 12) {
+                    historyEntries = historyEntries.subList(historyEntries.size() - 12, historyEntries.size());
                 }
 
-                UserWordKey key = new UserWordKey(user, fromWord, toWord);
+                ScoreKey key = new ScoreKey(userId, pairId, mode);
                 if (!seenKeys.add(key)) {
-                    errors.add("Score row " + rowNumber + ": duplicate key (user='" + user + "', fromWord='" + fromWord + "', toWord='" + toWord + "')");
+                    errors.add("Score row " + rowNumber + ": duplicate key (userId='" + userId
+                            + "', pairId='" + pairId + "', mode='" + mode + "')");
                     continue;
                 }
                 histories.put(key, new UserWordHistory(historyEntries));

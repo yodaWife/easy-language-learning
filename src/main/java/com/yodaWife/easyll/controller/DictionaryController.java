@@ -6,8 +6,12 @@ import com.yodawife.easyll.domain.LanguageBundle;
 import com.yodawife.easyll.domain.ModeEligibility;
 import com.yodawife.easyll.domain.Word;
 import com.yodawife.easyll.domain.WordId;
+import com.yodawife.easyll.service.AccountService;
 import com.yodawife.easyll.service.DataHealthService;
 import com.yodawife.easyll.service.DictionaryEditService;
+import com.yodawife.easyll.service.ScoreProgressService;
+import jakarta.servlet.http.HttpSession;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -36,19 +40,26 @@ public class DictionaryController {
     private static final String ATTR_LANGUAGE_CODE = "languageCode";
     private static final String ATTR_ERROR = "error";
     private static final String SORT_BY_FROM = "FROM";
+    private static final String SORT_BY_PROGRESS = "PROGRESS";
     private static final String SORT_DIR_DESC = "DESC";
 
     private final DataHealthService dataHealthService;
     private final DictionaryEditService dictionaryEditService;
     private final DictionaryProperties dictionaryProperties;
+    private final ScoreProgressService scoreProgressService;
+    private final AccountService accountService;
 
     public DictionaryController(
             DataHealthService dataHealthService,
             DictionaryEditService dictionaryEditService,
-            DictionaryProperties dictionaryProperties) {
+            DictionaryProperties dictionaryProperties,
+            ScoreProgressService scoreProgressService,
+            AccountService accountService) {
         this.dataHealthService = dataHealthService;
         this.dictionaryEditService = dictionaryEditService;
         this.dictionaryProperties = dictionaryProperties;
+        this.scoreProgressService = scoreProgressService;
+        this.accountService = accountService;
     }
 
     @GetMapping("/dictionary")
@@ -59,9 +70,10 @@ public class DictionaryController {
             @RequestParam(defaultValue = "") String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int pageSize,
-            Model model) {
+            Model model,
+            HttpSession session) {
         var effectiveLang = resolveLanguage(languageCode);
-        populateModel(model, effectiveLang, sortBy, sortDir, search, page, clampPageSize(pageSize));
+        populateModel(model, effectiveLang, sortBy, sortDir, search, page, clampPageSize(pageSize), session);
         return "dictionary";
     }
 
@@ -73,9 +85,10 @@ public class DictionaryController {
             @RequestParam(defaultValue = "") String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int pageSize,
-            Model model) {
+            Model model,
+            HttpSession session) {
         var effectiveLang = resolveLanguage(languageCode);
-        populateModel(model, effectiveLang, sortBy, sortDir, search, page, clampPageSize(pageSize));
+        populateModel(model, effectiveLang, sortBy, sortDir, search, page, clampPageSize(pageSize), session);
         return "fragments/dictionary-table :: table-rows";
     }
 
@@ -86,10 +99,16 @@ public class DictionaryController {
             @RequestParam(defaultValue = "FROM") String sortBy,
             @RequestParam(defaultValue = "ASC") String sortDir,
             @RequestParam(defaultValue = "") String search,
-            Model model) {
+            Model model,
+            HttpSession session) {
         var modes = dictionaryProperties.getModes();
         model.addAttribute(ATTR_MODES, modes);
         model.addAttribute(ATTR_LANGUAGE_CODE, languageCode);
+        var activeUser = accountService.resolveActiveUser(session);
+        boolean progressEnabled = activeUser.signedIn() && activeUser.userId() != null;
+        model.addAttribute("progressEnabled", progressEnabled);
+        var userId = activeUser.userId();
+        Map<String, Integer> progressMap = (userId != null) ? scoreProgressService.getProgressForUser(userId) : Map.of();
 
         if (languageCode.isBlank() || wordId.isBlank()) {
             model.addAttribute(ATTR_ERROR, "Invalid request: languageCode and wordId must not be blank");
@@ -105,7 +124,8 @@ public class DictionaryController {
                         .getLanguageBundle(languageCode)
                         .map(LanguageBundle::modeEligibilities)
                         .orElse(List.of());
-                model.addAttribute(ATTR_WORD, new WordViewModel(s.value(), eligibilities, modes));
+                model.addAttribute(ATTR_WORD, new WordViewModel(s.value(), eligibilities, modes,
+                        progressMap.get(s.value().wordId().value())));
             }
             case DictionaryOperationResult.Failure<Word> f -> {
                 log.warn("toggleGlobalEnabled failed for language={}, wordId={}: {}",
@@ -131,10 +151,16 @@ public class DictionaryController {
             @RequestParam(defaultValue = "FROM") String sortBy,
             @RequestParam(defaultValue = "ASC") String sortDir,
             @RequestParam(defaultValue = "") String search,
-            Model model) {
+            Model model,
+            HttpSession session) {
         var modes = dictionaryProperties.getModes();
         model.addAttribute(ATTR_MODES, modes);
         model.addAttribute(ATTR_LANGUAGE_CODE, languageCode);
+        var activeUser = accountService.resolveActiveUser(session);
+        boolean progressEnabled = activeUser.signedIn() && activeUser.userId() != null;
+        model.addAttribute("progressEnabled", progressEnabled);
+        var userId = activeUser.userId();
+        Map<String, Integer> progressMap = (userId != null) ? scoreProgressService.getProgressForUser(userId) : Map.of();
 
         if (languageCode.isBlank() || wordId.isBlank() || mode.isBlank()) {
             model.addAttribute(ATTR_ERROR, "Invalid request: languageCode, wordId, and mode must not be blank");
@@ -156,7 +182,8 @@ public class DictionaryController {
                                 .filter(w -> w.wordId().equals(typedWordId))
                                 .findFirst()
                                 .ifPresent(w -> model.addAttribute(
-                                        ATTR_WORD, new WordViewModel(w, lb.modeEligibilities(), modes))));
+                                        ATTR_WORD, new WordViewModel(w, lb.modeEligibilities(), modes,
+                                                progressMap.get(w.wordId().value())))));
             }
             case DictionaryOperationResult.Failure<ModeEligibility> f -> {
                 log.warn("toggleModeEnabled failed for language={}, wordId={}, mode={}: {}",
@@ -178,8 +205,9 @@ public class DictionaryController {
     public String dictionaryRow(
             @RequestParam String languageCode,
             @RequestParam String wordId,
-            Model model) {
-        populateSingleRowModel(model, languageCode, wordId);
+            Model model,
+            HttpSession session) {
+        populateSingleRowModel(model, languageCode, wordId, session);
         return FRAGMENT_ROW;
     }
 
@@ -198,10 +226,16 @@ public class DictionaryController {
             @RequestParam(defaultValue = "") String fromWord,
             @RequestParam(defaultValue = "") String toWord,
             @RequestParam(defaultValue = "") String example,
-            Model model) {
+            Model model,
+            HttpSession session) {
         var modes = dictionaryProperties.getModes();
         model.addAttribute(ATTR_MODES, modes);
         model.addAttribute(ATTR_LANGUAGE_CODE, languageCode);
+        var activeUser = accountService.resolveActiveUser(session);
+        boolean progressEnabled = activeUser.signedIn() && activeUser.userId() != null;
+        model.addAttribute("progressEnabled", progressEnabled);
+        var userId = activeUser.userId();
+        Map<String, Integer> progressMap = (userId != null) ? scoreProgressService.getProgressForUser(userId) : Map.of();
 
         if (languageCode.isBlank()) {
             model.addAttribute(ATTR_ERROR, "Invalid request: languageCode must not be blank");
@@ -220,7 +254,8 @@ public class DictionaryController {
                         .getLanguageBundle(languageCode)
                         .map(LanguageBundle::modeEligibilities)
                         .orElse(List.of());
-                model.addAttribute(ATTR_WORD, new WordViewModel(s.value(), eligibilities, modes));
+                model.addAttribute(ATTR_WORD, new WordViewModel(s.value(), eligibilities, modes,
+                        progressMap.get(s.value().wordId().value())));
                 yield FRAGMENT_ROW;
             }
             case DictionaryOperationResult.Failure<Word> f -> {
@@ -235,8 +270,9 @@ public class DictionaryController {
     public String dictionaryRowEdit(
             @RequestParam String languageCode,
             @RequestParam String wordId,
-            Model model) {
-        populateSingleRowModel(model, languageCode, wordId);
+            Model model,
+            HttpSession session) {
+        populateSingleRowModel(model, languageCode, wordId, session);
         return FRAGMENT_ROW_EDIT;
     }
 
@@ -247,10 +283,16 @@ public class DictionaryController {
             @RequestParam String fromWord,
             @RequestParam String toWord,
             @RequestParam(defaultValue = "") String example,
-            Model model) {
+            Model model,
+            HttpSession session) {
         var modes = dictionaryProperties.getModes();
         model.addAttribute(ATTR_MODES, modes);
         model.addAttribute(ATTR_LANGUAGE_CODE, languageCode);
+        var activeUser = accountService.resolveActiveUser(session);
+        boolean progressEnabled = activeUser.signedIn() && activeUser.userId() != null;
+        model.addAttribute("progressEnabled", progressEnabled);
+        var userId = activeUser.userId();
+        Map<String, Integer> progressMap = (userId != null) ? scoreProgressService.getProgressForUser(userId) : Map.of();
 
         if (languageCode.isBlank() || wordId.isBlank()) {
             model.addAttribute(ATTR_ERROR, "Invalid request: languageCode and wordId must not be blank");
@@ -259,7 +301,7 @@ public class DictionaryController {
 
         if (fromWord.isBlank() || toWord.isBlank()) {
             model.addAttribute(ATTR_ERROR, "From and To words must not be blank");
-            populateSingleRowModel(model, languageCode, wordId);
+            populateSingleRowModel(model, languageCode, wordId, session);
             return FRAGMENT_ROW_EDIT;
         }
 
@@ -272,7 +314,8 @@ public class DictionaryController {
                         .getLanguageBundle(languageCode)
                         .map(LanguageBundle::modeEligibilities)
                         .orElse(List.of());
-                model.addAttribute(ATTR_WORD, new WordViewModel(s.value(), eligibilities, modes));
+                model.addAttribute(ATTR_WORD, new WordViewModel(s.value(), eligibilities, modes,
+                        progressMap.get(s.value().wordId().value())));
             }
             case DictionaryOperationResult.Failure<Word> f -> {
                 log.warn("editWord failed for language={}, wordId={}: {}", languageCode, wordId, f.errorMessage());
@@ -289,16 +332,25 @@ public class DictionaryController {
         return FRAGMENT_ROW;
     }
 
-    private void populateSingleRowModel(Model model, String languageCode, String wordId) {
+    private void populateSingleRowModel(Model model, String languageCode, String wordId, HttpSession session) {
         var modes = dictionaryProperties.getModes();
         model.addAttribute(ATTR_MODES, modes);
         model.addAttribute(ATTR_LANGUAGE_CODE, languageCode);
+        var activeUser = accountService.resolveActiveUser(session);
+        boolean progressEnabled = activeUser.signedIn() && activeUser.userId() != null;
+        model.addAttribute("progressEnabled", progressEnabled);
+        var userId = activeUser.userId();
         var typedWordId = new WordId(wordId);
         var found = dataHealthService.snapshot().getLanguageBundle(languageCode)
                 .flatMap(lb -> lb.words().stream()
                         .filter(w -> w.wordId().equals(typedWordId))
                         .findFirst()
-                        .map(w -> new WordViewModel(w, lb.modeEligibilities(), modes)));
+                        .map(w -> {
+                            var progressPercent = (progressEnabled && userId != null)
+                                    ? scoreProgressService.getProgressForUser(userId).get(w.wordId().value())
+                                    : null;
+                            return new WordViewModel(w, lb.modeEligibilities(), modes, progressPercent);
+                        }));
         if (found.isPresent()) {
             model.addAttribute(ATTR_WORD, found.get());
         } else {
@@ -307,12 +359,19 @@ public class DictionaryController {
     }
 
     private void populateModel(Model model, String effectiveLang, String sortBy, String sortDir,
-                               String search, int page, int clampedPageSize) {
+                               String search, int page, int clampedPageSize, HttpSession session) {
         var modes = dictionaryProperties.getModes();
         var snapshot = dataHealthService.snapshot();
         var bundle = snapshot.getLanguageBundle(effectiveLang);
         var allWords = bundle.map(LanguageBundle::words).orElse(List.of());
         var eligibilities = bundle.map(LanguageBundle::modeEligibilities).orElse(List.of());
+
+        var activeUser = accountService.resolveActiveUser(session);
+        var userId = activeUser.userId();
+        boolean progressEnabled = activeUser.signedIn() && userId != null;
+        Map<String, Integer> progressMap = userId != null && activeUser.signedIn()
+                ? scoreProgressService.getProgressForUser(userId)
+                : Map.of();
 
         model.addAttribute("languages", dataHealthService.availableLanguages());
         model.addAttribute("currentLanguage", effectiveLang);
@@ -324,8 +383,9 @@ public class DictionaryController {
         model.addAttribute("pageSize", clampedPageSize);
         model.addAttribute(ATTR_MODES, modes);
         model.addAttribute("totalWords", countFiltered(allWords, search));
+        model.addAttribute("progressEnabled", progressEnabled);
         model.addAttribute("words",
-                applyFilterSortPage(allWords, eligibilities, modes, sortBy, sortDir, search, page, clampedPageSize));
+                applyFilterSortPage(allWords, eligibilities, modes, sortBy, sortDir, search, page, clampedPageSize, progressMap));
     }
 
     private String resolveLanguage(String languageCode) {
@@ -358,14 +418,23 @@ public class DictionaryController {
             String sortDir,
             String search,
             int page,
-            int pageSize) {
+            int pageSize,
+            Map<String, Integer> progressMap) {
         var filtered = words.stream()
                 .filter(w -> matchesSearch(w, search))
                 .toList();
 
-        Comparator<Word> comparator = SORT_BY_FROM.equals(sortBy)
-                ? Comparator.comparing(Word::fromWord, String.CASE_INSENSITIVE_ORDER)
-                : Comparator.comparing(Word::toWord, String.CASE_INSENSITIVE_ORDER);
+        Comparator<Word> comparator;
+        if (SORT_BY_FROM.equals(sortBy)) {
+            comparator = Comparator.comparing(Word::fromWord, String.CASE_INSENSITIVE_ORDER);
+        } else if (SORT_BY_PROGRESS.equals(sortBy)) {
+            // Words with no history are treated as -1 so they sort before 0% in ASC
+            // (unstarted words first) and after everything in DESC (most-learned first).
+            comparator = Comparator.comparingInt((Word w) ->
+                    progressMap.getOrDefault(w.wordId().value(), -1));
+        } else {
+            comparator = Comparator.comparing(Word::toWord, String.CASE_INSENSITIVE_ORDER);
+        }
 
         if (SORT_DIR_DESC.equals(sortDir)) {
             comparator = comparator.reversed();
@@ -380,7 +449,7 @@ public class DictionaryController {
         var toIdx = Math.min(fromIdx + pageSize, sorted.size());
 
         return sorted.subList(fromIdx, toIdx).stream()
-                .map(w -> new WordViewModel(w, eligibilities, modes))
+                .map(w -> new WordViewModel(w, eligibilities, modes, progressMap.get(w.wordId().value())))
                 .toList();
     }
 
@@ -391,8 +460,10 @@ public class DictionaryController {
 
         private final Word word;
         private final Map<String, Boolean> modeEnabled;
+        private final @Nullable Integer progressPercent;
 
-        public WordViewModel(Word word, List<ModeEligibility> eligibilities, List<String> modes) {
+        public WordViewModel(Word word, List<ModeEligibility> eligibilities, List<String> modes,
+                             @Nullable Integer progressPercent) {
             this.word = word;
             var map = new LinkedHashMap<String, Boolean>();
             for (var m : modes) {
@@ -404,6 +475,11 @@ public class DictionaryController {
                 map.put(m, enabled);
             }
             this.modeEnabled = Collections.unmodifiableMap(map);
+            this.progressPercent = progressPercent;
+        }
+
+        public WordViewModel(Word word, List<ModeEligibility> eligibilities, List<String> modes) {
+            this(word, eligibilities, modes, null);
         }
 
         public Word getWord() {
@@ -412,6 +488,10 @@ public class DictionaryController {
 
         public Map<String, Boolean> getModeEnabled() {
             return modeEnabled;
+        }
+
+        public @Nullable Integer getProgressPercent() {
+            return progressPercent;
         }
     }
 }

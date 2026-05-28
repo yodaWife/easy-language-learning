@@ -2,7 +2,7 @@ package com.yodawife.easyll.controller;
 
 import com.yodawife.easyll.config.DictionaryProperties;
 import com.yodawife.easyll.domain.MatchSession;
-import com.yodawife.easyll.repository.ScoreRepository;
+import com.yodawife.easyll.service.AccountService;
 import com.yodawife.easyll.service.DataHealthService;
 import com.yodawife.easyll.service.DataSnapshot;
 import com.yodawife.easyll.service.SessionStore;
@@ -20,27 +20,28 @@ public class HomeController {
 
     private final DataHealthService dataHealthService;
     private final SessionStore sessionStore;
-    private final ScoreRepository scoreRepository;
+    private final AccountService accountService;
     private final DictionaryProperties dictionaryProperties;
 
     public HomeController(DataHealthService dataHealthService,
                           SessionStore sessionStore,
-                          ScoreRepository scoreRepository,
+                          AccountService accountService,
                           DictionaryProperties dictionaryProperties) {
         this.dataHealthService = dataHealthService;
         this.sessionStore = sessionStore;
-        this.scoreRepository = scoreRepository;
+        this.accountService = accountService;
         this.dictionaryProperties = dictionaryProperties;
     }
 
     @GetMapping("/")
-    public String home(Model model) {
+    public String home(Model model, HttpSession session) {
         DataSnapshot snapshot = dataHealthService.snapshot();
         model.addAttribute("wordsHealthy", snapshot.wordsHealthy());
         model.addAttribute("scoresHealthy", snapshot.scoresHealthy());
         model.addAttribute("wordErrors", snapshot.wordErrors());
         model.addAttribute("scoreErrors", snapshot.scoreErrors());
-        model.addAttribute("nicknames", List.copyOf(scoreRepository.knownUsers()));
+        model.addAttribute("activeUser", accountService.resolveActiveUser(session));
+        model.addAttribute("users", accountService.findAll());
         model.addAttribute("languages", dataHealthService.availableLanguages());
         model.addAttribute("primaryLanguage", dictionaryProperties.getPrimaryLanguageCode());
         return "index";
@@ -48,7 +49,6 @@ public class HomeController {
 
     @PostMapping("/session/start")
     public String startSession(
-            @RequestParam(required = false) String nickname,
             @RequestParam String mode,
             @RequestParam(required = false) String languageCode,
             HttpSession httpSession) {
@@ -70,7 +70,8 @@ public class HomeController {
         }
         httpSession.setAttribute("languageCode", resolvedLanguage);
 
-        MatchSession session = sessionStore.create(nickname, mode);
+        var userId = accountService.resolveActiveUser(httpSession).userId();
+        MatchSession session = sessionStore.create(userId, mode);
         httpSession.setAttribute("sessionId", session.getSessionId());
 
         return switch (mode) {

@@ -5,12 +5,14 @@ This guide covers the project architecture, codebase structure, configuration, t
 ## Table of Contents
 
 - [Architecture overview](#architecture-overview)
+- [Account and session management](#account-and-session-management)
 - [Project structure](#project-structure)
 - [Mobile support](#mobile-support)
 - [Build and run](#build-and-run)
 - [Configuration reference](#configuration-reference)
 - [Security model](#security-model)
 - [Data model](#data-model)
+- [Scoring model updates (phase 1)](#scoring-model-updates-phase-1)
 - [Testing](#testing)
 - [Extending the app](#extending-the-app)
 - [Known constraints and backlog](#known-constraints-and-backlog)
@@ -115,6 +117,36 @@ sequenceDiagram
 
 ---
 
+## Account and session management
+
+Phase 1 introduces account selection and signed-in/guest context backed by `HttpSession` and CSV persistence.
+
+### Architecture
+
+- `Account` (record): immutable account model with `userId` (stable UUID string), `displayName`, and `createdAt`.
+- `ActiveUserContext` (record): session snapshot of current user (`userId`, `displayName`, `signedIn`).
+- `SessionAttributes.ACTIVE_USER`: shared session key constant with value `"activeUser"`.
+- `AccountRepository`: persistence contract (`findById`, `findByDisplayName`, `findAll`, `save`).
+- `CsvAccountRepository`: CSV adapter using `app.accounts.file-path` (default `./data/users/users.csv`), in-memory cache, and atomic temp-file rename writes.
+- `AccountService`: orchestrates find/create account, sign-in, sign-out, and active-user resolution.
+
+### HTTP endpoints
+
+All account endpoints are public and return HTMX fragments.
+
+- `GET /account/panel` — account modal content (known users + active user)
+- `POST /account/sign-in` — sign in with existing/new display name
+- `POST /account/sign-out` — clear active user context
+- `GET /account/status` — signed-in/guest status fragment
+
+### Session behavior
+
+- Active user state is stored in `HttpSession` under key `"activeUser"`.
+- Page reloads keep the same active user while the session remains valid.
+- Signing out removes only the active user attribute; it does not invalidate the whole session.
+
+---
+
 ## Project structure
 
 ```
@@ -124,21 +156,29 @@ src/main/java/com/yodawife/easyll/
 │   ├── MatchGameProperties.java      app.match.*
 │   └── SecurityConfig.java
 ├── controller/
+│   ├── AccountController.java        /account/panel, /account/sign-in, /account/sign-out, /account/status
 │   ├── DictionaryController.java     /dictionary, /dictionary/rows, toggle endpoints
 │   ├── FlashcardsController.java
 │   ├── HealthController.java
 │   ├── HomeController.java
 │   └── MatchController.java
 ├── domain/
+│   ├── Account.java
+│   ├── ActiveUserContext.java
 │   ├── LanguageBundle.java
 │   ├── MultiLanguageDataBundle.java
 │   ├── ModeEligibility.java
+│   ├── ScoreKey.java
+│   ├── SessionAttributes.java
 │   ├── Word.java
 │   ├── WordId.java
 │   └── ...
 ├── repository/
+│   ├── AccountRepository.java
+│   ├── CsvAccountRepository.java
 │   └── ScoreRepository.java
 ├── service/
+│   ├── AccountService.java
 │   ├── DataHealthService.java
 │   ├── DictionaryEditService.java
 │   ├── DictionaryDiscoveryService.java
@@ -147,6 +187,8 @@ src/main/java/com/yodawife/easyll/
 │   ├── EligibilityEvaluator.java
 │   ├── FlashcardService.java
 │   ├── MatchBoardGenerator.java
+│   ├── ScoreMigrationService.java
+│   ├── ScoreProgressService.java
 │   └── ...
 └── validation/
     ├── MultiLanguageDictionaryParser.java
@@ -244,6 +286,7 @@ All properties live in `src/main/resources/application.properties`. Override per
 | `app.dictionaries.modes` | `flashcards,match` | Supported mode names used by dictionary toggles and eligibility checks. |
 | `app.scores.file-path` | `./data/scores/scores.csv` | Score CSV read path. |
 | `app.scores.write-path` | `./data/scores/scores.csv` | Score CSV write path. Can differ from the read path for staged setups; must be a filesystem path (not classpath). |
+| `app.accounts.file-path` | `./data/users/users.csv` | Accounts CSV read/write path for account selection and sign-in state. |
 | `app.match.max-attempts` | `30` | Successful matches required to complete a session. Minimum 1. |
 | `app.match.board-size` | `5` | Word pairs per match board. Minimum 1. |
 | `app.match.session-ttl-minutes` | `60` | Idle TTL for match sessions in minutes. Sessions not accessed within this window are evicted by the scheduled sweep. Minimum 1. |
@@ -266,6 +309,7 @@ Security is provided by Spring Security, configured in `SecurityConfig`.
 | `/flashcards`, `/flashcards/card` | Public |
 | `/match`, `/match/attempt`, `/match/result` | Public |
 | `/health/data` | Public |
+| `/account/panel`, `/account/sign-in`, `/account/sign-out`, `/account/status` | Public |
 | `/css/**`, `/webjars/**` | Public |
 | `/admin/**` | Requires `ROLE_ADMIN` (HTTP Basic) |
 | Any other path | Authenticated |
@@ -290,8 +334,10 @@ Semicolon-delimited UTF-8, with header row.
 
 ```text
 WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
-w1;dog;pies;The dog runs.;true
+90eadc73-ef0e-3efe-a5f3-e2ecd0b76d28;Letter;Betű;Írtam egy betűt a barátomnak.;true
 ```
+
+`WORD_ID` values are UUID strings. Existing seeded dictionaries use deterministic type-3 UUIDs generated from `languageCode:fromWord:toWord` via `UUID.nameUUIDFromBytes(...)`, which provides globally unique identifiers across dictionaries for stable score keys.
 
 Validation:
 - Exactly 5 columns.
@@ -318,6 +364,8 @@ Validation:
 
 Missing `mode-eligibility.csv` is treated as empty (all words enabled per mode by default).
 
+`mode-eligibility.csv` references the same `WORD_ID` UUID values used in `words.csv`.
+
 Eligibility used by games:
 - `word.globalEnabled == true`
 - and mode override is enabled, or missing (defaults to enabled).
@@ -327,17 +375,34 @@ Eligibility used by games:
 Semicolon-delimited, UTF-8. No header row.
 
 ```text
-USER;FROM;TO;HISTORY
-alice;Letter;Betű;S,F,S,S
+USER_ID;PAIR_ID;MODE;HISTORY
+6f59df77-74c3-4f0a-8c85-a0f4a96d2740;90eadc73-ef0e-3efe-a5f3-e2ecd0b76d28;match;S,F,S,S
 ```
 
-Parsed into `ScoreDataBundle` containing a `Map<UserWordKey, UserWordHistory>`.
+Parsed into `ScoreDataBundle` containing a `Map<ScoreKey, UserWordHistory>` where `ScoreKey = (userId, pairId, mode)`.
 
 **Validation:**
 - HISTORY must contain only `S` or `F` tokens separated by commas.
 - Blank HISTORY values are invalid.
-- History is capped to the **last 10 entries** per `(user, from, to)` on write.
+- History is capped to the **last 12 entries** per `(userId, pairId, mode)` (`UserWordHistory.MAX_HISTORY = 12`).
 - A missing score file is treated as empty history (not an error).
+
+### Migration behavior
+
+- Legacy score rows (`nickname;fromWord;toWord;history`) are migrated automatically by `ScoreMigrationService` when `ScoreCsvParser` parses filesystem-based score data.
+- New row format is `userId;pairId;mode;history`.
+- Migration is one-time and atomic: original file is backed up to `.bak`, converted rows are written through a temp file and moved into place.
+- Rows with unresolved `(fromWord,toWord)` mapping are skipped and logged.
+- In migrated rows, `mode` is written as `match`.
+
+---
+
+## Scoring model updates (phase 1)
+
+- Persistent key changed from `(nickname, fromWord, toWord)` to `(userId, pairId, mode)`.
+- Signed-in users persist score history to `data/scores/scores.csv`; anonymous users still get per-session counters and result messages, but no persistent writes.
+- `ScoreProgressService.getProgressForUser(userId)` returns `Map<String pairId, Integer successPercent>`.
+- Dictionary progress column is enabled only for signed-in users and uses the computed success percentage.
 
 **Write strategy.** `ScoreRepository` writes to a temp file next to the target path, then renames it atomically. This prevents partial-write corruption if the JVM is interrupted mid-write.
 
@@ -406,7 +471,7 @@ The `ScoreRepository` class is the single point of persistence for scores. To sw
 | Item | Detail |
 | --- | --- |
 | In-memory sessions | Sessions are stored in a `ConcurrentHashMap`. A server restart clears all active sessions. |
-| Nickname-only identity | No user accounts or authentication for players. |
+| Gameplay account model | Player selection is session-based (no password authentication). |
 | Single admin credential | The admin user is an in-memory Spring Security user. |
 | CSV scalability | The entire word file is parsed on every reload. Performance degrades with very large files. |
 | Score weighting not yet active | Per-user history is tracked but not yet used to bias word selection toward frequently failed words. |

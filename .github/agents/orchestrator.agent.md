@@ -51,7 +51,7 @@ The orchestrator is plan-driven and reviewer-gated:
 5. After ALL phases are complete and all tasks are marked done:
    LAUNCH the Change Reviewer subagent with:
    - The generated implementation plan
-   - All spec/requirements files found in the project (requirements.md, README.md, etc.)
+   - All spec/requirements files found in the project (docs/functional-spec.md, docs/developer-guide.md, README.md, etc.)
    - The full list of files changed across all tasks
 
 6. EVALUATE the reviewer's findings:

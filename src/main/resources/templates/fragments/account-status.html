@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="status" id="account-status-fragment">
+    <th:block th:if="${activeUser != null and activeUser.signedIn()}">
+        <span class="account-status account-status--signed-in">
+            <i class="bi bi-person-check-fill account-status-icon"></i>
+            <span class="account-status-name" th:text="${activeUser.displayName()}">Username</span>
+        </span>
+    </th:block>
+    <th:block th:unless="${activeUser != null and activeUser.signedIn()}">
+        <span class="account-status account-status--guest">
+            <i class="bi bi-person account-status-icon"></i>
+            <span class="account-status-name">Guest</span>
+        </span>
+    </th:block>
+</div>
+</body>
+</html>

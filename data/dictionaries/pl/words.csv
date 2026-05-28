@@ -1,96 +1,96 @@
 WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
-1;Letter;List;Piszę list do przyjaciela.;true
-2;Silliness;Głupota;To była wielka głupota!;true
-3;Stamp;Znaczek;Na kopercie jest znaczek.;true
-4;Postcard;Pocztówka;Wysyłam pocztówkę z Warszawy.;true
-5;Envelope;Koperta;List jest w kopercie.;true
-6;Newspaper;Gazeta;Rano czytam gazetę.;true
-7;Glue;Klej;Klej leży na stole.;true
-8;Eraser;Gumka;Pożycz mi swoją gumkę!;true
-9;Vacuum cleaner;Odkurzacz;Odkurzacz jest bardzo głośny.;true
-10;Screws;Śruby;Do półki potrzeba śrub.;true
-11;To set;Ustawić;Trzeba ustawić temperaturę.;true
-12;Detergent;Proszek do prania;Kupuję proszek do prania.;true
-13;Fill;Napełnić;Napełniam szklankę wodą.;true
-14;To start;Uruchomić;Trzeba uruchomić maszynę.;true
-15;Bush;Krzak;Ptak siedzi w krzaku.;true
-16;Bus stop;Przystanek autobusowy;Czekam na przystanku autobusowym.;true
-17;Cloud;Chmura;Na niebie są ciemne chmury.;true
-18;Fisherman;Wędkarz;Wędkarz siedzi nad jeziorem.;true
-19;Sidewalk;Chodnik;Dzieci idą chodnikiem.;true
-20;Fence;Płot;Wokół ogrodu jest płot.;true
-21;Stone;Kamień;Na drodze leży kamień.;true
-22;Field;Łąka;Krowa pasie się na łące.;true
-23;Tower;Wieża;Ta wieża jest bardzo wysoka.;true
-24;Temple;Świątynia;Świątynia stoi w centrum miasta.;true
-25;Hallway;Przedpokój;Buty stoją w przedpokoju.;true
-26;To move;Przeprowadzić się;Wkrótce przeprowadzamy się do nowego mieszkania.;true
-27;All;Wszystkie;Przeczytałem wszystkie książki.;true
-28;Angry;Zły;Jestem zły, bo się spóźniłeś.;true
-29;Interests me;Interesuje mnie;Bardzo interesuje mnie kultura polska.;true
-30;To arrive;Przyjechać;Kiedy przyjedziesz do Warszawy?;true
-31;To tell(a story);Opowiedzieć;Opowiedział mi swoją historię.;true
-32;Morning;Przedpołudnie;Przedpołudniem pracuję w domu.;true
-33;Plant;Roślina;Ta roślina potrzebuje dużo wody.;true
-34;Adult;Dorosły;Ten film jest tylko dla dorosłych.;true
-35;Suit;Garnitur;Tata nosi garnitur do pracy.;true
-36;Tie;Krawat;Dziś noszę czerwony krawat.;true
-37;Pants;Spodnie;Założyłem nowe spodnie.;true
-38;West;Zachód;Idziemy na zachód.;true
-39;East;Wschód;Słońce wschodzi na wschodzie.;true
-40;North;Północ;Na północy zimy są mroźne.;true
-41;South;Południe;Na południu jest cieplej.;true
-42;Before;Przed;Przed spotkaniem piję kawę.;true
-43;After;Po;Po pracy wracam do domu.;true
-44;Behind;Za;Kot jest za stołem.;true
-45;Beside;Obok;Mój przyjaciel siedzi obok mnie.;true
-46;Weekday;Dzień powszedni;W dni powszednie wstaję wcześnie.;true
-47;Important;Ważny;Dobre zdrowie jest ważne.;true
-48;Flat(surface);Płaski;Blat stołu jest płaski.;true
-49;In the middle;Pośrodku;Lampa wisi pośrodku pokoju.;true
-50;To stay;Zostać;Dziś wieczorem zostanę w domu.;true
-51;Disadventage;Wada;Ten plan ma jedną wadę.;true
-52;Advantage;Zaleta;Zaletą mieszkania jest duży ogród.;true
-53;Friendly;Przyjazny;Moi sąsiedzi są bardzo przyjaźni.;true
-54;Bracelet;Bransoletka;Dostałam piękną bransoletkę w prezencie.;true
-55;Kind;Miły;Jesteś bardzo miły!;true
-56;Short(height);Niski;Moja siostra jest niska i blond.;true
-57;Long(height);Wysoki;Mój brat jest bardzo wysoki.;true
-58;Old;Stary;Stary pies śpi w fotelu.;true
-59;Young;Młody;Nasza nauczycielka jest młoda.;true
-60;Younger sister;Młodsza siostra;Moja młodsza siostra ma sześć lat.;true
-61;Sister;Siostra;Moja siostra mieszka w Berlinie.;true
-62;Older Sister;Starsza siostra;Starsza siostra ma na imię Anna.;true
-63;Younger brother;Młodszy brat;Mój młodszy brat lubi grać w piłkę.;true
-64;Older brother;Starszy brat;Starszy brat jest inżynierem.;true
-65;Brother;Brat;Mam dwóch braci.;true
-66;Usually;Zazwyczaj;Zazwyczaj jeżdżę do pracy autobusem.;true
-67;Rarely;Rzadko;Rzadko jem mięso.;true
-68;Jawellery;Biżuteria;Biżuteria leży w szufladzie.;true
-69;Occupation;Zawód;Jaki masz zawód?;true
-70;Means of transport;Środek transportu;Autobus to tani środek transportu.;true
-71;Tram;Tramwaj;Jadę tramwajem do centrum.;true
-72;Engineer;Inżynier;Inżynier projektuje budynki.;true
-73;Pear;Gruszka;Jestem głodny, zjem gruszkę.;true
-74;Old(thing);Stary;To jest stare zdjęcie.;true
-75;Slow;Wolny;Żółw jest bardzo wolny.;true
-76;Empty;Pusty;Szklanka jest pusta, nalej wody!;true
-77;Full;Pełny;Moja torba jest pełna książek.;true
-78;Short(duration);Krótki;Film był krótki.;true
-79;Long(duration);Długi;To był długi dzień.;true
-80;Rectangle;Prostokąt;Drzwi mają kształt prostokąta.;true
-81;Circle;Koło;Narysuj koło!;true
-82;Triangle;Trójkąt;Trójkąt ma trzy kąty.;true
-83;Square;Kwadrat;Kwadrat ma cztery równe boki.;true
-84;Garage;Garaż;Samochód stoi w garażu.;true
-85;Repair;Naprawić;Trzeba naprawić rower.;true
-86;Tall;Wysoki;Wysoki budynek stoi w centrum.;true
-87;Spend(time);Spędzać;Chętnie spędzam tu czas.;true
-88;To care;Dbać;Dbasz o swoje rośliny?;true
-89;To look for(search);Szukać;Szukam kluczy wszędzie.;true
-90;Huge amount;Mnóstwo;Czeka mnie mnóstwo pracy.;true
-91;Sad;Smutny;Jestem smutny, bo wyjeżdżasz.;true
-92;Completly;Zupełnie;Masz zupełną rację!;true
-93;Clever;Mądry;Mądry uczeń dużo się uczy.;true
-94;Stupid;Głupi;Nie bądź taki głupi!;true
-95;Busy;Zajęty;Dziś jestem bardzo zajęty.;true
+37e04c53-3a05-303a-a7cd-65319c412573;Letter;List;Piszę list do przyjaciela.;true
+dcd3b9f4-8029-3f9f-b2b9-dd22a28d4e9f;Silliness;Głupota;To była wielka głupota!;true
+8fca4e95-cf98-33af-b6a3-0797ce6627c6;Stamp;Znaczek;Na kopercie jest znaczek.;true
+aafa165b-cba4-3e32-a6c4-eb7870f4ba75;Postcard;Pocztówka;Wysyłam pocztówkę z Warszawy.;true
+0582ac05-b4ef-3f37-b4c3-ef4a841a919f;Envelope;Koperta;List jest w kopercie.;true
+c22a49ab-3bf4-3524-8f84-0360384e1cf2;Newspaper;Gazeta;Rano czytam gazetę.;true
+f79cff2d-cd13-3a37-9407-2176e86dd5c7;Glue;Klej;Klej leży na stole.;true
+a773e79f-2102-39e5-8b77-ead5062ddb87;Eraser;Gumka;Pożycz mi swoją gumkę!;true
+bc1b4d57-8c8a-3057-9779-3e4cee5b657c;Vacuum cleaner;Odkurzacz;Odkurzacz jest bardzo głośny.;true
+1d7bbce1-c208-32b1-a89d-b4041e5b70a6;Screws;Śruby;Do półki potrzeba śrub.;true
+d90786e9-c027-36a3-980b-1db1a5da88e8;To set;Ustawić;Trzeba ustawić temperaturę.;true
+1ee71178-4f88-3d6a-8f4c-170df33d543b;Detergent;Proszek do prania;Kupuję proszek do prania.;true
+e9d9f625-39d8-31d3-9bca-3c6b71af5eb1;Fill;Napełnić;Napełniam szklankę wodą.;true
+97dcfb67-4ccc-3572-ac6d-e1f397fa3c3f;To start;Uruchomić;Trzeba uruchomić maszynę.;true
+55ba4306-7813-3734-ba7d-64e2689ca335;Bush;Krzak;Ptak siedzi w krzaku.;true
+a3038f1e-347b-3a84-842f-61deea3ff3ba;Bus stop;Przystanek autobusowy;Czekam na przystanku autobusowym.;true
+8aeb6994-e767-34a3-9f0e-e82195f6a7d3;Cloud;Chmura;Na niebie są ciemne chmury.;true
+e89c27ff-629b-3bad-a6b9-680c38bda262;Fisherman;Wędkarz;Wędkarz siedzi nad jeziorem.;true
+7417f4cf-a9ff-3410-8b93-775673971547;Sidewalk;Chodnik;Dzieci idą chodnikiem.;true
+17103000-95af-3e8b-a474-85b19fda6601;Fence;Płot;Wokół ogrodu jest płot.;true
+f9f81c43-2ed9-33ab-83d1-61abeffa1887;Stone;Kamień;Na drodze leży kamień.;true
+b798549c-e73b-3e0c-ac02-37ee7ddc4b94;Field;Łąka;Krowa pasie się na łące.;true
+dd841862-bd21-3e3f-abb6-45b7bc82d72e;Tower;Wieża;Ta wieża jest bardzo wysoka.;true
+6a31050f-f698-3326-86a2-cc34270d057e;Temple;Świątynia;Świątynia stoi w centrum miasta.;true
+c2751685-fb95-348b-a01d-657e0b8626c0;Hallway;Przedpokój;Buty stoją w przedpokoju.;true
+869b6084-2354-304b-a441-c416f16ab45a;To move;Przeprowadzić się;Wkrótce przeprowadzamy się do nowego mieszkania.;true
+3f2191e3-88a6-3e30-930f-87e97e1b940f;All;Wszystkie;Przeczytałem wszystkie książki.;true
+007d2b5d-c73f-3e28-8c0a-33dcb18f3f70;Angry;Zły;Jestem zły, bo się spóźniłeś.;true
+fc724be7-b074-35d1-a028-eaec91586e74;Interests me;Interesuje mnie;Bardzo interesuje mnie kultura polska.;true
+81e429be-a7b6-3ec4-8b55-a55a1869d34f;To arrive;Przyjechać;Kiedy przyjedziesz do Warszawy?;true
+14b06f0a-c304-381c-9a2c-db821b752176;To tell(a story);Opowiedzieć;Opowiedział mi swoją historię.;true
+c8719a96-c1c7-32ba-ac0d-dec45182258c;Morning;Przedpołudnie;Przedpołudniem pracuję w domu.;true
+03b220e5-6306-3ae8-adf8-565e8af54bb2;Plant;Roślina;Ta roślina potrzebuje dużo wody.;true
+afb548ea-c7de-3fea-8bd9-ec53fa039f7d;Adult;Dorosły;Ten film jest tylko dla dorosłych.;true
+460071ec-3aae-318c-b6a4-852e609edbb4;Suit;Garnitur;Tata nosi garnitur do pracy.;true
+cfdab31b-faf7-32fc-b453-87f6b10f94b9;Tie;Krawat;Dziś noszę czerwony krawat.;true
+cea35ea1-c0e1-3135-8028-a6873ae4fa7b;Pants;Spodnie;Założyłem nowe spodnie.;true
+dfd61230-0c24-30cc-bfc6-9b3b019b4969;West;Zachód;Idziemy na zachód.;true
+88a38325-3be3-3346-b272-2b3cf28d58d0;East;Wschód;Słońce wschodzi na wschodzie.;true
+6b8f9eb3-304a-324b-b5d7-2796fa7d9961;North;Północ;Na północy zimy są mroźne.;true
+aac20254-2c74-3b71-b91c-2568a6b21c1a;South;Południe;Na południu jest cieplej.;true
+a5d5246f-1ec7-365a-ae7a-b6f97a6ee502;Before;Przed;Przed spotkaniem piję kawę.;true
+c2d8dbbb-1e53-31aa-9a1a-d46730cb8c08;After;Po;Po pracy wracam do domu.;true
+33955fc4-5c6c-34e3-b40a-d97c8e2cde18;Behind;Za;Kot jest za stołem.;true
+c0e2c4b4-faf3-3aab-aabc-2936e243222f;Beside;Obok;Mój przyjaciel siedzi obok mnie.;true
+70ab800a-aaec-3b64-9cc4-89a4f517b8d7;Weekday;Dzień powszedni;W dni powszednie wstaję wcześnie.;true
+12315540-3f29-3e08-a736-6355942d79e8;Important;Ważny;Dobre zdrowie jest ważne.;true
+b6866f69-8b0d-392f-916b-4fb05f7f807d;Flat(surface);Płaski;Blat stołu jest płaski.;true
+2a6b71be-ebab-3e01-9db0-bffad0f71bd0;In the middle;Pośrodku;Lampa wisi pośrodku pokoju.;true
+61170c64-665d-39f5-8350-5d52683f5e2e;To stay;Zostać;Dziś wieczorem zostanę w domu.;true
+5f7ca786-8bbc-300d-bc0d-f6cd9fda81a4;Disadventage;Wada;Ten plan ma jedną wadę.;true
+6f46b08d-8762-300e-8953-b5d9f909b708;Advantage;Zaleta;Zaletą mieszkania jest duży ogród.;true
+e684b127-ca69-3929-a498-0aec1a235f78;Friendly;Przyjazny;Moi sąsiedzi są bardzo przyjaźni.;true
+911f7524-f3b9-3d26-a268-14390b7a4cf1;Bracelet;Bransoletka;Dostałam piękną bransoletkę w prezencie.;true
+29853498-d370-3eae-9838-ec9703f98860;Kind;Miły;Jesteś bardzo miły!;true
+e9578b61-4058-3d91-b913-1ddbb2150afb;Short(height);Niski;Moja siostra jest niska i blond.;true
+ae9c4e67-f3d9-30be-bf8d-0bd95e1de7f6;Long(height);Wysoki;Mój brat jest bardzo wysoki.;true
+ee35aeda-9d0b-36c3-b8c2-29f584c6524b;Old;Stary;Stary pies śpi w fotelu.;true
+57128d98-d935-3105-b90b-637fdf2950ee;Young;Młody;Nasza nauczycielka jest młoda.;true
+5878065a-9234-344e-bfc2-b53536babda0;Younger sister;Młodsza siostra;Moja młodsza siostra ma sześć lat.;true
+542262fa-e232-3260-b0f7-fe23ec43bca5;Sister;Siostra;Moja siostra mieszka w Berlinie.;true
+7f95e003-da98-36c5-acf6-78876eec6329;Older Sister;Starsza siostra;Starsza siostra ma na imię Anna.;true
+44c55b02-10ca-354d-9c3c-a268aa40c2d8;Younger brother;Młodszy brat;Mój młodszy brat lubi grać w piłkę.;true
+773fdcd3-2f3e-3c40-8ab3-55e6ec8b83ee;Older brother;Starszy brat;Starszy brat jest inżynierem.;true
+d2190d7e-0226-30c4-bb73-ea9171a0089c;Brother;Brat;Mam dwóch braci.;true
+b5d32e81-b16c-38bd-9d19-b2452b101fd1;Usually;Zazwyczaj;Zazwyczaj jeżdżę do pracy autobusem.;true
+f344118c-9abf-33d6-b351-f481792046b4;Rarely;Rzadko;Rzadko jem mięso.;true
+8becb329-b74f-37b4-b1d4-03780e0d800d;Jawellery;Biżuteria;Biżuteria leży w szufladzie.;true
+7c385046-47c3-3cdc-862d-36392369fb4f;Occupation;Zawód;Jaki masz zawód?;true
+4c734229-631c-3b8d-8f2c-f0a42cfca5a6;Means of transport;Środek transportu;Autobus to tani środek transportu.;true
+541cbe4f-93a0-3863-8a91-626782d12e55;Tram;Tramwaj;Jadę tramwajem do centrum.;true
+9385aec1-3c45-323c-a779-fd3b53a593a9;Engineer;Inżynier;Inżynier projektuje budynki.;true
+2cd62e60-c812-3546-aef5-9275ca9009fd;Pear;Gruszka;Jestem głodny, zjem gruszkę.;true
+9bfedf57-5e7e-30c1-af12-03e3b773df51;Old(thing);Stary;To jest stare zdjęcie.;true
+3f4c2de0-6615-3566-a1d3-95b3ffc52ac0;Slow;Wolny;Żółw jest bardzo wolny.;true
+34597ffb-eff0-3efc-891d-1a06a402820e;Empty;Pusty;Szklanka jest pusta, nalej wody!;true
+4195c53e-d7ff-3254-84dd-4d2418f65acf;Full;Pełny;Moja torba jest pełna książek.;true
+292840e2-34db-3da3-80f7-b7f1b47876c0;Short(duration);Krótki;Film był krótki.;true
+b5d3d961-ecac-32d3-b844-76f5cf811118;Long(duration);Długi;To był długi dzień.;true
+9e0ae84c-74a5-3dad-934a-3b18a0aeb180;Rectangle;Prostokąt;Drzwi mają kształt prostokąta.;true
+a7c4450f-fd17-3c46-90f1-2c3f8fee00a5;Circle;Koło;Narysuj koło!;true
+7d65edc9-4af2-3411-afe0-2b02be4cad2f;Triangle;Trójkąt;Trójkąt ma trzy kąty.;true
+21ce6f54-ea0f-3fbd-a2a2-55b195a6373c;Square;Kwadrat;Kwadrat ma cztery równe boki.;true
+65e129d6-b566-388a-adef-8d576a0f8eca;Garage;Garaż;Samochód stoi w garażu.;true
+9c0bd6c7-db00-3bb4-a6a0-ee02c6fc35ac;Repair;Naprawić;Trzeba naprawić rower.;true
+3ea56e8c-0ae2-3c6f-95a7-f08a946b56a6;Tall;Wysoki;Wysoki budynek stoi w centrum.;true
+eac491b8-0366-3ed2-8c5a-1cd09f71970d;Spend(time);Spędzać;Chętnie spędzam tu czas.;true
+0df63487-abd6-3985-b20c-08c096e7bdbf;To care;Dbać;Dbasz o swoje rośliny?;true
+9fe7c7d9-4f7b-3499-8f72-6b47719cf008;To look for(search);Szukać;Szukam kluczy wszędzie.;true
+b9dfe2b3-e3ab-3fd7-9ad3-69d98f71216d;Huge amount;Mnóstwo;Czeka mnie mnóstwo pracy.;true
+3826273c-9cc3-34eb-8265-49493faadfb8;Sad;Smutny;Jestem smutny, bo wyjeżdżasz.;true
+1d10569d-e3e9-313a-b2fa-4ff070190198;Completly;Zupełnie;Masz zupełną rację!;true
+a0443010-c2da-31b5-ac0a-ec8df84b6dd9;Clever;Mądry;Mądry uczeń dużo się uczy.;true
+5db504ad-c19d-35f9-8c09-45a826f3742d;Stupid;Głupi;Nie bądź taki głupi!;true
+2e412d77-856b-3d0d-8971-d62629e099a1;Busy;Zajęty;Dziś jestem bardzo zajęty.;true

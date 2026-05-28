@@ -140,6 +140,23 @@
                             <th class="col-example">EXAMPLE</th>
                             <th class="col-toggle">GLOBAL</th>
                             <th th:each="mode : ${modes}" th:text="${mode}" class="col-toggle">MODE</th>
+                            <th th:if="${progressEnabled}" class="col-progress"
+                                :aria-sort="sortBy === 'PROGRESS' ? (sortDir === 'ASC' ? 'ascending' : 'descending') : 'none'">
+                                <button type="button" class="sort-header-btn"
+                                        @click="
+                                            const nd = sortBy === 'PROGRESS' ? (sortDir === 'ASC' ? 'DESC' : 'ASC') : 'DESC';
+                                            sortBy = 'PROGRESS'; sortDir = nd;
+                                            htmx.ajax('GET', '/dictionary/rows', {
+                                                target: '#dict-rows', swap: 'innerHTML',
+                                                values: { sortBy: 'PROGRESS', sortDir: nd, languageCode,
+                                                          search: document.getElementById('dict-search')?.value || '',
+                                                          pageSize: document.getElementById('dict-page-size')?.value || '20',
+                                                          page: '0' }
+                                            })">
+                                    PROGRESS
+                                    <span class="sort-arrow" x-text="sortBy === 'PROGRESS' ? (sortDir === 'ASC' ? '↑' : '↓') : '↕'">↕</span>
+                                </button>
+                            </th>
                             <th class="col-actions"><!-- actions --></th>
                         </tr>
                     </thead>

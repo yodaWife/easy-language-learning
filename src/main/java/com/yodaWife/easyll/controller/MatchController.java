@@ -86,7 +86,7 @@ public class MatchController {
         }
 
         AttemptResult result = matchGameApplicationService.processAttempt(session, board, fromWord, toWord);
-        matchGameApplicationService.recordAttempt(sessionId, fromWord, toWord, result);
+        matchGameApplicationService.recordAttempt(sessionId, fromWord, toWord, languageCode, result);
 
         if (result.sessionComplete()) {
             String message = matchGameApplicationService.finaliseSession(session);
