@@ -37,9 +37,9 @@
                 <input type="hidden" name="mode" th:value="${mode}">
                 <button type="submit"
                         class="toggle-switch-btn"
-                        th:attr="aria-label=${'Toggle ' + mode + ' for ' + wv.word.fromWord},aria-checked=${wv.modeEnabled[mode] ?: true}"
+                        th:attr="aria-label=${'Toggle ' + mode + ' for ' + wv.word.fromWord},aria-checked=${wv.getModeEnabledOrDefault(mode)}"
                         role="switch">
-                    <span th:class="${(wv.modeEnabled[mode] ?: true) ? 'toggle-switch toggle-switch--on' : 'toggle-switch toggle-switch--off'}">
+                    <span th:class="${wv.getModeEnabledOrDefault(mode) ? 'toggle-switch toggle-switch--on' : 'toggle-switch toggle-switch--off'}">
                         <span class="toggle-knob"></span>
                     </span>
                 </button>

@@ -168,22 +168,34 @@ public class DictionaryController {
         }
 
         var typedWordId = new WordId(wordId);
+        // Capture the word before the toggle — word data is unchanged by a mode toggle
+        var preToggleBundle = dataHealthService.snapshot().getLanguageBundle(languageCode);
+        var wordBeforeToggle = preToggleBundle.flatMap(lb -> lb.words().stream()
+                .filter(w -> w.wordId().equals(typedWordId))
+                .findFirst());
+
         var result = dictionaryEditService.toggleModeEnabled(languageCode, typedWordId, mode);
 
         switch (result) {
-            case DictionaryOperationResult.Success<ModeEligibility> _ -> {
-                var snapshot = dataHealthService.snapshot();
-                var bundleOpt = snapshot.getLanguageBundle(languageCode);
-                if (bundleOpt.isEmpty()) {
-                    log.warn("No language bundle found for languageCode={} after toggleModeEnabled", languageCode);
-                }
-                bundleOpt.ifPresent(lb ->
-                        lb.words().stream()
-                                .filter(w -> w.wordId().equals(typedWordId))
-                                .findFirst()
-                                .ifPresent(w -> model.addAttribute(
-                                        ATTR_WORD, new WordViewModel(w, lb.modeEligibilities(), modes,
-                                                progressMap.get(w.wordId().value())))));
+            case DictionaryOperationResult.Success<ModeEligibility> s -> {
+                // Use updated eligibilities from post-reload snapshot; if bundle is unavailable, fall back
+                // to applying the single change to the pre-toggle eligibilities
+                var postReloadBundle = dataHealthService.snapshot().getLanguageBundle(languageCode);
+                var eligibilities = postReloadBundle
+                        .map(LanguageBundle::modeEligibilities)
+                        .orElseGet(() -> {
+                            log.warn("Post-reload bundle unavailable for languageCode={}; applying toggle to pre-toggle state", languageCode);
+                            return withAppliedChange(
+                                    preToggleBundle.map(LanguageBundle::modeEligibilities).orElse(List.of()),
+                                    typedWordId, mode, s.value());
+                        });
+                wordBeforeToggle.ifPresentOrElse(
+                        w -> model.addAttribute(ATTR_WORD,
+                                new WordViewModel(w, eligibilities, modes, progressMap.get(w.wordId().value()))),
+                        () -> {
+                            log.warn("Word not found before toggle: language={}, wordId={}", languageCode, wordId);
+                            model.addAttribute(ATTR_ERROR, "Word not found");
+                        });
             }
             case DictionaryOperationResult.Failure<ModeEligibility> f -> {
                 log.warn("toggleModeEnabled failed for language={}, wordId={}, mode={}: {}",
@@ -454,6 +466,22 @@ public class DictionaryController {
     }
 
     /**
+     * Builds a new eligibility list from {@code existing} with the single {@code updated} entry
+     * replacing any prior entry for the same (wordId, mode) pair.
+     */
+    private static List<ModeEligibility> withAppliedChange(
+            List<ModeEligibility> existing, WordId wordId, String mode, ModeEligibility updated) {
+        var result = new java.util.ArrayList<ModeEligibility>(existing.size() + 1);
+        for (var me : existing) {
+            if (!(me.wordId().equals(wordId) && me.mode().equals(mode))) {
+                result.add(me);
+            }
+        }
+        result.add(updated);
+        return List.copyOf(result);
+    }
+
+    /**
      * View model for a dictionary word that exposes per-mode eligibility flags for Thymeleaf rendering.
      */
     public static final class WordViewModel {
@@ -488,6 +516,11 @@ public class DictionaryController {
 
         public Map<String, Boolean> getModeEnabled() {
             return modeEnabled;
+        }
+
+        public boolean getModeEnabledOrDefault(String mode) {
+            Boolean val = modeEnabled.get(mode);
+            return val == null || val;
         }
 
         public @Nullable Integer getProgressPercent() {
