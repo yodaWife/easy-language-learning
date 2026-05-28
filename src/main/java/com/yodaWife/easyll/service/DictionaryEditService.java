@@ -187,6 +187,78 @@ public class DictionaryEditService {
     }
 
     /**
+     * Explicitly sets the {@code enabled} flag for the specified word in the given game mode
+     * and persists the change atomically. If the word is already at the desired state, the call
+     * is a no-op and returns success immediately.
+     *
+     * @param languageCode the BCP-47 language code identifying the dictionary
+     * @param wordId       the identifier of the word whose mode eligibility should be set
+     * @param mode         the game mode to set eligibility for
+     * @param enabled      the desired eligibility value
+     * @return {@link DictionaryOperationResult.Success} carrying the resulting {@link ModeEligibility},
+     *         or {@link DictionaryOperationResult.Failure} with a descriptive message on any error
+     */
+    public DictionaryOperationResult<ModeEligibility> setModeEnabled(
+            String languageCode, WordId wordId, String mode, boolean enabled) {
+        if (!isEditableRootPath()) {
+            return new DictionaryOperationResult.Failure<>(
+                    "Dictionary editing requires a filesystem root path; current app.dictionaries.root-path is classpath-based");
+        }
+
+        var bundleOpt = dataHealthService.snapshot().getLanguageBundle(languageCode);
+        if (bundleOpt.isEmpty()) {
+            return new DictionaryOperationResult.Failure<>("Language not found");
+        }
+
+        var bundle = bundleOpt.get();
+        boolean wordExists = bundle.words().stream().anyMatch(w -> w.wordId().equals(wordId));
+        if (!wordExists) {
+            return new DictionaryOperationResult.Failure<>("Word not found: " + wordId.value());
+        }
+
+        var existingOpt = bundle.modeEligibilities().stream()
+                .filter(me -> me.wordId().equals(wordId) && me.mode().equals(mode))
+                .findFirst();
+        boolean oldEnabled = existingOpt.map(ModeEligibility::enabled).orElse(true);
+
+        // No-op if the word is already at the desired state
+        if (oldEnabled == enabled) {
+            return new DictionaryOperationResult.Success<>(new ModeEligibility(wordId, mode, enabled));
+        }
+
+        var updatedEligibility = new ModeEligibility(wordId, mode, enabled);
+        var updatedEligibilities = buildUpdatedEligibilities(bundle.modeEligibilities(), wordId, mode, updatedEligibility);
+
+        try {
+            var eligibilityPath = resolveLanguagePath(languageCode, MODE_ELIGIBILITY_CSV);
+            dictionaryWriteLock.executeWithLock(languageCode, LOCK_TIMEOUT_MS, () -> {
+                try {
+                    csvPersistence.writeModeEligibilities(eligibilityPath, updatedEligibilities);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+                auditLogService.logModeToggle(languageCode, wordId, mode, oldEnabled, enabled);
+                dataHealthService.reload();
+            });
+        } catch (DictionaryWriteLock.DictionaryLockTimeoutException e) {
+            return new DictionaryOperationResult.Failure<>("Dictionary is busy, please try again");
+        } catch (UncheckedIOException e) {
+            log.warn("Failed to write mode-eligibility CSV for language '{}': {}", languageCode, e.getMessage());
+            var cause = e.getCause();
+            return new DictionaryOperationResult.Failure<>("Failed to save changes: " +
+                    String.valueOf(cause != null ? cause.getMessage() : e.getMessage()));
+        } catch (IOException e) {
+            log.warn("Failed to resolve path for language '{}': {}", languageCode, e.getMessage());
+            return new DictionaryOperationResult.Failure<>("Failed to save changes: " + String.valueOf(e.getMessage()));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return new DictionaryOperationResult.Failure<>("Operation interrupted");
+        }
+
+        return new DictionaryOperationResult.Success<>(updatedEligibility);
+    }
+
+    /**
      * Updates the text content (fromWord, toWord, example) of a word and persists the change atomically.
      *
      * @param languageCode the BCP-47 language code identifying the dictionary

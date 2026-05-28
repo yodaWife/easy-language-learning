@@ -16,6 +16,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -146,5 +147,50 @@ class FlashcardsControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("flashcards"))
                 .andExpect(model().attributeExists("card", "fromLang", "toLang"));
+    }
+
+    @Test
+    @DisplayName("POST /flashcards/learned returns 200 and card fragment when session is active")
+    void markLearnedReturns200WithValidSession() throws Exception {
+        var session = sessionStore.create(null, "flashcards");
+        var httpSession = new MockHttpSession();
+        httpSession.setAttribute("sessionId", session.getSessionId());
+
+        mockMvc.perform(post("/flashcards/learned")
+                        .param("wordId", "some-word-id")
+                        .session(httpSession))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("POST /flashcards/learned redirects to / when no session is present (browser request)")
+    void markLearnedRedirectsToHomeWithNoSession() throws Exception {
+        mockMvc.perform(post("/flashcards/learned").param("wordId", "some-word-id"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/"));
+    }
+
+    @Test
+    @DisplayName("POST /flashcards/learned returns HX-Redirect when no session is present (HTMX request)")
+    void markLearnedReturnsHxRedirectWithNoSession() throws Exception {
+        mockMvc.perform(post("/flashcards/learned")
+                        .param("wordId", "some-word-id")
+                        .header("HX-Request", "true"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("HX-Redirect", "/"));
+    }
+
+    @Test
+    @DisplayName("POST /flashcards/learned redirects to / when session mode is match (browser request)")
+    void markLearnedRedirectsWhenSessionModeIsMatch() throws Exception {
+        var session = sessionStore.create(null, "match");
+        var httpSession = new MockHttpSession();
+        httpSession.setAttribute("sessionId", session.getSessionId());
+
+        mockMvc.perform(post("/flashcards/learned")
+                        .param("wordId", "some-word-id")
+                        .session(httpSession))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/"));
     }
 }

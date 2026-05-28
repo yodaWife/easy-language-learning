@@ -630,7 +630,60 @@ button.mode-card {
 }
 
 .flashcard-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.btn-flashcard-again {
+  display: inline-block;
+  padding: 12px 28px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
   text-align: center;
+}
+
+.btn-flashcard-again:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary-surface);
+  color: var(--text-primary);
+}
+
+.btn-flashcard-again:active {
+  transform: scale(0.97);
+}
+
+.btn-flashcard-learned {
+  display: inline-block;
+  padding: 12px 28px;
+  background: var(--primary);
+  color: #fff;
+  font-family: var(--font-family);
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: none;
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  text-align: center;
+}
+
+.btn-flashcard-learned:hover {
+  background: var(--primary-hover);
+  box-shadow: var(--shadow-btn-hover);
+  color: #fff;
+}
+
+.btn-flashcard-learned:active {
+  transform: scale(0.97);
 }
 
 /* ── Back to Home Link ── */
@@ -1090,12 +1143,11 @@ button.mode-card {
     font-size: 1.625rem; /* 26px */
   }
 
-  .flashcard-actions .btn-primary-action {
-    display: block;
-    width: 100%;
+  .flashcard-actions .btn-flashcard-again,
+  .flashcard-actions .btn-flashcard-learned {
+    flex: 1;
     height: 50px;
     font-size: 1rem;
-    margin-bottom: 12px;
   }
 
   .back-home-link {

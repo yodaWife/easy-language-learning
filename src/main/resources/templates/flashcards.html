@@ -19,11 +19,19 @@
 
                     <div class="flashcard-actions">
                         <button type="button"
-                                class="btn-primary-action w-100"
+                                class="btn-flashcard-again"
                                 hx-get="/flashcards/card"
                                 hx-target="#card-section"
                                 hx-swap="innerHTML">
-                            Next Card →
+                            Again
+                        </button>
+                        <button type="button"
+                                class="btn-flashcard-learned"
+                                hx-post="/flashcards/learned"
+                                hx-include="#card-word-id"
+                                hx-target="#card-section"
+                                hx-swap="innerHTML">
+                            Learned ✓
                         </button>
                     </div>
                 </div>

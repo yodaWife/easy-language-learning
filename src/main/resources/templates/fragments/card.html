@@ -3,7 +3,12 @@
 <body>
 <div th:fragment="card">
 
-    <div class="flashcard-scene"
+    <input type="hidden" id="card-word-id" name="wordId" th:value="${cardWordId}">
+
+    <div th:if="${card == null}" class="banner-error">No more cards available.</div>
+
+    <div th:if="${card != null}"
+         class="flashcard-scene"
          x-data="{ flipped: false }"
          @click="flipped = !flipped">
 

@@ -26,7 +26,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/", "/session/start",
-                                "/flashcards", "/flashcards/card",
+                                "/flashcards", "/flashcards/card", "/flashcards/learned",
                                 "/match", "/match/attempt", "/match/result",
                                 "/health/data",
                                 "/dictionary", "/dictionary/**",
