@@ -2,6 +2,8 @@
 
 A local-first Spring Boot application for vocabulary practice with two interactive game modes: **Flashcards** and **Match**.
 
+Phase 1 of the DB migration-readiness blueprint is complete (CSV runtime with migration-ready persistence boundaries).
+
 [User Guide](docs/user-guide.md) &bull; [Developer Guide](docs/developer-guide.md)
 
 ---
@@ -17,6 +19,8 @@ A local-first Spring Boot application for vocabulary practice with two interacti
 - **Eligibility-aware gameplay** — Flashcards and Match only use words enabled for the selected mode.
 - **Per-session scoring** — live success/failure counter throughout the match game.
 - **Per-user scoring** — signed-in history persisted to CSV (last 12 attempts per word pair).
+- **Repository interface boundaries** — score read/write and dictionary read contracts are active (`ScoreReadRepository`, `ScoreWriteRepository`, `DictionaryRepository`).
+- **Startup pairId integrity validation** — warns when a score `pairId` no longer exists in dictionary data.
 - **CSV-backed data** — no database required.
 - **Runtime data reload** — pick up CSV changes without restarting the app.
 - **Data health page** — see parse errors and disable gameplay automatically when data is invalid.

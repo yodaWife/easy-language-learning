@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 @Repository
-public class ScoreRepository {
+public class ScoreRepository implements ScoreReadRepository, ScoreWriteRepository {
 
     private static final Logger log = LoggerFactory.getLogger(ScoreRepository.class);
 

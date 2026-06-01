@@ -1,7 +1,7 @@
 package com.yodawife.easyll.service;
 
 import com.yodawife.easyll.domain.UserWordHistory;
-import com.yodawife.easyll.repository.ScoreRepository;
+import com.yodawife.easyll.repository.ScoreReadRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -14,9 +14,9 @@ import java.util.Map;
 @Service
 public class ScoreProgressService {
 
-    private final ScoreRepository scoreRepository;
+    private final ScoreReadRepository scoreRepository;
 
-    public ScoreProgressService(ScoreRepository scoreRepository) {
+    public ScoreProgressService(ScoreReadRepository scoreRepository) {
         this.scoreRepository = scoreRepository;
     }
 

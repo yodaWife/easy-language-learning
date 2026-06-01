@@ -170,7 +170,7 @@
 <tr th:fragment="row-new" id="word-new" class="row-editing">
     <!-- Error state -->
     <th:block th:if="${error != null}">
-        <td th:colspan="${5 + #lists.size(modes)}" class="row-error" th:text="${error}">Error</td>
+        <td th:colspan="${(progressEnabled ? 6 : 5) + #lists.size(modes)}" class="row-error" th:text="${error}">Error</td>
     </th:block>
 
     <!-- New word inputs -->

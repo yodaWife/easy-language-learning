@@ -35,10 +35,12 @@ graph TD
     Controllers -->|health state| DataHealthService
     Controllers -->|reload trigger| DataReloadApplicationService
     Controllers -->|dictionary edits| DictionaryEditService
+    PairIdIntegrityValidator -->|snapshot read| DataHealthService
 
     MatchGameApplicationService --> MatchSessionService
-    MatchGameApplicationService --> ScoreRepository
+    MatchGameApplicationService --> ScoreWriteRepository
     MatchGameApplicationService --> MatchBoardGenerator
+    ScoreProgressService --> ScoreReadRepository
 
     DataReloadApplicationService -->|DataReloadedEvent| EventBus
 
@@ -70,7 +72,7 @@ sequenceDiagram
     participant SessionStore
     participant MatchGameApplicationService
     participant MatchSessionService
-    participant ScoreRepository
+    participant ScoreWriteRepository
 
     Browser->>MatchController: POST /match/attempt (fromWord, toWord)
     MatchController->>SessionStore: get(sessionId)
@@ -83,7 +85,7 @@ sequenceDiagram
 
     alt session complete
         MatchController->>MatchGameApplicationService: finaliseSession(session)
-        MatchGameApplicationService->>ScoreRepository: flush attempts
+        MatchGameApplicationService->>ScoreWriteRepository: flush attempts
         MatchController-->>Browser: HX-Redirect /match/result
     else board complete
         MatchController-->>Browser: new board fragment
@@ -112,6 +114,10 @@ sequenceDiagram
 **Replay prevention.** `MatchBoard` tracks which pairs have already been matched. Re-submitting a previously matched pair is classified as a failure rather than a success. This prevents artificially inflating the success counter by replaying a correct pair.
 
 **Atomic score writes.** `ScoreRepository` writes to a temp file beside the target path, then renames it over the live file. This avoids partial writes if the JVM crashes mid-write.
+
+**Repository ports in phase 1.** Score services depend on read/write repository interfaces rather than the concrete CSV adapter: `ScoreProgressService -> ScoreReadRepository`, `MatchGameApplicationService -> ScoreWriteRepository`.
+
+**Startup pairId integrity validation.** `PairIdIntegrityValidator` runs on `ApplicationReadyEvent` and checks that all score `pairId` values exist in loaded dictionary data. Violations are logged as WARN and do not block startup.
 
 **NullAway enforcement.** The Gradle build runs Error Prone + NullAway in strict JSpecify mode over all `com.yodawife.*` packages. Unannotated nullable flows are compile-time errors.
 
@@ -176,7 +182,10 @@ src/main/java/com/yodawife/easyll/
 ├── repository/
 │   ├── AccountRepository.java
 │   ├── CsvAccountRepository.java
-│   └── ScoreRepository.java
+│   ├── DictionaryRepository.java
+│   ├── ScoreReadRepository.java
+│   ├── ScoreRepository.java
+│   └── ScoreWriteRepository.java
 ├── service/
 │   ├── AccountService.java
 │   ├── DataHealthService.java
@@ -187,6 +196,7 @@ src/main/java/com/yodawife/easyll/
 │   ├── EligibilityEvaluator.java
 │   ├── FlashcardService.java
 │   ├── MatchBoardGenerator.java
+│   ├── PairIdIntegrityValidator.java
 │   ├── ScoreMigrationService.java
 │   ├── ScoreProgressService.java
 │   └── ...
@@ -219,7 +229,7 @@ data/
 src/test/java/com/yodawife/easyll/
     controller/                      @WebMvcTest + MockMvc + spring-security-test
     domain/                          Pure unit tests; no Spring context
-    repository/                      ScoreRepository read/write with temp files
+    repository/                      Repository contract and CSV adapter tests with temp files
     service/                         Service unit tests (Mockito + pure JUnit)
     validation/                      CSV parser positive and negative cases
 ```
@@ -397,12 +407,17 @@ Parsed into `ScoreDataBundle` containing a `Map<ScoreKey, UserWordHistory>` wher
 
 ---
 
-## Scoring model updates (phase 1)
+## Scoring model updates (phase 1, complete)
 
 - Persistent key changed from `(nickname, fromWord, toWord)` to `(userId, pairId, mode)`.
 - Signed-in users persist score history to `data/scores/scores.csv`; anonymous users still get per-session counters and result messages, but no persistent writes.
 - `ScoreProgressService.getProgressForUser(userId)` returns `Map<String pairId, Integer successPercent>`.
 - Dictionary progress column is enabled only for signed-in users and uses the computed success percentage.
+- Repository interfaces now exist in `repository/`: `ScoreReadRepository`, `ScoreWriteRepository`, and `DictionaryRepository`.
+- `ScoreRepository` implements both score interfaces; `DataHealthService` implements `DictionaryRepository`.
+- Naming note: the blueprint names (`ScoreAttemptRepository`, `ScoreProgressRepository`) were intentionally replaced in phase 1 with `ScoreReadRepository`/`ScoreWriteRepository` because `ScoreAttempt` and `ScoreProgress` domain objects belong to phase 2 DB modeling and do not yet exist.
+- `PairIdIntegrityValidator` runs at startup and logs WARN for any score `pairId` missing from dictionary data.
+- Dictionary add-row fragment (`row-new`) now uses a `colspan` formula that respects `progressEnabled`.
 
 **Write strategy.** `ScoreRepository` writes to a temp file next to the target path, then renames it atomically. This prevents partial-write corruption if the JVM is interrupted mid-write.
 
@@ -455,12 +470,12 @@ Controller tests use `spring-security-test` utilities:
 
 ### Replacing CSV storage with a database
 
-The `ScoreRepository` class is the single point of persistence for scores. To swap it:
+Score persistence is already split by interface contracts. To swap CSV with DB:
 
-1. Extract an interface from `ScoreRepository`.
-2. Create a JPA or JDBC implementation of that interface.
-3. Register the new bean; remove the CSV implementation.
-4. Remove `ScoreCsvParser` and the `app.scores.*` properties.
+1. Implement DB adapters for `ScoreReadRepository` and `ScoreWriteRepository`.
+2. Keep service wiring unchanged (`ScoreProgressService` and `MatchGameApplicationService` already depend on interfaces).
+3. Implement a DB-backed `DictionaryRepository` when dictionary reads move off CSV.
+4. Switch Spring bean wiring to DB adapters and retire CSV adapters once parity tests pass.
 
 `WordCsvParser` is similarly isolated in `validation/`. The event-driven reload architecture means a database-backed implementation can simply publish a `DataReloadedEvent` (or skip the event entirely if data is always live).
 

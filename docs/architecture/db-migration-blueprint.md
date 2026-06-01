@@ -4,6 +4,22 @@
 
 Deliver current account/scoring requirements on CSV now, while shaping the code and data model for near-term migration to a relational database.
 
+### Implementation sync status (2026-06-01)
+
+Phase 1 is complete in the codebase.
+
+Completed in implementation:
+
+1. Account/session controller and service.
+2. `ActiveUserContext` in `HttpSession`.
+3. Repository interfaces and CSV adapters.
+4. Score key `(userId, pairId, mode)`.
+5. History cap increased from 10 to 12.
+6. Dictionary progress column visible only to signed-in users.
+7. Startup `pairId` referential-integrity validator.
+
+Actual code has precedence over this plan where names differ.
+
 ## 2. Scope and assumptions
 
 In scope:
@@ -20,7 +36,7 @@ Assumptions:
 1. Browser session (`HttpSession`) remains the active session mechanism.
 2. Existing dictionary `wordId` can be reused as `pair_id` if immutable and globally unique.
 
-## 3. Proposed persistence contracts
+## 3. Persistence contracts (implemented in phase 1)
 
 Create interfaces first. Keep CSV implementations active for now.
 
@@ -32,15 +48,14 @@ public interface AccountRepository {
     Account save(Account account);
 }
 
-public interface ScoreAttemptRepository {
-    void append(ScoreAttempt attempt);
-    List<ScoreAttempt> findByUserAndPairs(String userId, List<String> pairIds);
+public interface ScoreReadRepository {
+  Map<String, List<String>> getHistoriesForUser(String userId);
+  Set<String> knownUsers();
 }
 
-public interface ScoreProgressRepository {
-    Optional<ScoreProgress> find(String userId, String pairId, String mode);
-    Map<String, ScoreProgress> findByUserAndPairs(String userId, List<String> pairIds, String mode);
-    void upsert(ScoreProgress progress);
+public interface ScoreWriteRepository {
+  void appendAttempt(String userId, String pairId, String mode, String result);
+  void flush();
 }
 
 public interface DictionaryRepository {
@@ -50,6 +65,14 @@ public interface DictionaryRepository {
     // then move behind this interface in phase 2.
 }
 ```
+
+Implementation notes:
+
+1. `ScoreRepository` implements both `ScoreReadRepository` and `ScoreWriteRepository`.
+2. `DataHealthService` implements `DictionaryRepository` (`findLanguage`, `availableLanguages`).
+3. `ScoreProgressService` depends on `ScoreReadRepository` (not concrete `ScoreRepository`).
+4. `MatchGameApplicationService` depends on `ScoreWriteRepository` (not concrete `ScoreRepository`).
+5. Naming deviation from the original blueprint is deliberate: `ScoreAttemptRepository`/`ScoreProgressRepository` were replaced by `ScoreReadRepository`/`ScoreWriteRepository` because `ScoreAttempt` and `ScoreProgress` domain objects are planned for phase 2 DB modeling and do not yet exist in the CSV-era model.
 
 ## 4. Domain model updates
 
@@ -133,10 +156,10 @@ Notes:
 
 Endpoints:
 
-1. `GET /account/menu-data` - users and active status.
+1. `GET /account/panel` - users and active status.
 2. `POST /account/sign-in` - select existing or create new user.
 3. `POST /account/sign-out` - clear active user context.
-4. `GET /account/status-fragment` - signed-in/anonymous indicator for main menu.
+4. `GET /account/status` - signed-in/anonymous indicator for main menu.
 
 Dictionary view:
 
@@ -171,6 +194,13 @@ Important:
 5. Increase history cap from 10 to 12.
 6. Add dictionary progress column for signed-in user only.
 
+Status: completed (2026-06-01).
+
+Delivered in this phase beyond original list:
+
+1. `PairIdIntegrityValidator` (`@Component`) runs on `ApplicationReadyEvent` and logs WARN for score `pairId` values that are missing from dictionary data.
+2. Dictionary `row-new` fragment `colspan` now respects `progressEnabled`, so add-row rendering stays aligned for both signed-in and anonymous views.
+
 ### Phase 2: DB adapter introduction
 
 1. Add Flyway migrations for target schema.
@@ -198,6 +228,8 @@ Important:
 1. Risk: key mismatch between dictionary and scoring stores.
 - Mitigation: startup referential integrity check for all `pair_id` values.
 
+Implementation status: mitigation is active via `PairIdIntegrityValidator`.
+
 2. Risk: account display-name collisions.
 - Mitigation: case-insensitive uniqueness policy and deterministic normalization.
 
@@ -210,3 +242,5 @@ Important:
 2. Controllers/services compile unchanged when adapter switches from CSV to DB.
 3. Stable `user_id` and `pair_id` used in all new score writes.
 4. Migration dry-run report available with explicit unresolved rows.
+
+Phase 1 readiness status: items 1-3 are implemented in the current codebase; item 4 remains a phase 2/3 migration activity.

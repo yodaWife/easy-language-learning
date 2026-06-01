@@ -13,6 +13,8 @@ It is account-aware: signed-in users get persistent score tracking and learning 
 
 The application is local-first and file-based. A relational database migration is planned for the next phase (see [docs/architecture/db-migration-blueprint.md](architecture/db-migration-blueprint.md)).
 
+Phase 1 from the migration blueprint is complete in the current implementation (as of 2026-06-01).
+
 ## 2. Core Functional Requirements
 
 ### 2.1 Account management
@@ -54,12 +56,14 @@ The application is local-first and file-based. A relational database migration i
 6. Toggle global word enablement.
 7. Toggle per-mode enablement.
 8. Toggle changes persist to CSV files and are reflected in gameplay.
+9. Dictionary add-row rendering stays aligned whether progress is visible or hidden (new-row colspan respects signed-in state).
 
 ### 2.6 Data health and reload
 
 1. Health page exposes word and score health states.
 2. Admin endpoint supports runtime reload of data.
 3. Gameplay availability depends on word data health.
+4. On startup, score `pairId` values are validated against loaded dictionary IDs; orphaned values are logged as WARN and do not fail startup.
 
 ### 2.7 Score tracking
 
@@ -68,6 +72,18 @@ The application is local-first and file-based. A relational database migration i
 3. Score key is `(userId, pairId, mode)`.
 4. Per-user history keeps the last 12 attempts per pair and mode (rolling window).
 5. Progress is expressed as a success percentage over those 12 attempts.
+
+### 2.8 Persistence boundary contracts (implemented)
+
+1. `ScoreReadRepository` provides read access for progress and user score lookup (`getHistoriesForUser`, `knownUsers`).
+2. `ScoreWriteRepository` provides write access for match-attempt persistence (`appendAttempt`, `flush`).
+3. `DictionaryRepository` provides dictionary-read access (`findLanguage`, `availableLanguages`).
+4. `ScoreRepository` implements both score interfaces.
+5. `DataHealthService` implements `DictionaryRepository`.
+6. Score services depend on interfaces, not concrete adapters:
+  1. `ScoreProgressService -> ScoreReadRepository`
+  2. `MatchGameApplicationService -> ScoreWriteRepository`
+7. Naming deviation from the blueprint is intentional in phase 1: `ScoreAttemptRepository` and `ScoreProgressRepository` were replaced by `ScoreReadRepository` and `ScoreWriteRepository` because `ScoreAttempt`/`ScoreProgress` domain objects are not present yet (planned for phase 2 DB model).
 
 ## 3. Data Requirements
 

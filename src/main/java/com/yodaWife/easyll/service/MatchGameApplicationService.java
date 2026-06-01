@@ -4,7 +4,7 @@ import com.yodawife.easyll.domain.AttemptResult;
 import com.yodawife.easyll.domain.MatchBoard;
 import com.yodawife.easyll.domain.MatchCard;
 import com.yodawife.easyll.domain.MatchSession;
-import com.yodawife.easyll.repository.ScoreRepository;
+import com.yodawife.easyll.repository.ScoreWriteRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,13 +25,13 @@ public class MatchGameApplicationService {
     private static final Logger log = LoggerFactory.getLogger(MatchGameApplicationService.class);
 
     private final MatchSessionService matchSessionService;
-    private final ScoreRepository scoreRepository;
+    private final ScoreWriteRepository scoreRepository;
     private final MatchBoardGenerator matchBoardGenerator;
     private final DataHealthService dataHealthService;
     private final ConcurrentHashMap<String, List<AttemptRecord>> pendingAttempts = new ConcurrentHashMap<>();
 
     public MatchGameApplicationService(MatchSessionService matchSessionService,
-                                       ScoreRepository scoreRepository,
+                                       ScoreWriteRepository scoreRepository,
                                        MatchBoardGenerator matchBoardGenerator,
                                        DataHealthService dataHealthService) {
         this.matchSessionService = matchSessionService;

@@ -27,6 +27,30 @@ This means:
 4. Move score key to `(user_id, pair_id, mode)` and enforce rolling window = 12.
 5. Prepare migration assets (schema, mapping rules, data migration script design) now.
 
+## Implementation update (2026-06-01)
+
+Phase 1 implementation is complete.
+
+Implemented boundaries in code:
+
+1. `ScoreReadRepository` (`getHistoriesForUser`, `knownUsers`).
+2. `ScoreWriteRepository` (`appendAttempt`, `flush`).
+3. `DictionaryRepository` (`findLanguage`, `availableLanguages`).
+4. `ScoreRepository` implements both score interfaces.
+5. `DataHealthService` implements `DictionaryRepository`.
+6. `ScoreProgressService` depends on `ScoreReadRepository`.
+7. `MatchGameApplicationService` depends on `ScoreWriteRepository`.
+
+Additional readiness guard implemented:
+
+1. `PairIdIntegrityValidator` runs on `ApplicationReadyEvent` and logs WARN for score `pairId` values not present in the dictionary.
+
+Deliberate naming deviation from the original blueprint:
+
+1. The blueprint used `ScoreAttemptRepository` and `ScoreProgressRepository` with `ScoreAttempt`/`ScoreProgress` domain types.
+2. The implemented code uses `ScoreReadRepository` and `ScoreWriteRepository` because those domain objects do not exist yet and are planned for phase 2 DB modeling.
+3. This keeps phase 1 CSV delivery pragmatic while preserving dependency inversion for adapter swap.
+
 ## Rationale
 
 ### Why not migrate fully now
@@ -46,6 +70,7 @@ This means:
 1. Faster and safer delivery of requested account/scoring features.
 2. Reduced migration risk through explicit contracts and stable IDs.
 3. Ability to support dual storage adapters during transition if needed.
+4. Startup referential-integrity checks now detect orphan score `pairId` values early.
 
 ### Negative
 

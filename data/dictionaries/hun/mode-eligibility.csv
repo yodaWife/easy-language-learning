@@ -58,7 +58,6 @@ c5670897-1433-3306-a125-8e9e1397b7cc;match;true
 a3358077-603d-3d5b-8083-a115ec9181d6;flashcards;true
 a3358077-603d-3d5b-8083-a115ec9181d6;match;true
 fa94fe86-5024-31cc-ad92-a5ccd174bb1b;match;true
-4588509e-5c5e-34c5-a511-939483258639;flashcards;true
 4588509e-5c5e-34c5-a511-939483258639;match;true
 da8bebd4-3770-3117-83a8-7a517d933c83;flashcards;true
 da8bebd4-3770-3117-83a8-7a517d933c83;match;true
@@ -111,7 +110,6 @@ ad480e9e-db83-3bd8-a5fd-2d4d080ebe4f;match;true
 55f54068-c908-3ee5-9f1e-dcb34b3fbf6b;match;true
 61bb31a4-0603-3426-aa4e-4d4afa8395ca;flashcards;true
 61bb31a4-0603-3426-aa4e-4d4afa8395ca;match;true
-a2320d57-7495-3d74-a73f-02555e73c36b;flashcards;true
 a2320d57-7495-3d74-a73f-02555e73c36b;match;true
 882d710a-3e78-331a-be4a-b1d1e8a12da0;flashcards;true
 882d710a-3e78-331a-be4a-b1d1e8a12da0;match;true
@@ -119,7 +117,6 @@ b9d9e6c9-9116-3fde-a5e1-de77c46e30e4;flashcards;true
 b9d9e6c9-9116-3fde-a5e1-de77c46e30e4;match;true
 78270911-4a65-3b50-a0ab-efd9283d0d3d;flashcards;true
 78270911-4a65-3b50-a0ab-efd9283d0d3d;match;true
-752451f8-8d30-3fd3-be6b-26dc74af09d2;flashcards;true
 752451f8-8d30-3fd3-be6b-26dc74af09d2;match;true
 6cb7ad4f-df13-3ce1-9895-841212243600;flashcards;true
 6cb7ad4f-df13-3ce1-9895-841212243600;match;true
@@ -143,7 +140,6 @@ ab489605-ed4c-39ec-b1b4-4da62d710a73;flashcards;true
 ab489605-ed4c-39ec-b1b4-4da62d710a73;match;true
 33197143-dc86-3755-a750-b7a159700b41;flashcards;true
 33197143-dc86-3755-a750-b7a159700b41;match;true
-b5f35945-882c-3404-8f0a-40c078125ed5;flashcards;true
 b5f35945-882c-3404-8f0a-40c078125ed5;match;true
 71ca08f4-6266-3786-a038-1347f0daab18;flashcards;true
 71ca08f4-6266-3786-a038-1347f0daab18;match;true
@@ -151,14 +147,12 @@ efb5439c-8f8a-3149-a4bc-558c92f51836;flashcards;true
 efb5439c-8f8a-3149-a4bc-558c92f51836;match;true
 ef4c428e-c88f-3ff1-bebd-5828636f6514;flashcards;true
 ef4c428e-c88f-3ff1-bebd-5828636f6514;match;true
-95c88bc8-13ff-312c-bc71-fec6131ac2ec;flashcards;true
 95c88bc8-13ff-312c-bc71-fec6131ac2ec;match;true
 c1e68fa0-3081-3821-8c75-44a2644432f6;flashcards;true
 c1e68fa0-3081-3821-8c75-44a2644432f6;match;true
 7c8fe68d-ba44-3ef6-9366-75afc49581ed;flashcards;true
 7c8fe68d-ba44-3ef6-9366-75afc49581ed;match;true
 e26f6e56-206a-3cce-b75f-51bb264077bb;match;true
-80cc6fe9-0b87-3df1-a5e8-3f50b9cc4b23;flashcards;true
 80cc6fe9-0b87-3df1-a5e8-3f50b9cc4b23;match;true
 15c1c593-367b-35f4-8a81-9bfce69f61c9;flashcards;true
 15c1c593-367b-35f4-8a81-9bfce69f61c9;match;true
@@ -189,3 +183,9 @@ d566ff15-d5ed-31c5-bbc4-3677ab872d07;flashcards;false
 e26f6e56-206a-3cce-b75f-51bb264077bb;flashcards;false
 55f54068-c908-3ee5-9f1e-dcb34b3fbf6b;flashcards;false
 a43d599a-369f-3dc5-872e-d6837e9e13bd;flashcards;false
+95c88bc8-13ff-312c-bc71-fec6131ac2ec;flashcards;false
+80cc6fe9-0b87-3df1-a5e8-3f50b9cc4b23;flashcards;false
+4588509e-5c5e-34c5-a511-939483258639;flashcards;false
+a2320d57-7495-3d74-a73f-02555e73c36b;flashcards;false
+b5f35945-882c-3404-8f0a-40c078125ed5;flashcards;false
+752451f8-8d30-3fd3-be6b-26dc74af09d2;flashcards;true
