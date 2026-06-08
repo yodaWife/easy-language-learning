@@ -20,7 +20,19 @@ Easy Language Learning is a vocabulary practice app that runs locally in your br
 
 ## Running the app
 
-**Prerequisite:** Java 26 installed.
+**Prerequisites:**
+
+- Java 26 installed
+- PostgreSQL running locally (default app profile is `db`)
+
+Default local DB settings:
+
+- database: `easyll`
+- username: `easyll`
+- password: `easyll`
+- url: `jdbc:postgresql://localhost:5432/easyll`
+
+If your local database uses different values, set `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` before starting.
 
 ```sh
 # Windows
@@ -31,6 +43,16 @@ gradlew.bat bootRun
 ```
 
 Open [http://localhost:8080](http://localhost:8080) in your browser.
+
+If you want to run without PostgreSQL, use CSV mode:
+
+```sh
+# Windows
+gradlew.bat bootRun --args='--spring.profiles.active=csv'
+
+# Linux / macOS
+./gradlew bootRun --args='--spring.profiles.active=csv'
+```
 
 ---
 

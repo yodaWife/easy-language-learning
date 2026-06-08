@@ -64,12 +64,12 @@ public class DictionaryController {
 
     @GetMapping("/dictionary")
     public String dictionaryPage(
-            @RequestParam(defaultValue = "") String languageCode,
-            @RequestParam(defaultValue = "FROM") String sortBy,
-            @RequestParam(defaultValue = "ASC") String sortDir,
-            @RequestParam(defaultValue = "") String search,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam(name = "languageCode", defaultValue = "") String languageCode,
+            @RequestParam(name = "sortBy", defaultValue = "FROM") String sortBy,
+            @RequestParam(name = "sortDir", defaultValue = "ASC") String sortDir,
+            @RequestParam(name = "search", defaultValue = "") String search,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
             Model model,
             HttpSession session) {
         var effectiveLang = resolveLanguage(languageCode);
@@ -79,12 +79,12 @@ public class DictionaryController {
 
     @GetMapping("/dictionary/rows")
     public String dictionaryRows(
-            @RequestParam(defaultValue = "") String languageCode,
-            @RequestParam(defaultValue = "FROM") String sortBy,
-            @RequestParam(defaultValue = "ASC") String sortDir,
-            @RequestParam(defaultValue = "") String search,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam(name = "languageCode", defaultValue = "") String languageCode,
+            @RequestParam(name = "sortBy", defaultValue = "FROM") String sortBy,
+            @RequestParam(name = "sortDir", defaultValue = "ASC") String sortDir,
+            @RequestParam(name = "search", defaultValue = "") String search,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
             Model model,
             HttpSession session) {
         var effectiveLang = resolveLanguage(languageCode);
@@ -94,11 +94,11 @@ public class DictionaryController {
 
     @PostMapping("/dictionary/toggle/global")
     public String toggleGlobal(
-            @RequestParam String languageCode,
-            @RequestParam String wordId,
-            @RequestParam(defaultValue = "FROM") String sortBy,
-            @RequestParam(defaultValue = "ASC") String sortDir,
-            @RequestParam(defaultValue = "") String search,
+            @RequestParam("languageCode") String languageCode,
+            @RequestParam("wordId") String wordId,
+            @RequestParam(name = "sortBy", defaultValue = "FROM") String sortBy,
+            @RequestParam(name = "sortDir", defaultValue = "ASC") String sortDir,
+            @RequestParam(name = "search", defaultValue = "") String search,
             Model model,
             HttpSession session) {
         var modes = dictionaryProperties.getModes();
@@ -145,12 +145,12 @@ public class DictionaryController {
 
     @PostMapping("/dictionary/toggle/mode")
     public String toggleMode(
-            @RequestParam String languageCode,
-            @RequestParam String wordId,
-            @RequestParam String mode,
-            @RequestParam(defaultValue = "FROM") String sortBy,
-            @RequestParam(defaultValue = "ASC") String sortDir,
-            @RequestParam(defaultValue = "") String search,
+            @RequestParam("languageCode") String languageCode,
+            @RequestParam("wordId") String wordId,
+            @RequestParam("mode") String mode,
+            @RequestParam(name = "sortBy", defaultValue = "FROM") String sortBy,
+            @RequestParam(name = "sortDir", defaultValue = "ASC") String sortDir,
+            @RequestParam(name = "search", defaultValue = "") String search,
             Model model,
             HttpSession session) {
         var modes = dictionaryProperties.getModes();
@@ -215,8 +215,8 @@ public class DictionaryController {
 
     @GetMapping("/dictionary/row")
     public String dictionaryRow(
-            @RequestParam String languageCode,
-            @RequestParam String wordId,
+            @RequestParam("languageCode") String languageCode,
+            @RequestParam("wordId") String wordId,
             Model model,
             HttpSession session) {
         populateSingleRowModel(model, languageCode, wordId, session);
@@ -225,7 +225,7 @@ public class DictionaryController {
 
     @GetMapping("/dictionary/row/new")
     public String newWordRow(
-            @RequestParam String languageCode,
+            @RequestParam("languageCode") String languageCode,
             Model model) {
         model.addAttribute(ATTR_MODES, dictionaryProperties.getModes());
         model.addAttribute(ATTR_LANGUAGE_CODE, languageCode);
@@ -234,10 +234,10 @@ public class DictionaryController {
 
     @PostMapping("/dictionary/add")
     public String addWord(
-            @RequestParam String languageCode,
-            @RequestParam(defaultValue = "") String fromWord,
-            @RequestParam(defaultValue = "") String toWord,
-            @RequestParam(defaultValue = "") String example,
+            @RequestParam("languageCode") String languageCode,
+            @RequestParam(name = "fromWord", defaultValue = "") String fromWord,
+            @RequestParam(name = "toWord", defaultValue = "") String toWord,
+            @RequestParam(name = "example", defaultValue = "") String example,
             Model model,
             HttpSession session) {
         var modes = dictionaryProperties.getModes();
@@ -280,8 +280,8 @@ public class DictionaryController {
 
     @GetMapping("/dictionary/row/edit")
     public String dictionaryRowEdit(
-            @RequestParam String languageCode,
-            @RequestParam String wordId,
+            @RequestParam("languageCode") String languageCode,
+            @RequestParam("wordId") String wordId,
             Model model,
             HttpSession session) {
         populateSingleRowModel(model, languageCode, wordId, session);
@@ -290,11 +290,11 @@ public class DictionaryController {
 
     @PostMapping("/dictionary/edit")
     public String editWord(
-            @RequestParam String languageCode,
-            @RequestParam String wordId,
-            @RequestParam String fromWord,
-            @RequestParam String toWord,
-            @RequestParam(defaultValue = "") String example,
+            @RequestParam("languageCode") String languageCode,
+            @RequestParam("wordId") String wordId,
+            @RequestParam("fromWord") String fromWord,
+            @RequestParam("toWord") String toWord,
+            @RequestParam(name = "example", defaultValue = "") String example,
             Model model,
             HttpSession session) {
         var modes = dictionaryProperties.getModes();

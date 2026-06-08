@@ -40,7 +40,7 @@ public class AccountController {
      * If displayName is blank, returns the status fragment with the current context unchanged.
      */
     @PostMapping("/sign-in")
-    public String signIn(@RequestParam(required = false) @Nullable String displayName,
+    public String signIn(@RequestParam(name = "displayName", required = false) @Nullable String displayName,
                          HttpSession session,
                          Model model) {
         if (displayName == null || displayName.isBlank()) {

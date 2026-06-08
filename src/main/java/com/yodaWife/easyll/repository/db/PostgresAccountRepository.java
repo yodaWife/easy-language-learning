@@ -3,6 +3,7 @@ package com.yodawife.easyll.repository.db;
 import com.yodawife.easyll.config.PersistenceProfiles;
 import com.yodawife.easyll.domain.Account;
 import com.yodawife.easyll.repository.AccountRepository;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -15,7 +16,10 @@ import java.util.Optional;
 /**
  * PostgreSQL-backed implementation of {@link AccountRepository}.
  * Active when the {@value PersistenceProfiles#DB} Spring profile is enabled.
+ * Marked {@code @Primary} so it wins over {@code CsvAccountRepository} when both are available
+ * (e.g. during migration where the CSV repo is also registered as the migration source).
  */
+@Primary
 @Repository
 @Profile(PersistenceProfiles.DB)
 public class PostgresAccountRepository implements AccountRepository {

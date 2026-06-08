@@ -36,6 +36,7 @@ dependencies {
 	runtimeOnly("org.postgresql:postgresql")
 	implementation("org.flywaydb:flyway-core")
 	implementation("org.flywaydb:flyway-database-postgresql")
+	implementation("org.springframework.boot:spring-boot-flyway")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation("org.testcontainers:testcontainers-junit-jupiter")
@@ -44,6 +45,7 @@ dependencies {
 }
 
 tasks.withType<JavaCompile>().configureEach {
+	options.compilerArgs.add("-parameters")
 	options.errorprone.disableAllChecks = true
 	options.errorprone.check("NullAway", net.ltgt.gradle.errorprone.CheckSeverity.ERROR)
 	options.errorprone.option("NullAway:AnnotatedPackages", "com.yodawife")

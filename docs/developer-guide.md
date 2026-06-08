@@ -8,11 +8,12 @@ This guide covers the project architecture, codebase structure, configuration, t
 - [Account and session management](#account-and-session-management)
 - [Project structure](#project-structure)
 - [Mobile support](#mobile-support)
+- [System setup (database default)](#system-setup-database-default)
 - [Build and run](#build-and-run)
 - [Configuration reference](#configuration-reference)
 - [Security model](#security-model)
 - [Data model](#data-model)
-- [Persistence model updates (phase 2, complete)](#persistence-model-updates-phase-2-complete)
+- [Persistence model updates (phase 3, complete)](#persistence-model-updates-phase-3-complete)
 - [Testing](#testing)
 - [Extending the app](#extending-the-app)
 - [Known constraints and backlog](#known-constraints-and-backlog)
@@ -23,8 +24,8 @@ This guide covers the project architecture, codebase structure, configuration, t
 
 Easy Language Learning is a monolithic Spring Boot MVC application with profile-gated persistence adapters.
 
-- `csv` profile (default): CSV-backed repositories for local-first runtime.
-- `db` profile: PostgreSQL-backed repositories with Flyway-managed schema.
+- `db` profile (default): PostgreSQL-backed repositories with Flyway-managed schema.
+- `csv` profile: CSV-backed repositories for fallback/import workflows.
 
 Dictionary and score data are still loaded through `DataHealthService` snapshots for gameplay use-cases, while persistence adapters behind repository interfaces determine the backing store.
 
@@ -280,6 +281,62 @@ The UI is responsive with a primary breakpoint at `576px`.
 
 ---
 
+## System setup (database default)
+
+The runtime default is PostgreSQL-backed profile `db`.
+
+```properties
+spring.profiles.active=db
+```
+
+### Prerequisites
+
+- Java 26
+- PostgreSQL 16+ reachable from the application process
+- A local database and user matching configured datasource properties
+
+### Local bootstrap
+
+1. Install PostgreSQL and start the server (default port `5432`).
+2. Create DB/user (example values used by this project):
+
+```sql
+CREATE DATABASE easyll;
+CREATE USER easyll WITH PASSWORD 'easyll';
+GRANT ALL PRIVILEGES ON DATABASE easyll TO easyll;
+```
+
+3. Confirm datasource values in `src/main/resources/application-db.properties`:
+    - `spring.datasource.url=jdbc:postgresql://localhost:5432/easyll`
+    - `spring.datasource.username=easyll`
+    - `spring.datasource.password=easyll`
+
+4. Start the app (`bootRun` or jar). Flyway runs automatically in `db` profile and applies migrations in `src/main/resources/db/migration`.
+
+### Environment overrides
+
+For non-local credentials, prefer environment variables:
+
+- `SPRING_DATASOURCE_URL`
+- `SPRING_DATASOURCE_USERNAME`
+- `SPRING_DATASOURCE_PASSWORD`
+
+### CSV fallback mode
+
+If PostgreSQL is temporarily unavailable, run with CSV adapters:
+
+```sh
+./gradlew bootRun --args='--spring.profiles.active=csv'
+```
+
+On Windows:
+
+```sh
+gradlew.bat bootRun --args='--spring.profiles.active=csv'
+```
+
+---
+
 ## Build and run
 
 **Prerequisite:** Java 26. The Gradle toolchain configuration enforces this; the build will fail if the required JDK is absent.
@@ -319,7 +376,7 @@ All properties live in `src/main/resources/application.properties`. Override per
 | `app.match.max-attempts` | `30` | Successful matches required to complete a session. Minimum 1. |
 | `app.match.board-size` | `5` | Word pairs per match board. Minimum 1. |
 | `app.match.session-ttl-minutes` | `60` | Idle TTL for match sessions in minutes. Sessions not accessed within this window are evicted by the scheduled sweep. Minimum 1. |
-| `spring.profiles.active` | `csv` | Active persistence profile. Use `csv` for CSV adapters (default), `db` for PostgreSQL adapters. |
+| `spring.profiles.active` | `db` | Active persistence profile. Use `db` for PostgreSQL adapters (default), `csv` for fallback/import utility workflows. |
 | `spring.profiles.group.test` | `csv` | Ensures the `test` profile also activates CSV adapters. |
 | `spring.flyway.enabled` | `false` | Flyway disabled by default, enabled in `db` profile. |
 | `app.migration.enabled` | `false` | Enables one-off CSV-to-DB migration runner at startup. |
@@ -428,20 +485,22 @@ Parsed into `ScoreDataBundle` containing a `Map<ScoreKey, UserWordHistory>` wher
 - History is capped to the **last 12 entries** per `(userId, pairId, mode)` (`UserWordHistory.MAX_HISTORY = 12`).
 - A missing score file is treated as empty history (not an error).
 
-### CSV to DB migration behavior (phase 2)
+### CSV to DB migration behavior (phase 3 status)
 
 - `CsvToDbMigrationRunner` runs only when `app.migration.enabled=true`.
 - Migration source is current CSV-backed runtime state (`CsvAccountRepository` + `DataHealthService` snapshot).
 - `app_user`, `dictionary_pair`, `score_attempt`, and `score_progress` are populated through JDBC SQL in a single startup run.
 - Dry-run mode (`app.migration.dry-run=true`) logs intended inserts/upserts without writing to DB.
 - Invalid score rows (missing `userId` or unknown `pairId`) are recorded via `MigrationErrorRecorder` into `app.migration.errors-output-path`.
+- Production migration completed on 2026-06-08: 2 users, 207 dictionary pairs, 116 score entries, 0 errors.
+- Keep `app.migration.enabled=false` after migration completes; the runner is a one-shot tool, not a recurring sync job.
 
 ---
 
-## Persistence model updates (phase 2, complete)
+## Persistence model updates (phase 3, complete)
 
 - Persistent key changed from `(nickname, fromWord, toWord)` to `(userId, pairId, mode)`.
-- Signed-in users persist score history to `data/scores/scores.csv`; anonymous users still get per-session counters and result messages, but no persistent writes.
+- Signed-in users persist score history through the active profile adapter (`db` by default, CSV path when `csv` profile is active); anonymous users still get per-session counters and result messages, but no persistent writes.
 - `ScoreProgressService.getProgressForUser(userId)` returns `Map<String pairId, Integer successPercent>`.
 - Dictionary progress column is enabled only for signed-in users and uses the computed success percentage.
 - Repository interfaces are active in `repository/`: `ScoreReadRepository`, `ScoreWriteRepository`, and `DictionaryRepository`.
@@ -449,8 +508,10 @@ Parsed into `ScoreDataBundle` containing a `Map<ScoreKey, UserWordHistory>` wher
 - PostgreSQL implementations are active under profile `db`: `PostgresAccountRepository`, `PostgresScoreReadRepository`, `PostgresScoreWriteRepository`, `PostgresDictionaryRepository`.
 - `DataHealthService` no longer implements `DictionaryRepository`; `CsvDictionaryRepository` now delegates dictionary reads to `DataHealthService` snapshots.
 - Flyway baseline schema is applied from `src/main/resources/db/migration/V1__init.sql`.
+- Spring Boot 4.x requires `org.springframework.boot:spring-boot-flyway` explicitly for Flyway auto-configuration.
 - `PairIdIntegrityValidator` runs at startup and logs WARN for any score `pairId` missing from dictionary data.
 - Dictionary add-row fragment (`row-new`) now uses a `colspan` formula that respects `progressEnabled`.
+- Default runtime profile in `application.properties` is now `db`; `csv` remains available as fallback/import utility.
 
 **Write strategy.** `ScoreRepository` writes to a temp file next to the target path, then renames it atomically. This prevents partial-write corruption if the JVM is interrupted mid-write.
 
@@ -510,12 +571,12 @@ Latest Phase 2 completion run summary:
 
 ### Replacing CSV storage with a database
 
-Phase 2 delivered profile-gated adapter implementations. Phase 3 cutover now focuses on runtime switch and rollout:
+Phase 3 cutover is complete. Operational expectations now are:
 
-1. Run migration in dry-run mode and resolve any migration error output.
-2. Execute production migration with `app.migration.enabled=true` and `app.migration.dry-run=false`.
-3. Switch active profile from `csv` to `db`.
-4. Keep CSV adapters as fallback/import utility only.
+1. Keep runtime on profile `db` by default.
+2. Keep `app.migration.enabled=false` unless intentionally running migration tooling in a controlled environment.
+3. Use `csv` profile only for fallback/import utility scenarios.
+4. Keep `org.springframework.boot:spring-boot-flyway` dependency present when upgrading Spring Boot 4.x dependencies.
 
 `WordCsvParser` is similarly isolated in `validation/`. The event-driven reload architecture means a database-backed implementation can simply publish a `DataReloadedEvent` (or skip the event entirely if data is always live).
 

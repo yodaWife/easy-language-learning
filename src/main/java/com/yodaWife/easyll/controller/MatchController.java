@@ -58,8 +58,8 @@ public class MatchController {
 
     @PostMapping("/match/attempt")
     public @Nullable String attempt(
-            @RequestParam String fromWord,
-            @RequestParam String toWord,
+            @RequestParam("fromWord") String fromWord,
+            @RequestParam("toWord") String toWord,
             HttpSession httpSession,
             HttpServletResponse response,
             Model model) {

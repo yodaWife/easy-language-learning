@@ -6,7 +6,7 @@ Deliver current account/scoring requirements on CSV now, while shaping the code 
 
 ### Implementation sync status (2026-06-08)
 
-Phase 2 is complete in the codebase.
+Phase 3 is complete in the codebase.
 
 Completed in implementation:
 
@@ -22,10 +22,19 @@ Additional phase 2 delivery completed:
 
 1. Flyway schema migration at `src/main/resources/db/migration/V1__init.sql`.
 2. PostgreSQL adapters: `PostgresAccountRepository`, `PostgresScoreReadRepository`, `PostgresScoreWriteRepository`, `PostgresDictionaryRepository`.
-3. Profile gating strategy via `PersistenceProfiles`: `csv` (default) and `db`.
+3. Profile gating strategy via `PersistenceProfiles`: `db` (default) and `csv` fallback/import profile.
 4. `CsvDictionaryRepository` introduced; `DataHealthService` no longer implements `DictionaryRepository`.
 5. Startup CSV-to-DB migrator `CsvToDbMigrationRunner` behind `app.migration.enabled` with dry-run support.
 6. Testcontainers parity tests for DB adapters (gracefully skipped when Docker is unavailable).
+
+Phase 3 cutover delivery completed:
+
+1. Runtime default switched from `csv` to `db` in `application.properties`.
+2. Flyway executed `V1__init.sql`; schema contains `app_user`, `dictionary_pair`, `score_attempt`, `score_progress`.
+3. Live CSV-to-DB migration completed via `CsvToDbMigrationRunner`: 2 users, 207 dictionary pairs, 116 score entries, 0 errors.
+4. Startup smoke verification passed on `db` profile (Flyway reports schema up to date and pairId integrity check passes).
+5. CSV profile retained as fallback/import utility.
+6. Spring Boot 4.x Flyway autoconfiguration gotcha documented: explicit `org.springframework.boot:spring-boot-flyway` dependency is required.
 
 Actual code has precedence over this plan where names differ.
 
@@ -223,10 +232,14 @@ Delivered:
 
 ### Phase 3: Cutover
 
-1. Run dry-run migration in staging.
-2. Run production migration with backups.
-3. Switch active adapter to DB.
-4. Keep CSV reader as fallback import utility only.
+Status: completed (2026-06-08).
+
+Delivered:
+
+1. Cutover to `db` profile completed.
+2. Production migration run completed with 0 recorded migration errors.
+3. CSV adapters retained for fallback/import utility workflows.
+4. Post-cutover operation set to `app.migration.enabled=false` (one-shot migration runner remains disabled during normal runtime).
 
 ## 9. Test strategy
 
@@ -259,9 +272,4 @@ Implementation status: mitigation is active via `PairIdIntegrityValidator`.
 
 Phase 2 readiness status: items 1-4 are implemented in the current codebase.
 
-Current remaining work (Phase 3 cutover):
-
-1. Execute migration dry-run in target environment and review error output.
-2. Execute production migration with backups.
-3. Switch default runtime profile to `db`.
-4. Retain CSV adapters as fallback/import utility only.
+Phase 3 status: all cutover items are implemented in the current codebase and validated in runtime smoke checks.

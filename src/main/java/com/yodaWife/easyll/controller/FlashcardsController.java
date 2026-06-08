@@ -132,7 +132,7 @@ public class FlashcardsController {
 
     @PostMapping("/flashcards/learned")
     public @Nullable String markLearned(
-            @RequestParam(defaultValue = "") String wordId,
+            @RequestParam(name = "wordId", defaultValue = "") String wordId,
             HttpSession httpSession,
             HttpServletResponse response,
             @RequestHeader(value = "HX-Request", required = false) String hxRequest,

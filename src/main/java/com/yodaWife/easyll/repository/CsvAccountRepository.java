@@ -34,7 +34,7 @@ import org.jspecify.annotations.Nullable;
  * <p>Accounts are loaded into memory on startup from a semicolon-delimited CSV file.
  * All mutating operations atomically rewrite the file using a temp-file rename pattern.
  */
-@Profile("csv")
+@Profile({"csv", "db"})
 @Repository
 public class CsvAccountRepository implements AccountRepository {
 

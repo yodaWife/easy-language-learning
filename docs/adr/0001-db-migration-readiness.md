@@ -29,7 +29,7 @@ This means:
 
 ## Implementation update (2026-06-08)
 
-Phase 2 implementation is complete.
+Phase 3 implementation is complete.
 
 Implemented boundaries in code:
 
@@ -43,12 +43,21 @@ Implemented boundaries in code:
 
 Phase 2 delivery now implemented:
 
-1. Profile-gated adapter strategy with `csv` (default) and `db` profiles.
+1. Profile-gated adapter strategy with `db` (default) and `csv` fallback/import profile.
 2. PostgreSQL adapters for account, dictionary, score read, and score write repositories.
 3. Flyway schema migration at `src/main/resources/db/migration/V1__init.sql`.
 4. One-off startup migrator `CsvToDbMigrationRunner` enabled via `app.migration.enabled=true` and supporting dry-run.
 5. Migration error output via `MigrationErrorRecorder` to configurable CSV path.
 6. DB adapter parity/contract tests running with Testcontainers (graceful skip when Docker unavailable).
+
+Phase 3 cutover now implemented:
+
+1. Runtime default switched to PostgreSQL by setting `spring.profiles.active=db`.
+2. Flyway migration `V1__init.sql` executed and schema validated as up to date on subsequent starts.
+3. Live CSV-to-DB migration completed via `CsvToDbMigrationRunner` (2 users, 207 dictionary pairs, 116 score entries, 0 errors).
+4. `csv` profile retained as fallback/import utility path.
+5. Migration runner treated as one-shot tooling; `app.migration.enabled=false` remains the steady-state setting.
+6. Spring Boot 4.x Flyway module gotcha resolved by explicit `org.springframework.boot:spring-boot-flyway` dependency.
 
 Additional readiness guard implemented:
 
@@ -80,7 +89,7 @@ Deliberate naming deviation from the original blueprint:
 2. Reduced migration risk through explicit contracts and stable IDs.
 3. Ability to support dual storage adapters during transition if needed.
 4. Startup referential-integrity checks now detect orphan score `pairId` values early.
-5. Runtime cutover can be executed through profile switch (`csv` -> `db`) without controller/service rewiring.
+5. Runtime cutover has been executed through profile switch (`csv` -> `db`) without controller/service rewiring.
 
 ### Negative
 
@@ -89,7 +98,7 @@ Deliberate naming deviation from the original blueprint:
 
 ## Non-goals (for this iteration)
 
-1. No immediate runtime switch to DB.
+1. No redesign beyond completed DB runtime cutover and migration.
 2. No user authentication redesign beyond current session-based account selection.
 3. No distributed session infrastructure.
 
@@ -107,11 +116,10 @@ Current verification snapshot for completed Phase 2 test run:
 2. 16 skipped (Testcontainers when Docker unavailable)
 3. 0 failing
 
-Remaining scope (Phase 3):
+Phase 3 status (2026-06-08):
 
-1. Environment dry-run migration rehearsal.
-2. Production migration and profile cutover to `db`.
-3. Keep CSV adapters as fallback/import path only.
+1. Environment/production migration and DB profile cutover are complete.
+2. CSV adapters remain available for fallback/import path only.
 
 ## References
 

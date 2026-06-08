@@ -49,8 +49,8 @@ public class HomeController {
 
     @PostMapping("/session/start")
     public String startSession(
-            @RequestParam String mode,
-            @RequestParam(required = false) String languageCode,
+            @RequestParam("mode") String mode,
+            @RequestParam(name = "languageCode", required = false) String languageCode,
             HttpSession httpSession) {
 
         if (!dataHealthService.snapshot().wordsHealthy()) {
