@@ -2,7 +2,7 @@
 
 A local-first Spring Boot application for vocabulary practice with two interactive game modes: **Flashcards** and **Match**.
 
-Phase 1 of the DB migration-readiness blueprint is complete (CSV runtime with migration-ready persistence boundaries).
+Phase 2 of the DB migration-readiness blueprint is complete (profile-gated CSV/PostgreSQL adapters, Flyway schema, and CSV-to-DB migration runner).
 
 [User Guide](docs/user-guide.md) &bull; [Developer Guide](docs/developer-guide.md)
 
@@ -20,8 +20,12 @@ Phase 1 of the DB migration-readiness blueprint is complete (CSV runtime with mi
 - **Per-session scoring** — live success/failure counter throughout the match game.
 - **Per-user scoring** — signed-in history persisted to CSV (last 12 attempts per word pair).
 - **Repository interface boundaries** — score read/write and dictionary read contracts are active (`ScoreReadRepository`, `ScoreWriteRepository`, `DictionaryRepository`).
+- **Profile-gated persistence adapters** — `csv` profile (default) uses CSV adapters, `db` profile uses PostgreSQL adapters.
+- **Dedicated CSV dictionary adapter** — `CsvDictionaryRepository` delegates to `DataHealthService`; dictionary repository ownership is no longer on `DataHealthService`.
+- **Flyway schema management** — baseline migration at `src/main/resources/db/migration/V1__init.sql`.
+- **CSV to DB migration runner** — `CsvToDbMigrationRunner` runs when `app.migration.enabled=true` and supports dry-run mode.
 - **Startup pairId integrity validation** — warns when a score `pairId` no longer exists in dictionary data.
-- **CSV-backed data** — no database required.
+- **CSV-first default** — no database required unless `db` profile is enabled.
 - **Runtime data reload** — pick up CSV changes without restarting the app.
 - **Data health page** — see parse errors and disable gameplay automatically when data is invalid.
 
@@ -109,7 +113,30 @@ app.dictionaries.modes=flashcards,match
 app.scores.file-path=./data/scores/scores.csv
 app.scores.write-path=./data/scores/scores.csv
 app.accounts.file-path=./data/users/users.csv
+spring.profiles.active=csv
+spring.profiles.group.test=csv
+app.migration.enabled=false
+app.migration.dry-run=true
+app.migration.errors-output-path=./data/migration-errors.csv
 ```
+
+DB profile overrides in `src/main/resources/application-db.properties`:
+
+- `spring.datasource.*` for PostgreSQL connection
+- `spring.flyway.enabled=true`
+- `spring.flyway.locations=classpath:db/migration`
+
+## Testing status
+
+- Latest Phase 2 completion run: 227 passing, 16 skipped (Testcontainers without Docker), 0 failing.
+- DB parity tests use Testcontainers PostgreSQL and skip gracefully when Docker is not available.
+
+## Remaining Phase 3 cutover
+
+1. Run migration dry-run in target environment and inspect migration errors CSV.
+2. Run production migration with backups (`app.migration.enabled=true`, `app.migration.dry-run=false`).
+3. Switch active runtime profile from `csv` to `db`.
+4. Keep CSV adapters as fallback/import utility only.
 
 ## Known Constraints
 

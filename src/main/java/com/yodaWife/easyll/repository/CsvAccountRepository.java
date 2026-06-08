@@ -8,6 +8,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import java.io.BufferedWriter;
@@ -33,6 +34,7 @@ import org.jspecify.annotations.Nullable;
  * <p>Accounts are loaded into memory on startup from a semicolon-delimited CSV file.
  * All mutating operations atomically rewrite the file using a temp-file rename pattern.
  */
+@Profile("csv")
 @Repository
 public class CsvAccountRepository implements AccountRepository {
 

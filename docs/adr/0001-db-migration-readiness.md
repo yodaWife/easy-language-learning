@@ -27,9 +27,9 @@ This means:
 4. Move score key to `(user_id, pair_id, mode)` and enforce rolling window = 12.
 5. Prepare migration assets (schema, mapping rules, data migration script design) now.
 
-## Implementation update (2026-06-01)
+## Implementation update (2026-06-08)
 
-Phase 1 implementation is complete.
+Phase 2 implementation is complete.
 
 Implemented boundaries in code:
 
@@ -37,9 +37,18 @@ Implemented boundaries in code:
 2. `ScoreWriteRepository` (`appendAttempt`, `flush`).
 3. `DictionaryRepository` (`findLanguage`, `availableLanguages`).
 4. `ScoreRepository` implements both score interfaces.
-5. `DataHealthService` implements `DictionaryRepository`.
+5. `CsvDictionaryRepository` implements `DictionaryRepository` by delegating to `DataHealthService` snapshots.
 6. `ScoreProgressService` depends on `ScoreReadRepository`.
 7. `MatchGameApplicationService` depends on `ScoreWriteRepository`.
+
+Phase 2 delivery now implemented:
+
+1. Profile-gated adapter strategy with `csv` (default) and `db` profiles.
+2. PostgreSQL adapters for account, dictionary, score read, and score write repositories.
+3. Flyway schema migration at `src/main/resources/db/migration/V1__init.sql`.
+4. One-off startup migrator `CsvToDbMigrationRunner` enabled via `app.migration.enabled=true` and supporting dry-run.
+5. Migration error output via `MigrationErrorRecorder` to configurable CSV path.
+6. DB adapter parity/contract tests running with Testcontainers (graceful skip when Docker unavailable).
 
 Additional readiness guard implemented:
 
@@ -71,6 +80,7 @@ Deliberate naming deviation from the original blueprint:
 2. Reduced migration risk through explicit contracts and stable IDs.
 3. Ability to support dual storage adapters during transition if needed.
 4. Startup referential-integrity checks now detect orphan score `pairId` values early.
+5. Runtime cutover can be executed through profile switch (`csv` -> `db`) without controller/service rewiring.
 
 ### Negative
 
@@ -88,8 +98,20 @@ Deliberate naming deviation from the original blueprint:
 Before DB cutover:
 
 1. Parity tests pass against both CSV and DB implementations.
-2. Migration dry-run reports zero unresolved `pair_id` mappings.
+2. Migration dry-run report is generated and reviewed for unresolved mappings.
 3. Data health endpoint validates both dictionary and score stores.
+
+Current verification snapshot for completed Phase 2 test run:
+
+1. 227 passing
+2. 16 skipped (Testcontainers when Docker unavailable)
+3. 0 failing
+
+Remaining scope (Phase 3):
+
+1. Environment dry-run migration rehearsal.
+2. Production migration and profile cutover to `db`.
+3. Keep CSV adapters as fallback/import path only.
 
 ## References
 

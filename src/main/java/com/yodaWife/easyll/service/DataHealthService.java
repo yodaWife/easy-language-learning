@@ -4,7 +4,6 @@ import com.yodawife.easyll.domain.CsvParseResult;
 import com.yodawife.easyll.domain.LanguageBundle;
 import com.yodawife.easyll.domain.MultiLanguageDataBundle;
 import com.yodawife.easyll.domain.ScoreDataBundle;
-import com.yodawife.easyll.repository.DictionaryRepository;
 import com.yodawife.easyll.validation.MultiLanguageDictionaryParser;
 import com.yodawife.easyll.validation.ScoreCsvParser;
 import jakarta.annotation.PostConstruct;
@@ -15,10 +14,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
-public class DataHealthService implements DictionaryRepository {
+public class DataHealthService {
 
     private static final Logger log = LoggerFactory.getLogger(DataHealthService.class);
 
@@ -102,12 +100,8 @@ public class DataHealthService implements DictionaryRepository {
         return multiLanguageData.bundles().entrySet().stream()
                 .filter(entry -> entry.getValue().isValid())
                 .map(Map.Entry::getKey)
+                .sorted()
                 .toList();
-    }
-
-    @Override
-    public Optional<LanguageBundle> findLanguage(String languageCode) {
-        return snapshot().getLanguageBundle(languageCode);
     }
 
     public synchronized void reportRuntimeError(String errorMessage) {

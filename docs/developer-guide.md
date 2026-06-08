@@ -12,7 +12,7 @@ This guide covers the project architecture, codebase structure, configuration, t
 - [Configuration reference](#configuration-reference)
 - [Security model](#security-model)
 - [Data model](#data-model)
-- [Scoring model updates (phase 1)](#scoring-model-updates-phase-1)
+- [Persistence model updates (phase 2, complete)](#persistence-model-updates-phase-2-complete)
 - [Testing](#testing)
 - [Extending the app](#extending-the-app)
 - [Known constraints and backlog](#known-constraints-and-backlog)
@@ -21,7 +21,12 @@ This guide covers the project architecture, codebase structure, configuration, t
 
 ## Architecture overview
 
-Easy Language Learning is a monolithic Spring Boot MVC application. It is intentionally local-first: word data and score history are read from CSV files on startup and held in memory during runtime. There is no external database.
+Easy Language Learning is a monolithic Spring Boot MVC application with profile-gated persistence adapters.
+
+- `csv` profile (default): CSV-backed repositories for local-first runtime.
+- `db` profile: PostgreSQL-backed repositories with Flyway-managed schema.
+
+Dictionary and score data are still loaded through `DataHealthService` snapshots for gameplay use-cases, while persistence adapters behind repository interfaces determine the backing store.
 
 ### Component diagram
 
@@ -101,7 +106,7 @@ sequenceDiagram
 | Controllers | `controller` | HTTP request handling, session attribute management, view selection |
 | Application services | `service` | Use-case orchestration; no HTTP or persistence knowledge |
 | Domain | `domain` | Game state, rules, result types; pure Java, no Spring dependencies |
-| Repository | `repository` | CSV read/write; isolated persistence concern |
+| Repository | `repository` + `repository.db` | Profile-gated CSV and PostgreSQL adapters; isolated persistence concern |
 | Validation | `validation` | CSV parsing with full error collection; returns `CsvParseResult<T>` |
 | Config | `config` | `@ConfigurationProperties` beans and Spring Security filter chain |
 
@@ -115,7 +120,7 @@ sequenceDiagram
 
 **Atomic score writes.** `ScoreRepository` writes to a temp file beside the target path, then renames it over the live file. This avoids partial writes if the JVM crashes mid-write.
 
-**Repository ports in phase 1.** Score services depend on read/write repository interfaces rather than the concrete CSV adapter: `ScoreProgressService -> ScoreReadRepository`, `MatchGameApplicationService -> ScoreWriteRepository`.
+**Repository ports and adapter swap.** Score services depend on read/write repository interfaces rather than concrete adapters: `ScoreProgressService -> ScoreReadRepository`, `MatchGameApplicationService -> ScoreWriteRepository`. The active implementation is selected by Spring profile (`csv` or `db`).
 
 **Startup pairId integrity validation.** `PairIdIntegrityValidator` runs on `ApplicationReadyEvent` and checks that all score `pairId` values exist in loaded dictionary data. Violations are logged as WARN and do not block startup.
 
@@ -160,6 +165,8 @@ src/main/java/com/yodawife/easyll/
 ├── config/
 │   ├── DictionaryProperties.java     app.dictionaries.*
 │   ├── MatchGameProperties.java      app.match.*
+│   ├── MigrationProperties.java      app.migration.*
+│   └── PersistenceProfiles.java      csv/db profile constants
 │   └── SecurityConfig.java
 ├── controller/
 │   ├── AccountController.java        /account/panel, /account/sign-in, /account/sign-out, /account/status
@@ -182,10 +189,19 @@ src/main/java/com/yodawife/easyll/
 ├── repository/
 │   ├── AccountRepository.java
 │   ├── CsvAccountRepository.java
+│   ├── CsvDictionaryRepository.java
 │   ├── DictionaryRepository.java
 │   ├── ScoreReadRepository.java
 │   ├── ScoreRepository.java
 │   └── ScoreWriteRepository.java
+├── repository/db/
+│   ├── PostgresAccountRepository.java
+│   ├── PostgresDictionaryRepository.java
+│   ├── PostgresScoreReadRepository.java
+│   └── PostgresScoreWriteRepository.java
+├── migration/
+│   ├── CsvToDbMigrationRunner.java
+│   └── MigrationErrorRecorder.java
 ├── service/
 │   ├── AccountService.java
 │   ├── DataHealthService.java
@@ -208,6 +224,9 @@ src/main/java/com/yodawife/easyll/
 
 src/main/resources/
 ├── application.properties
+├── application-db.properties
+├── db/migration/
+│   └── V1__init.sql
 ├── static/css/
 └── templates/
     ├── dictionary.html
@@ -300,9 +319,21 @@ All properties live in `src/main/resources/application.properties`. Override per
 | `app.match.max-attempts` | `30` | Successful matches required to complete a session. Minimum 1. |
 | `app.match.board-size` | `5` | Word pairs per match board. Minimum 1. |
 | `app.match.session-ttl-minutes` | `60` | Idle TTL for match sessions in minutes. Sessions not accessed within this window are evicted by the scheduled sweep. Minimum 1. |
+| `spring.profiles.active` | `csv` | Active persistence profile. Use `csv` for CSV adapters (default), `db` for PostgreSQL adapters. |
+| `spring.profiles.group.test` | `csv` | Ensures the `test` profile also activates CSV adapters. |
+| `spring.flyway.enabled` | `false` | Flyway disabled by default, enabled in `db` profile. |
+| `app.migration.enabled` | `false` | Enables one-off CSV-to-DB migration runner at startup. |
+| `app.migration.dry-run` | `true` | Logs migration actions without writing DB rows when true. |
+| `app.migration.errors-output-path` | `./data/migration-errors.csv` | Output CSV for unresolved migration rows. |
 | `spring.security.user.name` | `admin` | Admin username for HTTP Basic Auth on `/admin/**`. |
 | `spring.security.user.password` | `admin` | Admin password. **Change this before any non-localhost deployment.** |
 | `spring.security.user.roles` | `ADMIN` | Role granted to the admin user. |
+
+DB-only overrides in `application-db.properties`:
+
+- `spring.datasource.*` (PostgreSQL connection)
+- `spring.flyway.enabled=true`
+- `spring.flyway.locations=classpath:db/migration`
 
 ---
 
@@ -397,25 +428,27 @@ Parsed into `ScoreDataBundle` containing a `Map<ScoreKey, UserWordHistory>` wher
 - History is capped to the **last 12 entries** per `(userId, pairId, mode)` (`UserWordHistory.MAX_HISTORY = 12`).
 - A missing score file is treated as empty history (not an error).
 
-### Migration behavior
+### CSV to DB migration behavior (phase 2)
 
-- Legacy score rows (`nickname;fromWord;toWord;history`) are migrated automatically by `ScoreMigrationService` when `ScoreCsvParser` parses filesystem-based score data.
-- New row format is `userId;pairId;mode;history`.
-- Migration is one-time and atomic: original file is backed up to `.bak`, converted rows are written through a temp file and moved into place.
-- Rows with unresolved `(fromWord,toWord)` mapping are skipped and logged.
-- In migrated rows, `mode` is written as `match`.
+- `CsvToDbMigrationRunner` runs only when `app.migration.enabled=true`.
+- Migration source is current CSV-backed runtime state (`CsvAccountRepository` + `DataHealthService` snapshot).
+- `app_user`, `dictionary_pair`, `score_attempt`, and `score_progress` are populated through JDBC SQL in a single startup run.
+- Dry-run mode (`app.migration.dry-run=true`) logs intended inserts/upserts without writing to DB.
+- Invalid score rows (missing `userId` or unknown `pairId`) are recorded via `MigrationErrorRecorder` into `app.migration.errors-output-path`.
 
 ---
 
-## Scoring model updates (phase 1, complete)
+## Persistence model updates (phase 2, complete)
 
 - Persistent key changed from `(nickname, fromWord, toWord)` to `(userId, pairId, mode)`.
 - Signed-in users persist score history to `data/scores/scores.csv`; anonymous users still get per-session counters and result messages, but no persistent writes.
 - `ScoreProgressService.getProgressForUser(userId)` returns `Map<String pairId, Integer successPercent>`.
 - Dictionary progress column is enabled only for signed-in users and uses the computed success percentage.
-- Repository interfaces now exist in `repository/`: `ScoreReadRepository`, `ScoreWriteRepository`, and `DictionaryRepository`.
-- `ScoreRepository` implements both score interfaces; `DataHealthService` implements `DictionaryRepository`.
-- Naming note: the blueprint names (`ScoreAttemptRepository`, `ScoreProgressRepository`) were intentionally replaced in phase 1 with `ScoreReadRepository`/`ScoreWriteRepository` because `ScoreAttempt` and `ScoreProgress` domain objects belong to phase 2 DB modeling and do not yet exist.
+- Repository interfaces are active in `repository/`: `ScoreReadRepository`, `ScoreWriteRepository`, and `DictionaryRepository`.
+- CSV implementations are active under profile `csv`: `ScoreRepository`, `CsvAccountRepository`, `CsvDictionaryRepository`.
+- PostgreSQL implementations are active under profile `db`: `PostgresAccountRepository`, `PostgresScoreReadRepository`, `PostgresScoreWriteRepository`, `PostgresDictionaryRepository`.
+- `DataHealthService` no longer implements `DictionaryRepository`; `CsvDictionaryRepository` now delegates dictionary reads to `DataHealthService` snapshots.
+- Flyway baseline schema is applied from `src/main/resources/db/migration/V1__init.sql`.
 - `PairIdIntegrityValidator` runs at startup and logs WARN for any score `pairId` missing from dictionary data.
 - Dictionary add-row fragment (`row-new`) now uses a `colspan` formula that respects `progressEnabled`.
 
@@ -435,6 +468,7 @@ Tests live under `src/test/java/com/yodawife/easyll/`. The test Spring profile l
 | Service unit tests | `service/` | JUnit 5 + Mockito; no Spring context loaded |
 | CSV parser tests | `validation/` | JUnit 5; both positive and negative (malformed input) cases |
 | Repository tests | `repository/` | JUnit 5 with temp file I/O |
+| DB parity tests | `repository/db/` | Testcontainers PostgreSQL contract tests (same repository behavior assertions) |
 | Controller tests | `controller/` | `@WebMvcTest`, MockMvc, `spring-security-test` |
 | Integration tests | `controller/DataReloadIntegrationTest` | `@SpringBootTest` with full context |
 
@@ -454,6 +488,12 @@ Controller tests use `spring-security-test` utilities:
 # XML results: build/test-results/test/
 ```
 
+Latest Phase 2 completion run summary:
+
+- 227 passing
+- 16 skipped (Testcontainers tests gracefully skipped when Docker is unavailable)
+- 0 failing
+
 ---
 
 ## Extending the app
@@ -470,12 +510,12 @@ Controller tests use `spring-security-test` utilities:
 
 ### Replacing CSV storage with a database
 
-Score persistence is already split by interface contracts. To swap CSV with DB:
+Phase 2 delivered profile-gated adapter implementations. Phase 3 cutover now focuses on runtime switch and rollout:
 
-1. Implement DB adapters for `ScoreReadRepository` and `ScoreWriteRepository`.
-2. Keep service wiring unchanged (`ScoreProgressService` and `MatchGameApplicationService` already depend on interfaces).
-3. Implement a DB-backed `DictionaryRepository` when dictionary reads move off CSV.
-4. Switch Spring bean wiring to DB adapters and retire CSV adapters once parity tests pass.
+1. Run migration in dry-run mode and resolve any migration error output.
+2. Execute production migration with `app.migration.enabled=true` and `app.migration.dry-run=false`.
+3. Switch active profile from `csv` to `db`.
+4. Keep CSV adapters as fallback/import utility only.
 
 `WordCsvParser` is similarly isolated in `validation/`. The event-driven reload architecture means a database-backed implementation can simply publish a `DataReloadedEvent` (or skip the event entirely if data is always live).
 

@@ -4,9 +4,9 @@
 
 Deliver current account/scoring requirements on CSV now, while shaping the code and data model for near-term migration to a relational database.
 
-### Implementation sync status (2026-06-01)
+### Implementation sync status (2026-06-08)
 
-Phase 1 is complete in the codebase.
+Phase 2 is complete in the codebase.
 
 Completed in implementation:
 
@@ -17,6 +17,15 @@ Completed in implementation:
 5. History cap increased from 10 to 12.
 6. Dictionary progress column visible only to signed-in users.
 7. Startup `pairId` referential-integrity validator.
+
+Additional phase 2 delivery completed:
+
+1. Flyway schema migration at `src/main/resources/db/migration/V1__init.sql`.
+2. PostgreSQL adapters: `PostgresAccountRepository`, `PostgresScoreReadRepository`, `PostgresScoreWriteRepository`, `PostgresDictionaryRepository`.
+3. Profile gating strategy via `PersistenceProfiles`: `csv` (default) and `db`.
+4. `CsvDictionaryRepository` introduced; `DataHealthService` no longer implements `DictionaryRepository`.
+5. Startup CSV-to-DB migrator `CsvToDbMigrationRunner` behind `app.migration.enabled` with dry-run support.
+6. Testcontainers parity tests for DB adapters (gracefully skipped when Docker is unavailable).
 
 Actual code has precedence over this plan where names differ.
 
@@ -69,7 +78,7 @@ public interface DictionaryRepository {
 Implementation notes:
 
 1. `ScoreRepository` implements both `ScoreReadRepository` and `ScoreWriteRepository`.
-2. `DataHealthService` implements `DictionaryRepository` (`findLanguage`, `availableLanguages`).
+2. `CsvDictionaryRepository` implements `DictionaryRepository` by delegating to `DataHealthService` snapshot reads.
 3. `ScoreProgressService` depends on `ScoreReadRepository` (not concrete `ScoreRepository`).
 4. `MatchGameApplicationService` depends on `ScoreWriteRepository` (not concrete `ScoreRepository`).
 5. Naming deviation from the original blueprint is deliberate: `ScoreAttemptRepository`/`ScoreProgressRepository` were replaced by `ScoreReadRepository`/`ScoreWriteRepository` because `ScoreAttempt` and `ScoreProgress` domain objects are planned for phase 2 DB modeling and do not yet exist in the CSV-era model.
@@ -166,22 +175,22 @@ Dictionary view:
 1. If `signedIn == true`, show progress column.
 2. If `signedIn == false`, hide progress column.
 
-## 7. Migration from existing scores.csv
+## 7. Migration from CSV runtime state (implemented in phase 2)
 
-Current shape: `user;fromWord;toWord;history`.
+Runtime trigger:
 
-Migration algorithm:
+1. `CsvToDbMigrationRunner` executes on startup only when `app.migration.enabled=true`.
+2. `app.migration.dry-run=true` logs planned writes without mutating DB.
 
-1. Resolve `user` to `user_id` from `app_user` (create if missing).
-2. Resolve `(fromWord,toWord,languageCode)` to `pair_id`.
-3. Parse history symbols and trim to last 12.
-4. Write generated attempts chronologically with synthetic timestamps if needed.
-5. Recompute and upsert `score_progress`.
-6. Log unresolved rows into `migration-errors.csv`.
+Algorithm implemented in code:
 
-Important:
-
-1. If language cannot be inferred deterministically for legacy rows, migration must mark row unresolved and not silently guess.
+1. Load users from `CsvAccountRepository` and insert/upsert into `app_user`.
+2. Load dictionary bundles from `DataHealthService` snapshot and insert into `dictionary_pair`.
+3. Load score histories from snapshot (`ScoreKey -> UserWordHistory`).
+4. Validate `userId` exists and `pairId` exists in migrated dictionary set.
+5. For each score key, write `score_attempt` rows (synthetic chronological timestamps) for the last 12 entries.
+6. Upsert `score_progress` with `history_last12`, counts, and success percentage.
+7. Record invalid rows through `MigrationErrorRecorder` to `app.migration.errors-output-path`.
 
 ## 8. Incremental implementation plan
 
@@ -203,10 +212,14 @@ Delivered in this phase beyond original list:
 
 ### Phase 2: DB adapter introduction
 
-1. Add Flyway migrations for target schema.
-2. Implement JDBC/JPA adapters for repository interfaces.
-3. Add parity tests to run against CSV and DB adapters.
-4. Build one-off migration command.
+Status: completed (2026-06-08).
+
+Delivered:
+
+1. Flyway migration V1 schema.
+2. JDBC PostgreSQL adapters for account, dictionary, score read, and score write repositories.
+3. Contract/parity test coverage for DB adapters via Testcontainers.
+4. One-off migration runner (`CsvToDbMigrationRunner`) with dry-run and error reporting.
 
 ### Phase 3: Cutover
 
@@ -222,6 +235,7 @@ Delivered in this phase beyond original list:
 3. Integration tests for dictionary progress visibility by account state.
 4. Adapter contract tests shared by CSV and DB implementations.
 5. Migration test fixtures including ambiguous/unresolvable legacy rows.
+6. Testcontainers-based DB tests skip gracefully when Docker is unavailable.
 
 ## 10. Risks and mitigations
 
@@ -243,4 +257,11 @@ Implementation status: mitigation is active via `PairIdIntegrityValidator`.
 3. Stable `user_id` and `pair_id` used in all new score writes.
 4. Migration dry-run report available with explicit unresolved rows.
 
-Phase 1 readiness status: items 1-3 are implemented in the current codebase; item 4 remains a phase 2/3 migration activity.
+Phase 2 readiness status: items 1-4 are implemented in the current codebase.
+
+Current remaining work (Phase 3 cutover):
+
+1. Execute migration dry-run in target environment and review error output.
+2. Execute production migration with backups.
+3. Switch default runtime profile to `db`.
+4. Retain CSV adapters as fallback/import utility only.

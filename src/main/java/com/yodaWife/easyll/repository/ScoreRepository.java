@@ -10,6 +10,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Repository;
 
@@ -27,6 +28,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
+@Profile("csv")
 @Repository
 public class ScoreRepository implements ScoreReadRepository, ScoreWriteRepository {
 
