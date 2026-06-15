@@ -11,9 +11,9 @@ The application supports vocabulary learning through two modes:
 
 It is account-aware: signed-in users get persistent score tracking and learning progress visibility. Anonymous users can play and browse the dictionary without persistence.
 
-The application is local-first and file-based. A relational database migration is planned for the next phase (see [docs/architecture/db-migration-blueprint.md](architecture/db-migration-blueprint.md)).
+The application is local-first in deployment model and PostgreSQL-backed in persistence.
 
-Phase 1 from the migration blueprint is complete in the current implementation (as of 2026-06-01).
+CSV migration work is complete; normal operation is database-only.
 
 ## 2. Core Functional Requirements
 
@@ -55,7 +55,7 @@ Phase 1 from the migration blueprint is complete in the current implementation (
 5. Sort behavior is available from table headers.
 6. Toggle global word enablement.
 7. Toggle per-mode enablement.
-8. Toggle changes persist to CSV files and are reflected in gameplay.
+8. Toggle changes persist to PostgreSQL and are reflected in gameplay.
 9. Dictionary add-row rendering stays aligned whether progress is visible or hidden (new-row colspan respects signed-in state).
 
 ### 2.6 Data health and reload
@@ -77,94 +77,53 @@ Phase 1 from the migration blueprint is complete in the current implementation (
 
 1. `ScoreReadRepository` provides read access for progress and user score lookup (`getHistoriesForUser`, `knownUsers`).
 2. `ScoreWriteRepository` provides write access for match-attempt persistence (`appendAttempt`, `flush`).
-3. `DictionaryRepository` provides dictionary-read access (`findLanguage`, `availableLanguages`).
-4. `ScoreRepository` implements both score interfaces.
-5. `DataHealthService` implements `DictionaryRepository`.
+3. `DictionaryRepository` provides dictionary read/write access (`findLanguage`, `availableLanguages`, `updateGlobalEnabled`, `updateWordContent`, `insertWord`, `upsertModeEligibility`).
+4. Score read/write persistence is provided by PostgreSQL-backed repository implementations.
+5. `DataHealthService` uses `DictionaryRepository` plus DB score connectivity checks via `JdbcTemplate`.
 6. Score services depend on interfaces, not concrete adapters:
   1. `ScoreProgressService -> ScoreReadRepository`
   2. `MatchGameApplicationService -> ScoreWriteRepository`
-7. Naming deviation from the blueprint is intentional in phase 1: `ScoreAttemptRepository` and `ScoreProgressRepository` were replaced by `ScoreReadRepository` and `ScoreWriteRepository` because `ScoreAttempt`/`ScoreProgress` domain objects are not present yet (planned for phase 2 DB model).
+7. Service dependencies remain interface-driven (`ScoreReadRepository`, `ScoreWriteRepository`, `DictionaryRepository`) with DB implementations active by default.
 
 ## 3. Data Requirements
 
-### 3.1 Dictionary structure
+### 3.1 Dictionary schema (database)
 
-Dictionary root path contains language folders:
+Dictionary content is stored in PostgreSQL tables:
 
-```text
-data/dictionaries/{languageCode}/
-  words.csv
-  mode-eligibility.csv
-```
-
-### 3.2 words.csv schema
-
-```text
-WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
-```
+1. `dictionary_pair`
+2. `mode_eligibility` (added by Flyway `V2__mode_eligibility.sql`)
 
 Rules:
 
-1. Exactly 5 columns.
-2. WORD_ID is a deterministic type-3 UUID derived from `languageCode:from:to`.
-3. WORD_ID unique per language.
-4. FROM and TO non-blank.
-5. GLOBAL_ENABLED is true or false.
+1. `pair_id` uniquely identifies dictionary word pairs.
+2. Per-mode overrides are keyed by `(pair_id, mode)`.
+3. `mode_eligibility.pair_id` references `dictionary_pair.pair_id`.
+4. Missing mode override means mode-enabled by default.
 
-### 3.3 mode-eligibility.csv schema
-
-```text
-WORD_ID;MODE;ENABLED
-```
-
-Rules:
-
-1. Exactly 3 columns.
-2. WORD_ID must exist in words.csv.
-3. MODE non-blank.
-4. ENABLED is true or false.
-5. (WORD_ID, MODE) unique.
-6. Missing row means default enabled for that mode.
-
-### 3.4 Eligibility rule
+### 3.2 Eligibility rule
 
 A word is eligible in mode M when:
 
 1. GLOBAL_ENABLED = true
 2. And per-mode value for M is true, or missing.
 
-### 3.5 users.csv schema
+### 3.3 User and score persistence
 
-```text
-USER_ID;DISPLAY_NAME;CREATED_AT
-```
+User and score data are persisted in PostgreSQL and exposed through repository interfaces.
 
 Rules:
 
-1. Exactly 3 columns.
-2. USER_ID is a randomly-generated UUID, immutable after creation.
-3. DISPLAY_NAME is unique (case-insensitive on lookup).
-4. CREATED_AT is an ISO-8601 UTC timestamp.
-
-### 3.6 scores.csv schema
-
-```text
-userId;pairId;mode;history
-```
-
-Rules:
-
-1. Exactly 4 columns.
-2. `userId` must reference a known user.
-3. `pairId` must match a WORD_ID in the dictionary.
-4. `history` is a string of `S` (success) and `F` (failure) characters, most recent last, max 12.
+1. User identity is immutable (`userId`).
+2. Score identity key is `(userId, pairId, mode)`.
+3. Score history is capped to the last 12 attempts.
 
 ## 4. Non-Functional Requirements
 
 1. Runtime: Java 26.
 2. Framework: Spring Boot MVC + Thymeleaf + HTMX + Alpine.js.
-3. Persistence: CSV files only (database migration planned for next phase).
-4. Safety: atomic writes for mutable CSV updates.
+3. Persistence: PostgreSQL with Flyway-managed schema.
+4. Safety: DB constraints and transactional repository operations.
 5. Concurrency: per-language write synchronization for dictionary edits.
 6. Validation: deterministic, user-visible parsing errors.
 7. Static analysis: Error Prone + NullAway in JSpecify mode.
@@ -178,8 +137,5 @@ Rules:
 ## 6. Operational Constraints
 
 1. Session store is in-memory.
-2. Application process must have write permission to:
-   1. `data/dictionaries` (dictionary toggles)
-   2. `data/users` (account creation and updates)
-   3. Score write path (score persistence)
-3. Dictionary availability is based on valid bundles discovered under configured root.
+2. PostgreSQL availability is required for normal application operation.
+3. Flyway migrations must be successfully applied before serving traffic.

@@ -1,6 +1,5 @@
 package com.yodawife.easyll.repository;
 
-import com.yodawife.easyll.config.PersistenceProfiles;
 import com.yodawife.easyll.domain.LanguageBundle;
 import com.yodawife.easyll.service.DataHealthService;
 import org.springframework.context.annotation.Profile;
@@ -14,7 +13,7 @@ import java.util.Optional;
  * Delegates to {@link DataHealthService} which owns the loaded CSV state.
  */
 @Repository
-@Profile(PersistenceProfiles.CSV)
+@Profile("csv")
 public class CsvDictionaryRepository implements DictionaryRepository {
 
     private final DataHealthService dataHealthService;
@@ -31,5 +30,25 @@ public class CsvDictionaryRepository implements DictionaryRepository {
     @Override
     public List<String> availableLanguages() {
         return dataHealthService.availableLanguages();
+    }
+
+    @Override
+    public void updateGlobalEnabled(String pairId, boolean enabled) {
+        throw new UnsupportedOperationException("Write operations not supported in CSV mode");
+    }
+
+    @Override
+    public void updateWordContent(String pairId, String fromWord, String toWord, String example) {
+        throw new UnsupportedOperationException("Write operations not supported in CSV mode");
+    }
+
+    @Override
+    public void insertWord(String languageCode, String pairId, String fromWord, String toWord, String example, boolean globalEnabled) {
+        throw new UnsupportedOperationException("Write operations not supported in CSV mode");
+    }
+
+    @Override
+    public void upsertModeEligibility(String pairId, String mode, boolean enabled) {
+        throw new UnsupportedOperationException("Write operations not supported in CSV mode");
     }
 }

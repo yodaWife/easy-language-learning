@@ -8,7 +8,8 @@ import com.yodawife.easyll.domain.MatchSession;
 import com.yodawife.easyll.domain.Word;
 import com.yodawife.easyll.domain.WordEntry;
 import com.yodawife.easyll.domain.WordId;
-import com.yodawife.easyll.repository.ScoreRepository;
+import com.yodawife.easyll.repository.DictionaryRepository;
+import com.yodawife.easyll.repository.ScoreWriteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,21 +28,18 @@ import static org.mockito.Mockito.when;
 class MatchGameApplicationServiceTest {
 
     private final MatchSessionService matchSessionService = mock(MatchSessionService.class);
-    private final ScoreRepository scoreRepository = mock(ScoreRepository.class);
+    private final ScoreWriteRepository scoreRepository = mock(ScoreWriteRepository.class);
     private final MatchBoardGenerator matchBoardGenerator = mock(MatchBoardGenerator.class);
-    private final DataHealthService mockDataHealthService = mock(DataHealthService.class);
+    private final DictionaryRepository dictionaryRepository = mock(DictionaryRepository.class);
     private final MatchGameApplicationService service =
-            new MatchGameApplicationService(matchSessionService, scoreRepository, matchBoardGenerator, mockDataHealthService);
+            new MatchGameApplicationService(matchSessionService, scoreRepository, matchBoardGenerator, dictionaryRepository);
 
     @BeforeEach
-    void setupDataHealthMock() {
-        var mockSnapshot = mock(DataSnapshot.class);
-        when(mockDataHealthService.snapshot()).thenReturn(mockSnapshot);
-        var lb = mock(LanguageBundle.class);
-        when(mockSnapshot.getLanguageBundle("hun")).thenReturn(Optional.of(lb));
+    void setupDictionaryMock() {
         var word1 = new Word(new WordId("pair-abc"), "Letter", "Betű", "", true);
         var word2 = new Word(new WordId("pair-xyz"), "Stone", "Kő", "", true);
-        when(lb.words()).thenReturn(List.of(word1, word2));
+        var bundle = new LanguageBundle("hun", null, List.of(word1, word2), List.of(), List.of());
+        when(dictionaryRepository.findLanguage("hun")).thenReturn(Optional.of(bundle));
     }
 
     private MatchBoard boardWithPair(WordEntry entry) {

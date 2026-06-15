@@ -1,11 +1,10 @@
 package com.yodawife.easyll.repository.db;
 
-import com.yodawife.easyll.config.PersistenceProfiles;
 import com.yodawife.easyll.domain.LanguageBundle;
+import com.yodawife.easyll.domain.ModeEligibility;
 import com.yodawife.easyll.domain.Word;
 import com.yodawife.easyll.domain.WordId;
 import com.yodawife.easyll.repository.DictionaryRepository;
-import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -14,10 +13,9 @@ import java.util.Optional;
 
 /**
  * PostgreSQL-backed implementation of {@link DictionaryRepository}.
- * Active when the {@value PersistenceProfiles#DB} Spring profile is enabled.
+ * Active when the {@code db} Spring profile is enabled.
  */
 @Repository
-@Profile(PersistenceProfiles.DB)
 public class PostgresDictionaryRepository implements DictionaryRepository {
 
     private final JdbcTemplate jdbc;
@@ -46,7 +44,20 @@ public class PostgresDictionaryRepository implements DictionaryRepository {
             return Optional.empty();
         }
 
-        return Optional.of(new LanguageBundle(languageCode, null, words, List.of(), List.of()));
+        var modeEligibilities = jdbc.query(
+            """
+            SELECT me.pair_id, me.mode, me.enabled
+            FROM mode_eligibility me
+            JOIN dictionary_pair dp ON me.pair_id = dp.pair_id
+            WHERE dp.language_code = ?
+            """,
+            (rs, rowNum) -> new ModeEligibility(
+                new WordId(rs.getString("pair_id")),
+                rs.getString("mode"),
+                rs.getBoolean("enabled")),
+            languageCode);
+
+        return Optional.of(new LanguageBundle(languageCode, null, words, modeEligibilities, List.of()));
     }
 
     @Override
@@ -55,4 +66,34 @@ public class PostgresDictionaryRepository implements DictionaryRepository {
             "SELECT DISTINCT language_code FROM dictionary_pair ORDER BY language_code ASC",
             String.class);
     }
+
+    @Override
+    public void updateGlobalEnabled(String pairId, boolean enabled) {
+        jdbc.update(
+            "UPDATE dictionary_pair SET global_enabled = ? WHERE pair_id = ?",
+            enabled, pairId);
+    }
+
+    @Override
+    public void updateWordContent(String pairId, String fromWord, String toWord, String example) {
+        jdbc.update(
+            "UPDATE dictionary_pair SET from_word = ?, to_word = ?, example = ? WHERE pair_id = ?",
+            fromWord, toWord, example, pairId);
+    }
+
+    @Override
+    public void insertWord(String languageCode, String pairId, String fromWord, String toWord, String example, boolean globalEnabled) {
+        jdbc.update(
+            "INSERT INTO dictionary_pair (pair_id, language_code, from_word, to_word, example, global_enabled) VALUES (?, ?, ?, ?, ?, ?)",
+            pairId, languageCode, fromWord, toWord, example, globalEnabled);
+    }
+
+    @Override
+    public void upsertModeEligibility(String pairId, String mode, boolean enabled) {
+        jdbc.update(
+            "INSERT INTO mode_eligibility (pair_id, mode, enabled) VALUES (?, ?, ?) " +
+            "ON CONFLICT (pair_id, mode) DO UPDATE SET enabled = EXCLUDED.enabled",
+            pairId, mode, enabled);
+    }
 }
+

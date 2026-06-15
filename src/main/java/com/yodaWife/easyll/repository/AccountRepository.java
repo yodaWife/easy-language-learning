@@ -7,7 +7,6 @@ import java.util.Optional;
 
 /**
  * Persistence contract for user accounts.
- * Implementations may be backed by CSV files or a relational database.
  */
 public interface AccountRepository {
 

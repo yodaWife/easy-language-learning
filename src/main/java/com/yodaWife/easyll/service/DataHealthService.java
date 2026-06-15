@@ -1,37 +1,36 @@
 package com.yodawife.easyll.service;
 
-import com.yodawife.easyll.domain.CsvParseResult;
 import com.yodawife.easyll.domain.LanguageBundle;
 import com.yodawife.easyll.domain.MultiLanguageDataBundle;
-import com.yodawife.easyll.domain.ScoreDataBundle;
-import com.yodawife.easyll.validation.MultiLanguageDictionaryParser;
-import com.yodawife.easyll.validation.ScoreCsvParser;
+import com.yodawife.easyll.repository.DictionaryRepository;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class DataHealthService {
 
     private static final Logger log = LoggerFactory.getLogger(DataHealthService.class);
 
-    private final ScoreCsvParser scoreCsvParser;
+    private final DictionaryRepository dictionaryRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final MultiLanguageDictionaryParser multiLanguageDictionaryParser;
+    private final JdbcTemplate jdbcTemplate;
 
     private volatile DataSnapshot currentSnapshot = DataSnapshot.degraded(List.of("Data not yet loaded"));
 
-    public DataHealthService(ScoreCsvParser scoreCsvParser,
+    public DataHealthService(DictionaryRepository dictionaryRepository,
                              ApplicationEventPublisher eventPublisher,
-                             MultiLanguageDictionaryParser multiLanguageDictionaryParser) {
-        this.scoreCsvParser = scoreCsvParser;
+                             JdbcTemplate jdbcTemplate) {
+        this.dictionaryRepository = dictionaryRepository;
         this.eventPublisher = eventPublisher;
-        this.multiLanguageDictionaryParser = multiLanguageDictionaryParser;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @PostConstruct
@@ -40,46 +39,52 @@ public class DataHealthService {
     }
 
     public synchronized void reload() {
-        log.info("Loading CSV data...");
-        var scoreErrors = new java.util.ArrayList<String>();
-        ScoreDataBundle scoreData = null;
-
-        CsvParseResult<ScoreDataBundle> scoreResult = scoreCsvParser.parse();
-        switch (scoreResult) {
-            case CsvParseResult.Success<ScoreDataBundle> s -> scoreData = s.value();
-            case CsvParseResult.Failure<ScoreDataBundle> f -> {
-                log.warn("Score CSV validation failed: {}", f.errors());
-                scoreErrors.addAll(f.errors());
+        log.info("Loading data...");
+        try {
+            var languageCodes = dictionaryRepository.availableLanguages();
+            var bundles = new LinkedHashMap<String, LanguageBundle>();
+            for (var code : languageCodes) {
+                dictionaryRepository.findLanguage(code).ifPresent(bundle -> bundles.put(code, bundle));
             }
-        }
 
-        MultiLanguageDataBundle multiLanguageData = multiLanguageDictionaryParser.parseAll();
+            var wordsAreHealthy = !bundles.isEmpty() && bundles.values().stream().anyMatch(LanguageBundle::isValid);
+            var wordErrors = bundles.values().stream()
+                    .flatMap(bundle -> bundle.validationErrors().stream())
+                    .toList();
 
-        boolean multiLanguageHealthy = multiLanguageData.bundles().values().stream()
-                .anyMatch(LanguageBundle::isValid);
-    var wordsAreHealthy = multiLanguageHealthy;
-    var wordErrors = collectWordErrors(multiLanguageData);
+            var primaryLanguageCode = languageCodes.isEmpty() ? "pl" : languageCodes.getFirst();
+            var multiLanguageData = new MultiLanguageDataBundle(bundles, primaryLanguageCode);
 
-        currentSnapshot = new DataSnapshot(
-                wordsAreHealthy, scoreData != null,
-                wordErrors, scoreErrors,
-        null, scoreData, multiLanguageData);
+            var scoreErrors = new ArrayList<String>();
+            var scoresHealthy = false;
+            try {
+                jdbcTemplate.queryForObject("SELECT COUNT(*) FROM score_attempt", Integer.class);
+                scoresHealthy = true;
+            } catch (Exception e) {
+                log.warn("Score health check failed: {}", e.getMessage());
+                scoreErrors.add("Score health check failed: " + e.getMessage());
+            }
 
-        if (wordsAreHealthy) {
-            eventPublisher.publishEvent(new DataReloadedEvent(this));
-        var validLanguages = multiLanguageData.bundles().values().stream()
-            .filter(LanguageBundle::isValid)
-            .count();
-        if (scoreData != null) {
-        log.info("Data loaded successfully. {} valid language(s), {} score entries.",
-            validLanguages, scoreData.histories().size());
+            currentSnapshot = new DataSnapshot(wordsAreHealthy, scoresHealthy, wordErrors, scoreErrors, multiLanguageData);
+
+            if (wordsAreHealthy) {
+                eventPublisher.publishEvent(new DataReloadedEvent(this));
+                var validLanguages = bundles.values().stream()
+                        .filter(LanguageBundle::isValid)
+                        .count();
+                if (scoresHealthy) {
+                    log.info("Data loaded successfully. {} valid language(s), scores healthy.", validLanguages);
+                } else {
+                    log.warn("Score health check failed ({} error(s)); multi-language data loaded ({} valid language(s)). Gameplay available.",
+                            scoreErrors.size(), validLanguages);
+                }
             } else {
-        log.warn("Score data failed ({} error(s)); multi-language data loaded ({} valid language(s)). Gameplay available.",
-            scoreErrors.size(), validLanguages);
+                log.warn("Data loading failed: {} word error(s), {} score error(s).",
+                        wordErrors.size(), scoreErrors.size());
             }
-        } else {
-            log.warn("Data loading failed: {} word error(s), {} score error(s).",
-                    wordErrors.size(), scoreErrors.size());
+        } catch (Exception e) {
+            log.error("Data reload failed due to database error: {}", e.getMessage());
+            currentSnapshot = DataSnapshot.degraded(List.of("Data reload failed: " + e.getMessage()));
         }
     }
 
@@ -88,20 +93,12 @@ public class DataHealthService {
     }
 
     /**
-     * Returns the language codes of all valid language bundles in the current snapshot.
+     * Returns the language codes of all available languages from the repository.
      *
-     * @return list of valid language codes, or an empty list if no multi-language data is available
+     * @return list of language codes
      */
     public List<String> availableLanguages() {
-        var multiLanguageData = currentSnapshot.multiLanguageData();
-        if (multiLanguageData == null) {
-            return List.of();
-        }
-        return multiLanguageData.bundles().entrySet().stream()
-                .filter(entry -> entry.getValue().isValid())
-                .map(Map.Entry::getKey)
-                .sorted()
-                .toList();
+        return dictionaryRepository.availableLanguages();
     }
 
     public synchronized void reportRuntimeError(String errorMessage) {
@@ -112,12 +109,6 @@ public class DataHealthService {
     public synchronized void reportScoreWritePathError(String message) {
         log.error("Score write path error: {}", message);
         var current = currentSnapshot;
-        currentSnapshot = new DataSnapshot(current.wordsHealthy(), false, current.wordErrors(), List.of(message), current.wordData(), null, current.multiLanguageData());
-    }
-
-    private List<String> collectWordErrors(MultiLanguageDataBundle multiLanguageData) {
-        return multiLanguageData.bundles().entrySet().stream()
-                .flatMap(entry -> entry.getValue().validationErrors().stream())
-                .toList();
+        currentSnapshot = new DataSnapshot(current.wordsHealthy(), false, current.wordErrors(), List.of(message), current.multiLanguageData());
     }
 }

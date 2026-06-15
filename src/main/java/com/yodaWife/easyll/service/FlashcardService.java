@@ -2,9 +2,9 @@ package com.yodawife.easyll.service;
 
 import com.yodawife.easyll.domain.Word;
 import com.yodawife.easyll.domain.WordEntry;
+import com.yodawife.easyll.repository.DictionaryRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.random.RandomGenerator;
@@ -12,26 +12,14 @@ import java.util.random.RandomGenerator;
 @Service
 public class FlashcardService {
 
-    private final DataHealthService dataHealthService;
+    private final DictionaryRepository dictionaryRepository;
     private final EligibilityEvaluator eligibilityEvaluator;
     private final RandomGenerator random = RandomGenerator.getDefault();
 
-    public FlashcardService(DataHealthService dataHealthService,
+    public FlashcardService(DictionaryRepository dictionaryRepository,
                             EligibilityEvaluator eligibilityEvaluator) {
-        this.dataHealthService = dataHealthService;
+        this.dictionaryRepository = dictionaryRepository;
         this.eligibilityEvaluator = eligibilityEvaluator;
-    }
-
-    public Optional<WordEntry> randomCard() {
-        DataSnapshot snapshot = dataHealthService.snapshot();
-        if (!snapshot.healthy() || snapshot.wordData() == null) {
-            return Optional.empty();
-        }
-        List<WordEntry> words = snapshot.wordData().words();
-        if (words.isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of(words.get(random.nextInt(words.size())));
     }
 
     /**
@@ -43,8 +31,7 @@ public class FlashcardService {
      * @return an eligible {@link WordEntry}, or {@link Optional#empty()} when none are available
      */
     public Optional<WordEntry> randomCard(String languageCode, String mode) {
-        var snapshot = dataHealthService.snapshot();
-        var bundleOpt = snapshot.getLanguageBundle(languageCode);
+        var bundleOpt = dictionaryRepository.findLanguage(languageCode);
         if (bundleOpt.isEmpty()) {
             return Optional.empty();
         }
@@ -66,8 +53,7 @@ public class FlashcardService {
      * @return an eligible {@link Word}, or {@link Optional#empty()} when none are available
      */
     public Optional<Word> randomWord(String languageCode, String mode, Set<String> excludeWordIds) {
-        var snapshot = dataHealthService.snapshot();
-        var bundleOpt = snapshot.getLanguageBundle(languageCode);
+        var bundleOpt = dictionaryRepository.findLanguage(languageCode);
         if (bundleOpt.isEmpty()) {
             return Optional.empty();
         }

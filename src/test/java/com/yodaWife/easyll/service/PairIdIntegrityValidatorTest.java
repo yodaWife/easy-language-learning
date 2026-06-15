@@ -5,12 +5,10 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.yodawife.easyll.domain.LanguageBundle;
-import com.yodawife.easyll.domain.MultiLanguageDataBundle;
-import com.yodawife.easyll.domain.ScoreDataBundle;
-import com.yodawife.easyll.domain.ScoreKey;
-import com.yodawife.easyll.domain.UserWordHistory;
 import com.yodawife.easyll.domain.Word;
 import com.yodawife.easyll.domain.WordId;
+import com.yodawife.easyll.repository.DictionaryRepository;
+import com.yodawife.easyll.repository.ScoreReadRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,16 +17,18 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class PairIdIntegrityValidatorTest {
 
-    private final DataHealthService dataHealthService = mock(DataHealthService.class);
-    private final PairIdIntegrityValidator validator = new PairIdIntegrityValidator(dataHealthService);
+    private final DictionaryRepository dictionaryRepository = mock(DictionaryRepository.class);
+    private final ScoreReadRepository scoreReadRepository = mock(ScoreReadRepository.class);
+    private final PairIdIntegrityValidator validator = new PairIdIntegrityValidator(dictionaryRepository, scoreReadRepository);
 
     private Logger logger;
     private ListAppender<ILoggingEvent> listAppender;
@@ -52,17 +52,14 @@ class PairIdIntegrityValidatorTest {
         var word1 = new Word(new WordId("pair-1"), "Hello", "Helló", "", true);
         var word2 = new Word(new WordId("pair-2"), "World", "Világ", "", true);
         var bundle = new LanguageBundle("hu", null, List.of(word1, word2), List.of(), List.of());
-        var multiLanguageData = new MultiLanguageDataBundle(Map.of("hu", bundle), "hu");
-        var scoreData = new ScoreDataBundle(Map.of(
-                new ScoreKey("user-1", "pair-1", "match"), new UserWordHistory(),
-                new ScoreKey("user-1", "pair-2", "match"), new UserWordHistory()
-        ));
-        var snapshot = new DataSnapshot(true, true, List.of(), List.of(), null, scoreData, multiLanguageData);
-        when(dataHealthService.snapshot()).thenReturn(snapshot);
+        when(dictionaryRepository.availableLanguages()).thenReturn(List.of("hu"));
+        when(dictionaryRepository.findLanguage("hu")).thenReturn(Optional.of(bundle));
+        when(scoreReadRepository.knownUsers()).thenReturn(Set.of("user-1"));
+        when(scoreReadRepository.getHistoriesForUser("user-1")).thenReturn(Map.of("pair-1", List.of(), "pair-2", List.of()));
 
         validator.validate();
 
-        List<ILoggingEvent> warnLogs = listAppender.list.stream()
+        var warnLogs = listAppender.list.stream()
                 .filter(e -> e.getLevel() == Level.WARN)
                 .toList();
         assertThat(warnLogs).isEmpty();
@@ -73,16 +70,14 @@ class PairIdIntegrityValidatorTest {
     void validate_orphanedPairId_logsWarning() {
         var word = new Word(new WordId("pair-known"), "Cat", "Macska", "", true);
         var bundle = new LanguageBundle("hu", null, List.of(word), List.of(), List.of());
-        var multiLanguageData = new MultiLanguageDataBundle(Map.of("hu", bundle), "hu");
-        var scoreData = new ScoreDataBundle(Map.of(
-                new ScoreKey("user-1", "pair-orphan", "match"), new UserWordHistory()
-        ));
-        var snapshot = new DataSnapshot(true, true, List.of(), List.of(), null, scoreData, multiLanguageData);
-        when(dataHealthService.snapshot()).thenReturn(snapshot);
+        when(dictionaryRepository.availableLanguages()).thenReturn(List.of("hu"));
+        when(dictionaryRepository.findLanguage("hu")).thenReturn(Optional.of(bundle));
+        when(scoreReadRepository.knownUsers()).thenReturn(Set.of("user-1"));
+        when(scoreReadRepository.getHistoriesForUser("user-1")).thenReturn(Map.of("pair-orphan", List.of()));
 
         validator.validate();
 
-        List<ILoggingEvent> warnLogs = listAppender.list.stream()
+        var warnLogs = listAppender.list.stream()
                 .filter(e -> e.getLevel() == Level.WARN)
                 .toList();
         assertThat(warnLogs).isNotEmpty();
@@ -90,23 +85,34 @@ class PairIdIntegrityValidatorTest {
     }
 
     @Test
-    @DisplayName("Null score data in snapshot — validator skips gracefully")
-    void validate_nullScoreData_skipsGracefully() {
-        var snapshot = new DataSnapshot(false, false, List.of(), List.of(), null, null, null);
-        when(dataHealthService.snapshot()).thenReturn(snapshot);
+    @DisplayName("No languages in dictionary — integrity check skipped with WARN")
+    void validate_noLanguages_skipsWithWarn() {
+        when(dictionaryRepository.availableLanguages()).thenReturn(List.of());
 
-        assertThatCode(validator::validate).doesNotThrowAnyException();
+        validator.validate();
+
+        var warnLogs = listAppender.list.stream()
+                .filter(e -> e.getLevel() == Level.WARN)
+                .toList();
+        assertThat(warnLogs).hasSize(1);
+        assertThat(warnLogs.get(0).getFormattedMessage()).contains("PairId integrity check skipped");
     }
 
     @Test
-    @DisplayName("Null multi-language data in snapshot — validator skips gracefully")
-    void validate_nullMultiLanguageData_skipsGracefully() {
-        var scoreData = new ScoreDataBundle(Map.of(
-                new ScoreKey("user-1", "pair-1", "match"), new UserWordHistory()
-        ));
-        var snapshot = new DataSnapshot(false, false, List.of(), List.of(), null, scoreData, null);
-        when(dataHealthService.snapshot()).thenReturn(snapshot);
+    @DisplayName("No score entries found — logs INFO that nothing to validate")
+    void validate_noScoreEntries_logsInfoNothingToValidate() {
+        var word = new Word(new WordId("pair-1"), "Hello", "Helló", "", true);
+        var bundle = new LanguageBundle("hu", null, List.of(word), List.of(), List.of());
+        when(dictionaryRepository.availableLanguages()).thenReturn(List.of("hu"));
+        when(dictionaryRepository.findLanguage("hu")).thenReturn(Optional.of(bundle));
+        when(scoreReadRepository.knownUsers()).thenReturn(Set.of());
 
-        assertThatCode(validator::validate).doesNotThrowAnyException();
+        validator.validate();
+
+        var infoLogs = listAppender.list.stream()
+                .filter(e -> e.getLevel() == Level.INFO)
+                .toList();
+        assertThat(infoLogs).hasSize(1);
+        assertThat(infoLogs.get(0).getFormattedMessage()).contains("no score entries found");
     }
 }

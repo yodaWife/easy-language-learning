@@ -1,6 +1,6 @@
-# ADR 0001: Deliver Current Features First, With Database Migration Readiness
+# ADR 0001: Database Migration Readiness and Completion
 
-- Status: Accepted
+- Status: COMPLETED
 - Date: 2026-05-28
 - Deciders: Easy Language Learning team
 
@@ -11,53 +11,48 @@ The product requires near-term feature delivery in two areas:
 1. Account and session UX: signed-in user selection, switching, sign-out, and session continuity across page reloads.
 2. Scoring and progress: keep last 12 attempts, expose per-user progress in dictionary view, and stop using FROM/TO text as persistence key.
 
-The application is currently CSV-backed and local-first. A full database migration is planned, but not yet mandatory for immediate feature release.
+The migration objective was to move dictionary/account/score persistence from CSV-era infrastructure to PostgreSQL while preserving application behavior and interface boundaries.
 
 ## Decision
 
-Implement current requirements on the existing runtime, while introducing persistence boundaries that allow a low-risk migration to a relational database in the next milestone.
+Introduce repository boundaries, migrate data model to PostgreSQL, and complete runtime cutover to DB-only operation.
 
 This means:
 
-1. Keep CSV adapters as active persistence implementation now.
-2. Introduce repository interfaces and storage-agnostic services now.
-3. Normalize identifiers now:
-   - `user_id` as immutable user identity.
-   - `pair_id` (or existing immutable `wordId` if guaranteed globally unique and immutable) as dictionary pair identity.
-4. Move score key to `(user_id, pair_id, mode)` and enforce rolling window = 12.
-5. Prepare migration assets (schema, mapping rules, data migration script design) now.
+1. Repository interfaces were introduced and adopted in services.
+2. Score key was normalized to `(userId, pairId, mode)` with rolling window 12.
+3. Flyway schema migrations were introduced and applied.
+4. Runtime profile was cut over to `db`.
+5. CSV migration and fallback infrastructure was subsequently removed.
 
-## Implementation update (2026-06-08)
+## Implementation update (2026-06-15)
 
-Phase 3 implementation is complete.
+Migration and cleanup are complete.
 
 Implemented boundaries in code:
 
 1. `ScoreReadRepository` (`getHistoriesForUser`, `knownUsers`).
 2. `ScoreWriteRepository` (`appendAttempt`, `flush`).
-3. `DictionaryRepository` (`findLanguage`, `availableLanguages`).
-4. `ScoreRepository` implements both score interfaces.
-5. `CsvDictionaryRepository` implements `DictionaryRepository` by delegating to `DataHealthService` snapshots.
+3. `DictionaryRepository` now supports full read/write dictionary operations (6 methods).
+4. DB repository implementations are active runtime adapters.
+5. CSV repositories and CSV migration utilities are removed.
 6. `ScoreProgressService` depends on `ScoreReadRepository`.
 7. `MatchGameApplicationService` depends on `ScoreWriteRepository`.
 
-Phase 2 delivery now implemented:
+Schema and adapter delivery implemented:
 
-1. Profile-gated adapter strategy with `db` (default) and `csv` fallback/import profile.
-2. PostgreSQL adapters for account, dictionary, score read, and score write repositories.
-3. Flyway schema migration at `src/main/resources/db/migration/V1__init.sql`.
-4. One-off startup migrator `CsvToDbMigrationRunner` enabled via `app.migration.enabled=true` and supporting dry-run.
-5. Migration error output via `MigrationErrorRecorder` to configurable CSV path.
-6. DB adapter parity/contract tests running with Testcontainers (graceful skip when Docker unavailable).
+1. PostgreSQL adapters for account, dictionary, score read, and score write repositories.
+2. Flyway baseline migration `V1__init.sql`.
+3. Flyway `V2__mode_eligibility.sql` adding `mode_eligibility` with FK to `dictionary_pair`.
+4. Controller integration tests standardized on PostgreSQL Testcontainers base class (`AbstractControllerIntegrationTest`).
 
 Phase 3 cutover now implemented:
 
 1. Runtime default switched to PostgreSQL by setting `spring.profiles.active=db`.
 2. Flyway migration `V1__init.sql` executed and schema validated as up to date on subsequent starts.
-3. Live CSV-to-DB migration completed via `CsvToDbMigrationRunner` (2 users, 207 dictionary pairs, 116 score entries, 0 errors).
-4. `csv` profile retained as fallback/import utility path.
-5. Migration runner treated as one-shot tooling; `app.migration.enabled=false` remains the steady-state setting.
-6. Spring Boot 4.x Flyway module gotcha resolved by explicit `org.springframework.boot:spring-boot-flyway` dependency.
+3. Runtime default remains `spring.profiles.active=db`.
+4. `spring.profiles.group.test=db` is active for integration tests.
+5. CSV code paths, profiles, and migration runner properties are removed from runtime documentation and code.
 
 Additional readiness guard implemented:
 
@@ -71,15 +66,11 @@ Deliberate naming deviation from the original blueprint:
 
 ## Rationale
 
-### Why not migrate fully now
+### Why this worked
 
-1. Current feature scope is broad and user-visible; adding a platform migration in the same cycle increases regression risk.
-2. Data model requirements are still evolving (multi-language and multi-game scoring behavior), so immediate DB lock-in could require follow-up schema churn.
-
-### Why readiness now
-
-1. Most migration pain is caused by unstable identifiers and storage-coupled services.
-2. Introducing interfaces and stable IDs now lets us swap persistence implementations with minimal controller/service rewiring.
+1. Stable repository boundaries reduced coupling during migration.
+2. Flyway made schema evolution explicit and repeatable.
+3. Testcontainers-based integration tests validated DB behavior in controller flows.
 
 ## Consequences
 
@@ -87,14 +78,14 @@ Deliberate naming deviation from the original blueprint:
 
 1. Faster and safer delivery of requested account/scoring features.
 2. Reduced migration risk through explicit contracts and stable IDs.
-3. Ability to support dual storage adapters during transition if needed.
+3. Data model now includes mode eligibility as first-class relational state.
 4. Startup referential-integrity checks now detect orphan score `pairId` values early.
 5. Runtime cutover has been executed through profile switch (`csv` -> `db`) without controller/service rewiring.
 
 ### Negative
 
 1. Additional short-term complexity from abstraction layers.
-2. Temporary duplicate logic risk if CSV and DB adapters diverge without shared tests.
+2. Ongoing schema evolution still requires migration discipline.
 
 ## Non-goals (for this iteration)
 
@@ -106,9 +97,9 @@ Deliberate naming deviation from the original blueprint:
 
 Before DB cutover:
 
-1. Parity tests pass against both CSV and DB implementations.
-2. Migration dry-run report is generated and reviewed for unresolved mappings.
-3. Data health endpoint validates both dictionary and score stores.
+1. DB-backed tests pass and runtime smoke checks pass on default profile.
+2. Data health endpoint validates dictionary and score stores through DB access.
+3. PairId integrity checks remain active at startup.
 
 Current verification snapshot for completed Phase 2 test run:
 
@@ -116,10 +107,11 @@ Current verification snapshot for completed Phase 2 test run:
 2. 16 skipped (Testcontainers when Docker unavailable)
 3. 0 failing
 
-Phase 3 status (2026-06-08):
+Final status (2026-06-15):
 
-1. Environment/production migration and DB profile cutover are complete.
-2. CSV adapters remain available for fallback/import path only.
+1. Migration is complete.
+2. CSV-era code and data sources are removed.
+3. PostgreSQL is the only persistence backend for normal operation.
 
 ## References
 

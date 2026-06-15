@@ -4,6 +4,7 @@ import com.yodawife.easyll.domain.AttemptResult;
 import com.yodawife.easyll.domain.MatchBoard;
 import com.yodawife.easyll.domain.MatchCard;
 import com.yodawife.easyll.domain.MatchSession;
+import com.yodawife.easyll.repository.DictionaryRepository;
 import com.yodawife.easyll.repository.ScoreWriteRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,17 +28,17 @@ public class MatchGameApplicationService {
     private final MatchSessionService matchSessionService;
     private final ScoreWriteRepository scoreRepository;
     private final MatchBoardGenerator matchBoardGenerator;
-    private final DataHealthService dataHealthService;
+    private final DictionaryRepository dictionaryRepository;
     private final ConcurrentHashMap<String, List<AttemptRecord>> pendingAttempts = new ConcurrentHashMap<>();
 
     public MatchGameApplicationService(MatchSessionService matchSessionService,
                                        ScoreWriteRepository scoreRepository,
                                        MatchBoardGenerator matchBoardGenerator,
-                                       DataHealthService dataHealthService) {
+                                       DictionaryRepository dictionaryRepository) {
         this.matchSessionService = matchSessionService;
         this.scoreRepository = scoreRepository;
         this.matchBoardGenerator = matchBoardGenerator;
-        this.dataHealthService = dataHealthService;
+        this.dictionaryRepository = dictionaryRepository;
     }
 
     /**
@@ -148,8 +149,7 @@ public class MatchGameApplicationService {
     }
 
     private Optional<String> resolvePairId(String fromWord, String toWord, String languageCode) {
-        return dataHealthService.snapshot()
-                .getLanguageBundle(languageCode)
+        return dictionaryRepository.findLanguage(languageCode)
                 .flatMap(lb -> lb.words().stream()
                         .filter(w -> w.fromWord().equals(fromWord) && w.toWord().equals(toWord))
                         .findFirst()

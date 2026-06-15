@@ -1,10 +1,10 @@
 package com.yodawife.easyll.service;
 
-import com.yodawife.easyll.validation.MultiLanguageDictionaryParser;
-import com.yodawife.easyll.validation.ScoreCsvParser;
+import com.yodawife.easyll.repository.DictionaryRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
 
@@ -13,12 +13,12 @@ import static org.mockito.Mockito.mock;
 
 class DataHealthServiceTest {
 
-    private final ScoreCsvParser scoreCsvParser = mock(ScoreCsvParser.class);
+    private final DictionaryRepository dictionaryRepository = mock(DictionaryRepository.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
-    private final MultiLanguageDictionaryParser multiLanguageDictionaryParser = mock(MultiLanguageDictionaryParser.class);
+    private final JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
 
     // @PostConstruct is not invoked in plain unit tests; initial snapshot is DataSnapshot.degraded("Data not yet loaded")
-    private final DataHealthService service = new DataHealthService(scoreCsvParser, eventPublisher, multiLanguageDictionaryParser);
+    private final DataHealthService service = new DataHealthService(dictionaryRepository, eventPublisher, jdbcTemplate);
 
     @Test
     @DisplayName("reportScoreWritePathError preserves wordsHealthy=false when word health was already degraded")

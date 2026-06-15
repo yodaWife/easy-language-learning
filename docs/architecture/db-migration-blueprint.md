@@ -2,9 +2,9 @@
 
 ## 1. Goal
 
-Deliver current account/scoring requirements on CSV now, while shaping the code and data model for near-term migration to a relational database.
+Document final migration outcome and current PostgreSQL-only architecture for dictionary and scoring persistence.
 
-### Implementation sync status (2026-06-08)
+### Implementation sync status (2026-06-15)
 
 Phase 3 is complete in the codebase.
 
@@ -12,29 +12,28 @@ Completed in implementation:
 
 1. Account/session controller and service.
 2. `ActiveUserContext` in `HttpSession`.
-3. Repository interfaces and CSV adapters.
+3. Repository interfaces are active and backed by PostgreSQL implementations.
 4. Score key `(userId, pairId, mode)`.
 5. History cap increased from 10 to 12.
 6. Dictionary progress column visible only to signed-in users.
 7. Startup `pairId` referential-integrity validator.
 
-Additional phase 2 delivery completed:
+Additional delivery completed:
 
 1. Flyway schema migration at `src/main/resources/db/migration/V1__init.sql`.
 2. PostgreSQL adapters: `PostgresAccountRepository`, `PostgresScoreReadRepository`, `PostgresScoreWriteRepository`, `PostgresDictionaryRepository`.
-3. Profile gating strategy via `PersistenceProfiles`: `db` (default) and `csv` fallback/import profile.
-4. `CsvDictionaryRepository` introduced; `DataHealthService` no longer implements `DictionaryRepository`.
-5. Startup CSV-to-DB migrator `CsvToDbMigrationRunner` behind `app.migration.enabled` with dry-run support.
-6. Testcontainers parity tests for DB adapters (gracefully skipped when Docker is unavailable).
+3. Flyway migration `V2__mode_eligibility.sql` added `mode_eligibility` with FK to `dictionary_pair`.
+4. `DictionaryRepository` expanded to read/write contract with 6 methods.
+5. `DataHealthService` now performs DB-backed reload and resilient degraded-state fallback on DB failures.
+6. Controller integration tests use `AbstractControllerIntegrationTest` with PostgreSQL Testcontainers.
 
 Phase 3 cutover delivery completed:
 
 1. Runtime default switched from `csv` to `db` in `application.properties`.
 2. Flyway executed `V1__init.sql`; schema contains `app_user`, `dictionary_pair`, `score_attempt`, `score_progress`.
-3. Live CSV-to-DB migration completed via `CsvToDbMigrationRunner`: 2 users, 207 dictionary pairs, 116 score entries, 0 errors.
-4. Startup smoke verification passed on `db` profile (Flyway reports schema up to date and pairId integrity check passes).
-5. CSV profile retained as fallback/import utility.
-6. Spring Boot 4.x Flyway autoconfiguration gotcha documented: explicit `org.springframework.boot:spring-boot-flyway` dependency is required.
+3. Startup smoke verification passed on `db` profile (Flyway schema up to date and pairId integrity check passes).
+4. CSV code, profiles, migration runner, and CSV data files were removed after migration completion.
+5. Spring Boot 4.x Flyway autoconfiguration gotcha documented: explicit `org.springframework.boot:spring-boot-flyway` dependency is required.
 
 Actual code has precedence over this plan where names differ.
 
@@ -56,7 +55,7 @@ Assumptions:
 
 ## 3. Persistence contracts (implemented in phase 1)
 
-Create interfaces first. Keep CSV implementations active for now.
+Repository interfaces are now fully implemented and used with PostgreSQL adapters.
 
 ```java
 public interface AccountRepository {
@@ -79,18 +78,19 @@ public interface ScoreWriteRepository {
 public interface DictionaryRepository {
     Optional<LanguageBundle> findLanguage(String languageCode);
     List<String> availableLanguages();
-    // Existing write operations can stay in DictionaryEditService initially,
-    // then move behind this interface in phase 2.
+  void updateGlobalEnabled(String pairId, boolean enabled);
+  void updateWordContent(String pairId, String fromWord, String toWord, String example);
+  void insertWord(String languageCode, String pairId, String fromWord, String toWord, String example, boolean globalEnabled);
+  void upsertModeEligibility(String pairId, String mode, boolean enabled);
 }
 ```
 
 Implementation notes:
 
-1. `ScoreRepository` implements both `ScoreReadRepository` and `ScoreWriteRepository`.
-2. `CsvDictionaryRepository` implements `DictionaryRepository` by delegating to `DataHealthService` snapshot reads.
-3. `ScoreProgressService` depends on `ScoreReadRepository` (not concrete `ScoreRepository`).
-4. `MatchGameApplicationService` depends on `ScoreWriteRepository` (not concrete `ScoreRepository`).
-5. Naming deviation from the original blueprint is deliberate: `ScoreAttemptRepository`/`ScoreProgressRepository` were replaced by `ScoreReadRepository`/`ScoreWriteRepository` because `ScoreAttempt` and `ScoreProgress` domain objects are planned for phase 2 DB modeling and do not yet exist in the CSV-era model.
+1. `PostgresDictionaryRepository` implements dictionary read and write operations.
+2. `ScoreProgressService` depends on `ScoreReadRepository`.
+3. `MatchGameApplicationService` depends on `ScoreWriteRepository`.
+4. Application services remain adapter-agnostic at interface level.
 
 ## 4. Domain model updates
 
@@ -167,8 +167,8 @@ create table score_progress (
 
 Notes:
 
-1. If keeping dictionary CSV in phase 1, `dictionary_pair` can be introduced in DB during phase 2 only.
-2. If `wordId` is already stable and globally unique, use it directly as `pair_id` value.
+1. `mode_eligibility` table is part of applied schema via `V2__mode_eligibility.sql`.
+2. `pair_id` remains the stable identifier for score and dictionary linking.
 
 ## 6. API and UI behavior changes (current requirements)
 
@@ -184,22 +184,14 @@ Dictionary view:
 1. If `signedIn == true`, show progress column.
 2. If `signedIn == false`, hide progress column.
 
-## 7. Migration from CSV runtime state (implemented in phase 2)
+## 7. Post-migration runtime state
 
-Runtime trigger:
+Current operation:
 
-1. `CsvToDbMigrationRunner` executes on startup only when `app.migration.enabled=true`.
-2. `app.migration.dry-run=true` logs planned writes without mutating DB.
-
-Algorithm implemented in code:
-
-1. Load users from `CsvAccountRepository` and insert/upsert into `app_user`.
-2. Load dictionary bundles from `DataHealthService` snapshot and insert into `dictionary_pair`.
-3. Load score histories from snapshot (`ScoreKey -> UserWordHistory`).
-4. Validate `userId` exists and `pairId` exists in migrated dictionary set.
-5. For each score key, write `score_attempt` rows (synthetic chronological timestamps) for the last 12 entries.
-6. Upsert `score_progress` with `history_last12`, counts, and success percentage.
-7. Record invalid rows through `MigrationErrorRecorder` to `app.migration.errors-output-path`.
+1. Runtime uses PostgreSQL only (`spring.profiles.active=db`).
+2. `DataHealthService` reads dictionaries from `DictionaryRepository` and validates score table access via JDBC.
+3. Dictionary edits persist through repository writes to DB tables.
+4. Integration tests execute against PostgreSQL Testcontainers via shared base class.
 
 ## 8. Incremental implementation plan
 
@@ -207,7 +199,7 @@ Algorithm implemented in code:
 
 1. Add account/session controller and service.
 2. Add `ActiveUserContext` in `HttpSession`.
-3. Add repository interfaces and CSV adapters.
+3. Add repository interfaces and migrate services to interface dependencies.
 4. Change scoring key to `(userId,pairId,mode)`.
 5. Increase history cap from 10 to 12.
 6. Add dictionary progress column for signed-in user only.
@@ -228,9 +220,9 @@ Delivered:
 1. Flyway migration V1 schema.
 2. JDBC PostgreSQL adapters for account, dictionary, score read, and score write repositories.
 3. Contract/parity test coverage for DB adapters via Testcontainers.
-4. One-off migration runner (`CsvToDbMigrationRunner`) with dry-run and error reporting.
+4. Flyway-based DB schema lifecycle established for runtime operation.
 
-### Phase 3: Cutover
+### Phase 3: Cutover and cleanup
 
 Status: completed (2026-06-08).
 
@@ -238,17 +230,16 @@ Delivered:
 
 1. Cutover to `db` profile completed.
 2. Production migration run completed with 0 recorded migration errors.
-3. CSV adapters retained for fallback/import utility workflows.
-4. Post-cutover operation set to `app.migration.enabled=false` (one-shot migration runner remains disabled during normal runtime).
+3. CSV-era repositories, parsers, migration runner, and CSV data files removed.
+4. Documentation and tests aligned to PostgreSQL-only architecture.
 
 ## 9. Test strategy
 
 1. Unit tests for rolling last-12 logic and progress percentage.
 2. Controller tests for sign-in/switch/sign-out flow and main-menu indicator.
 3. Integration tests for dictionary progress visibility by account state.
-4. Adapter contract tests shared by CSV and DB implementations.
-5. Migration test fixtures including ambiguous/unresolvable legacy rows.
-6. Testcontainers-based DB tests skip gracefully when Docker is unavailable.
+4. Testcontainers-based DB tests skip gracefully when Docker is unavailable.
+5. Controller integration tests share PostgreSQL setup via `AbstractControllerIntegrationTest`.
 
 ## 10. Risks and mitigations
 
@@ -260,16 +251,16 @@ Implementation status: mitigation is active via `PairIdIntegrityValidator`.
 2. Risk: account display-name collisions.
 - Mitigation: case-insensitive uniqueness policy and deterministic normalization.
 
-3. Risk: CSV and DB adapter behavior drift.
-- Mitigation: same contract test suite required for both adapters.
+3. Risk: schema drift across environments.
+- Mitigation: strict Flyway migration discipline and startup validation.
 
 ## 11. Definition of done for readiness
 
 1. No persistence logic outside repository adapters.
-2. Controllers/services compile unchanged when adapter switches from CSV to DB.
+2. Controllers/services remain persistence-agnostic via repository interfaces.
 3. Stable `user_id` and `pair_id` used in all new score writes.
-4. Migration dry-run report available with explicit unresolved rows.
+4. Runtime and integration tests validate DB-only behavior end to end.
 
 Phase 2 readiness status: items 1-4 are implemented in the current codebase.
 
-Phase 3 status: all cutover items are implemented in the current codebase and validated in runtime smoke checks.
+Final status: migration and cleanup are complete; PostgreSQL is the normal and only persistence runtime.

@@ -1,11 +1,14 @@
 package com.yodawife.easyll.service;
 
+import com.yodawife.easyll.repository.DictionaryRepository;
+import com.yodawife.easyll.repository.ScoreReadRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -21,31 +24,38 @@ public class PairIdIntegrityValidator {
 
     private static final Logger log = LoggerFactory.getLogger(PairIdIntegrityValidator.class);
 
-    private final DataHealthService dataHealthService;
+    private final DictionaryRepository dictionaryRepository;
+    private final ScoreReadRepository scoreReadRepository;
 
-    public PairIdIntegrityValidator(DataHealthService dataHealthService) {
-        this.dataHealthService = dataHealthService;
+    public PairIdIntegrityValidator(DictionaryRepository dictionaryRepository, ScoreReadRepository scoreReadRepository) {
+        this.dictionaryRepository = dictionaryRepository;
+        this.scoreReadRepository = scoreReadRepository;
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void validate() {
-        var snapshot = dataHealthService.snapshot();
-        var scoreData = snapshot.scoreData();
-        var multiLanguageData = snapshot.multiLanguageData();
+        var languages = dictionaryRepository.availableLanguages();
 
-        if (scoreData == null || multiLanguageData == null) {
-            log.warn("PairId integrity check skipped: score data or dictionary data is not available.");
+        if (languages.isEmpty()) {
+            log.warn("PairId integrity check skipped: no languages found in dictionary.");
             return;
         }
 
-        Set<String> knownPairIds = multiLanguageData.bundles().values().stream()
+        Set<String> knownPairIds = languages.stream()
+                .map(dictionaryRepository::findLanguage)
+                .flatMap(Optional::stream)
                 .flatMap(bundle -> bundle.words().stream())
                 .map(word -> word.wordId().value())
                 .collect(Collectors.toUnmodifiableSet());
 
-        Set<String> scorePairIds = scoreData.histories().keySet().stream()
-                .map(key -> key.pairId())
+        Set<String> scorePairIds = scoreReadRepository.knownUsers().stream()
+                .flatMap(userId -> scoreReadRepository.getHistoriesForUser(userId).keySet().stream())
                 .collect(Collectors.toUnmodifiableSet());
+
+        if (scorePairIds.isEmpty()) {
+            log.info("PairId integrity check: no score entries found, nothing to validate.");
+            return;
+        }
 
         var orphans = scorePairIds.stream()
                 .filter(pairId -> !knownPairIds.contains(pairId))

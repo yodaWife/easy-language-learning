@@ -1,29 +1,23 @@
 package com.yodawife.easyll.service;
 
-import com.yodawife.easyll.config.DictionaryProperties;
 import com.yodawife.easyll.domain.DictionaryOperationResult;
 import com.yodawife.easyll.domain.LanguageBundle;
 import com.yodawife.easyll.domain.ModeEligibility;
-import com.yodawife.easyll.domain.MultiLanguageDataBundle;
 import com.yodawife.easyll.domain.Word;
 import com.yodawife.easyll.domain.WordId;
-import org.jspecify.annotations.Nullable;
+import com.yodawife.easyll.repository.DictionaryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -32,21 +26,13 @@ import static org.mockito.Mockito.when;
 
 class DictionaryEditServiceTest {
 
-    @TempDir
-    @Nullable Path tempDir;
-
-    private Path tempDir() {
-        return Objects.requireNonNull(tempDir);
-    }
-
     private final DataHealthService dataHealthService = mock(DataHealthService.class);
     private final DictionaryWriteLock dictionaryWriteLock = mock(DictionaryWriteLock.class);
-    private final CsvPersistence csvPersistence = mock(CsvPersistence.class);
+    private final DictionaryRepository dictionaryRepository = mock(DictionaryRepository.class);
     private final DictionaryAuditLogService auditLogService = mock(DictionaryAuditLogService.class);
-    private final DictionaryProperties dictionaryProperties = mock(DictionaryProperties.class);
 
     private final DictionaryEditService service = new DictionaryEditService(
-            dataHealthService, dictionaryWriteLock, csvPersistence, auditLogService, dictionaryProperties);
+            dataHealthService, dictionaryWriteLock, dictionaryRepository, auditLogService);
 
     private static final String LANGUAGE = "en";
     private static final WordId WORD_ID = new WordId("hello");
@@ -59,34 +45,28 @@ class DictionaryEditServiceTest {
             action.run();
             return null;
         }).when(dictionaryWriteLock).executeWithLock(anyString(), anyLong(), any(Runnable.class));
-        when(dictionaryProperties.getRootPath()).thenReturn(tempDir().toString());
     }
 
-    private DataSnapshot snapshotWith(Word word) {
-        var bundle = new LanguageBundle(LANGUAGE, null, List.of(word), List.of(), List.of());
-        var multiBundle = new MultiLanguageDataBundle(Map.of(LANGUAGE, bundle), LANGUAGE);
-        return new DataSnapshot(true, true, List.of(), List.of(), null, null, multiBundle);
+    private LanguageBundle bundleWith(Word word) {
+        return new LanguageBundle(LANGUAGE, null, List.of(word), List.of(), List.of());
     }
 
-    private DataSnapshot snapshotWith(Word word, ModeEligibility eligibility) {
-        var bundle = new LanguageBundle(LANGUAGE, null, List.of(word), List.of(eligibility), List.of());
-        var multiBundle = new MultiLanguageDataBundle(Map.of(LANGUAGE, bundle), LANGUAGE);
-        return new DataSnapshot(true, true, List.of(), List.of(), null, null, multiBundle);
+    private LanguageBundle bundleWith(Word word, ModeEligibility eligibility) {
+        return new LanguageBundle(LANGUAGE, null, List.of(word), List.of(eligibility), List.of());
     }
 
     @Test
-    @DisplayName("toggleGlobalEnabled flips flag, writes CSV, logs audit event, and triggers reload")
+    @DisplayName("toggleGlobalEnabled flips flag, writes to database, logs audit event, and triggers reload")
     void toggleGlobalEnabledSuccessfullyFlipsFlagAndPersists() throws Exception {
         var word = new Word(WORD_ID, "Hallo", "hello", "", true);
-        when(dataHealthService.snapshot()).thenReturn(snapshotWith(word));
-        when(dictionaryProperties.getRootPath()).thenReturn(tempDir().toString());
+        when(dictionaryRepository.findLanguage(LANGUAGE)).thenReturn(Optional.of(bundleWith(word)));
 
         var result = service.toggleGlobalEnabled(LANGUAGE, WORD_ID);
 
         assertThat(result).isInstanceOf(DictionaryOperationResult.Success.class);
         var updatedWord = ((DictionaryOperationResult.Success<Word>) result).value();
         assertThat(updatedWord.globalEnabled()).isFalse();
-        verify(csvPersistence).writeWords(any(Path.class), any());
+        verify(dictionaryRepository).updateGlobalEnabled(WORD_ID.value(), false);
         verify(auditLogService).logGlobalToggle(LANGUAGE, WORD_ID, true, false);
         verify(dataHealthService).reload();
     }
@@ -94,7 +74,7 @@ class DictionaryEditServiceTest {
     @Test
     @DisplayName("toggleGlobalEnabled returns Failure when the language code is not found")
     void toggleGlobalEnabledReturnsFailureWhenLanguageNotFound() {
-        when(dataHealthService.snapshot()).thenReturn(DataSnapshot.degraded(List.of()));
+        when(dictionaryRepository.findLanguage("unknown")).thenReturn(Optional.empty());
 
         var result = service.toggleGlobalEnabled("unknown", WORD_ID);
 
@@ -107,7 +87,7 @@ class DictionaryEditServiceTest {
     @DisplayName("toggleGlobalEnabled returns Failure when the word is not found in the bundle")
     void toggleGlobalEnabledReturnsFailureWhenWordNotFound() {
         var differentWord = new Word(new WordId("other"), "Andere", "other", "", true);
-        when(dataHealthService.snapshot()).thenReturn(snapshotWith(differentWord));
+        when(dictionaryRepository.findLanguage(LANGUAGE)).thenReturn(Optional.of(bundleWith(differentWord)));
 
         var result = service.toggleGlobalEnabled(LANGUAGE, WORD_ID);
 
@@ -117,12 +97,11 @@ class DictionaryEditServiceTest {
     }
 
     @Test
-    @DisplayName("toggleGlobalEnabled returns Failure when CsvPersistence throws IOException")
-    void toggleGlobalEnabledReturnsFailureOnIoException() throws Exception {
+    @DisplayName("toggleGlobalEnabled returns Failure when database throws an exception")
+    void toggleGlobalEnabledReturnsFailureOnDatabaseException() {
         var word = new Word(WORD_ID, "Hallo", "hello", "", true);
-        when(dataHealthService.snapshot()).thenReturn(snapshotWith(word));
-        when(dictionaryProperties.getRootPath()).thenReturn(tempDir().toString());
-        doThrow(new IOException("disk full")).when(csvPersistence).writeWords(any(), any());
+        when(dictionaryRepository.findLanguage(LANGUAGE)).thenReturn(Optional.of(bundleWith(word)));
+        doThrow(new RuntimeException("connection refused")).when(dictionaryRepository).updateGlobalEnabled(anyString(), anyBoolean());
 
         var result = service.toggleGlobalEnabled(LANGUAGE, WORD_ID);
 
@@ -136,8 +115,7 @@ class DictionaryEditServiceTest {
     void toggleModeEnabledFlipsExistingEntryFromTrueToFalse() throws Exception {
         var word = new Word(WORD_ID, "Hallo", "hello", "", true);
         var existingEligibility = new ModeEligibility(WORD_ID, MODE, true);
-        when(dataHealthService.snapshot()).thenReturn(snapshotWith(word, existingEligibility));
-        when(dictionaryProperties.getRootPath()).thenReturn(tempDir().toString());
+        when(dictionaryRepository.findLanguage(LANGUAGE)).thenReturn(Optional.of(bundleWith(word, existingEligibility)));
 
         var result = service.toggleModeEnabled(LANGUAGE, WORD_ID, MODE);
 
@@ -150,29 +128,12 @@ class DictionaryEditServiceTest {
     @DisplayName("toggleModeEnabled with no existing entry defaults to enabled=true, then flips to false")
     void toggleModeEnabledMissingEntryDefaultsTrueThenFlipsToFalse() throws Exception {
         var word = new Word(WORD_ID, "Hallo", "hello", "", true);
-        when(dataHealthService.snapshot()).thenReturn(snapshotWith(word));
-        when(dictionaryProperties.getRootPath()).thenReturn(tempDir().toString());
+        when(dictionaryRepository.findLanguage(LANGUAGE)).thenReturn(Optional.of(bundleWith(word)));
 
         var result = service.toggleModeEnabled(LANGUAGE, WORD_ID, MODE);
 
         assertThat(result).isInstanceOf(DictionaryOperationResult.Success.class);
         var updated = ((DictionaryOperationResult.Success<ModeEligibility>) result).value();
         assertThat(updated.enabled()).isFalse();
-    }
-
-    @Test
-    @DisplayName("toggleGlobalEnabled returns Failure when dictionary root path is classpath-based")
-    void toggleGlobalEnabledReturnsFailureForClasspathRootPath() throws Exception {
-        var word = new Word(WORD_ID, "Hallo", "hello", "", true);
-        when(dataHealthService.snapshot()).thenReturn(snapshotWith(word));
-        when(dictionaryProperties.getRootPath()).thenReturn("classpath:data/dictionaries");
-
-        var result = service.toggleGlobalEnabled(LANGUAGE, WORD_ID);
-
-        assertThat(result).isInstanceOf(DictionaryOperationResult.Failure.class);
-        assertThat(((DictionaryOperationResult.Failure<Word>) result).errorMessage())
-                .contains("filesystem root path");
-        verify(csvPersistence, never()).writeWords(any(), any());
-        verify(dataHealthService, never()).reload();
     }
 }

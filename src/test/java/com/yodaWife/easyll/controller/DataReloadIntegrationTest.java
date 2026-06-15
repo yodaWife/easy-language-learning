@@ -1,6 +1,6 @@
 package com.yodawife.easyll.controller;
 
-import com.yodawife.easyll.repository.ScoreRepository;
+import com.yodawife.easyll.repository.ScoreReadRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -74,7 +74,7 @@ class DataReloadIntegrationTest {
     WebApplicationContext context;
 
     @Autowired
-    ScoreRepository scoreRepository;
+    ScoreReadRepository scoreRepository;
 
     MockMvc mockMvc;
 

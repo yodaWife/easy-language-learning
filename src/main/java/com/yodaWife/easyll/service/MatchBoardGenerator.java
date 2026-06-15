@@ -4,6 +4,7 @@ import com.yodawife.easyll.config.MatchGameProperties;
 import com.yodawife.easyll.domain.MatchBoard;
 import com.yodawife.easyll.domain.MatchCard;
 import com.yodawife.easyll.domain.WordEntry;
+import com.yodawife.easyll.repository.DictionaryRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -14,44 +15,25 @@ import java.util.Random;
 @Service
 public class MatchBoardGenerator {
 
-    private final DataHealthService dataHealthService;
+    private final DictionaryRepository dictionaryRepository;
     private final MatchGameProperties matchGameProperties;
     private final EligibilityEvaluator eligibilityEvaluator;
     private final Random random = new Random();
 
-    public MatchBoardGenerator(DataHealthService dataHealthService,
+    public MatchBoardGenerator(DictionaryRepository dictionaryRepository,
                                MatchGameProperties matchGameProperties,
                                EligibilityEvaluator eligibilityEvaluator) {
-        this.dataHealthService = dataHealthService;
+        this.dictionaryRepository = dictionaryRepository;
         this.matchGameProperties = matchGameProperties;
         this.eligibilityEvaluator = eligibilityEvaluator;
     }
 
     public MatchBoard generate() {
-        DataSnapshot snapshot = dataHealthService.snapshot();
-        var wordData = snapshot.wordData();
-        if (wordData == null) {
+        var languages = dictionaryRepository.availableLanguages();
+        if (languages.isEmpty()) {
             return new MatchBoard(List.of(), List.of(), List.of(), java.util.Set.of());
         }
-        List<WordEntry> allWords = new ArrayList<>(wordData.words());
-
-        // Pick random entries (no duplicates within a set) using configured board size.
-        Collections.shuffle(allWords, random);
-        int boardSize = matchGameProperties.getBoardSize();
-        List<WordEntry> picked = new ArrayList<>(allWords.subList(0, Math.min(boardSize, allWords.size())));
-
-        // Build left (draggable FROM) and right (drop-slot TO) columns, then shuffle each independently
-        List<MatchCard> leftColumn = new ArrayList<>();
-        List<MatchCard> rightColumn = new ArrayList<>();
-        for (WordEntry entry : picked) {
-            String pairId = MatchCard.buildPairId(entry.fromWord(), entry.toWord());
-            leftColumn.add(new MatchCard(entry.fromWord(), pairId, true, "from"));
-            rightColumn.add(new MatchCard(entry.toWord(), pairId, false, "to"));
-        }
-        Collections.shuffle(leftColumn, random);
-        Collections.shuffle(rightColumn, random);
-
-        return new MatchBoard(leftColumn, rightColumn, picked, java.util.Set.of());
+        return generate(languages.get(0), "match");
     }
 
     /**
@@ -64,8 +46,7 @@ public class MatchBoardGenerator {
      * @return a new {@link MatchBoard}, or an empty board when eligible words are insufficient
      */
     public MatchBoard generate(String languageCode, String mode) {
-        var snapshot = dataHealthService.snapshot();
-        var bundleOpt = snapshot.getLanguageBundle(languageCode);
+        var bundleOpt = dictionaryRepository.findLanguage(languageCode);
         if (bundleOpt.isEmpty()) {
             return new MatchBoard(List.of(), List.of(), List.of(), java.util.Set.of());
         }

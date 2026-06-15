@@ -100,35 +100,13 @@ curl -i -u admin:admin -X POST http://localhost:8080/admin/data/reload
 
 Expected: success status from reload endpoint.
 
-## 6. Data and Migration Controls
+## 6. Data Health Controls
 
-Normal runtime:
+- Use `/health/data` to verify word and score health.
+- Use `POST /admin/data/reload` (with admin credentials) to refresh runtime state.
+- On reload failures, expect degraded-state reporting and investigate DB connectivity/logs.
 
-- `app.migration.enabled=false`
-- `app.migration.dry-run=true` (safe default unless intentionally running writes)
-
-Notes:
-
-- Migration runner is one-shot tooling, not continuous sync.
-- Keep migration disabled after cutover unless explicitly executing migration tasks.
-
-## 7. CSV Fallback Mode (No PostgreSQL)
-
-Windows:
-
-```powershell
-./gradlew.bat bootRun --args='--spring.profiles.active=csv'
-```
-
-Linux / macOS:
-
-```sh
-./gradlew bootRun --args='--spring.profiles.active=csv'
-```
-
-Use fallback mode for temporary local work, import utilities, or DB outage scenarios.
-
-## 8. Quick Troubleshooting
+## 7. Quick Troubleshooting
 
 - Error: relation does not exist (`app_user`, etc.)
   - Confirm app runs with `db` profile and Flyway is enabled in DB profile.
@@ -139,7 +117,7 @@ Use fallback mode for temporary local work, import utilities, or DB outage scena
 - Port already in use
   - Free port `8080` (app) or `5432` (PostgreSQL), then restart.
 
-## 9. Routine Maintenance
+## 8. Routine Maintenance
 
 - Rotate default admin credentials in non-local environments.
 - Back up PostgreSQL database before major upgrades.

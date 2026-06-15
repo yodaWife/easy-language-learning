@@ -1,8 +1,6 @@
 package com.yodawife.easyll.repository.db;
 
-import com.yodawife.easyll.config.PersistenceProfiles;
 import com.yodawife.easyll.repository.ScoreWriteRepository;
-import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -13,10 +11,9 @@ import java.util.Collections;
 
 /**
  * PostgreSQL-backed implementation of {@link ScoreWriteRepository}.
- * Active when the {@value PersistenceProfiles#DB} Spring profile is enabled.
+ * Active when the {@code db} Spring profile is enabled.
  */
 @Repository
-@Profile(PersistenceProfiles.DB)
 public class PostgresScoreWriteRepository implements ScoreWriteRepository {
 
     private static final int MAX_HISTORY = 12;

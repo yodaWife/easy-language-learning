@@ -12,7 +12,7 @@ Easy Language Learning is a vocabulary practice app that runs locally in your br
 - [Flashcards mode](#flashcards-mode)
 - [Match mode](#match-mode)
 - [Scoring](#scoring)
-- [Dictionary files](#dictionary-files)
+- [Dictionary storage](#dictionary-storage)
 - [Data health and reload](#data-health-and-reload)
 - [Known limitations](#known-limitations)
 
@@ -43,16 +43,6 @@ gradlew.bat bootRun
 ```
 
 Open [http://localhost:8080](http://localhost:8080) in your browser.
-
-If you want to run without PostgreSQL, use CSV mode:
-
-```sh
-# Windows
-gradlew.bat bootRun --args='--spring.profiles.active=csv'
-
-# Linux / macOS
-./gradlew bootRun --args='--spring.profiles.active=csv'
-```
 
 ---
 
@@ -126,7 +116,7 @@ When you are signed in, the dictionary table includes an additional **PROGRESS**
 
 When no rows are available, the page shows a dedicated empty state for either an empty dictionary or no search results.
 
-Changes are persisted to dictionary CSV files and used by game modes immediately.
+Changes are persisted to the application data store and used by game modes immediately.
 
 ---
 
@@ -191,54 +181,29 @@ For signed-in users, the app records **S** (success) or **F** (failure) for ever
 
 The dictionary **PROGRESS** column is visible only for signed-in users and shows the percentage of correct attempts based on the stored history window.
 
-By default, score history is stored at `data/scores/scores.csv`.
+By default, score history is stored in the PostgreSQL database.
 
 > [!NOTE]
 > Playing as Guest still gives you the per-session result. Your attempts are simply not saved between sessions.
 
 ---
 
-## Dictionary files
+## Dictionary storage
 
-Dictionary data is loaded from folders under `data/dictionaries`.
+Dictionary entries are stored in PostgreSQL.
 
-Example layout:
-
-```text
-data/dictionaries/
-   hun/
-      words.csv
-      mode-eligibility.csv
-   pl/
-      words.csv
-      mode-eligibility.csv
-```
-
-### words.csv format
-
-```text
-WORD_ID;FROM;TO;EXAMPLE;GLOBAL_ENABLED
-90eadc73-ef0e-3efe-a5f3-e2ecd0b76d28;Letter;Betű;Írtam egy betűt a barátomnak.;true
-```
-
-### mode-eligibility.csv format
-
-```text
-WORD_ID;MODE;ENABLED
-w1;flashcards;true
-w1;match;false
-```
-
-If a WORD_ID/MODE pair is missing in `mode-eligibility.csv`, it defaults to enabled.
+- Base words are stored in `dictionary_pair`.
+- Per-mode overrides are stored in `mode_eligibility`.
+- Missing mode override means the word is enabled for that mode by default.
 
 ---
 
 ## Data health and reload
 
-The app validates both CSV files on startup and on every reload.
+The app validates dictionary and score data access on startup and on every reload.
 
 - **Healthy** — gameplay is enabled.
-- **Degraded** — one or both files failed validation. A banner on the home page describes the problem.
+- **Degraded** — one or more data checks failed. A banner on the home page describes the problem.
 
 ### Health diagnostics page
 
@@ -246,7 +211,7 @@ Visit `/health/data` for a full list of parse errors with details.
 
 ### Reloading without a restart
 
-If you edited a CSV file, you can reload it without restarting:
+If you need to refresh data after maintenance operations, you can reload without restarting:
 
 1. Go to `/health/data`.
 2. Click the **Reload data** button.
@@ -267,4 +232,4 @@ POST /admin/data/reload
 - Sessions are held in memory — restarting the app clears all active sessions.
 - Gameplay account selection has no password-based authentication.
 - Score history is capped to the last 12 attempts per word pair per user.
-- Dictionary edits require file write permissions under `data/dictionaries`.
+- PostgreSQL availability is required for dictionary and score persistence.

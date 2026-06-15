@@ -49,7 +49,7 @@ class DataReloadApplicationServiceTest {
     void reloadReturnsSnapshotContainingMultiLanguageData() {
         var englishBundle = new LanguageBundle("en", null, List.of(), List.of(), List.of());
         var multiBundle = new MultiLanguageDataBundle(Map.of("en", englishBundle), "en");
-        var snapshot = new DataSnapshot(true, true, List.of(), List.of(), null, null, multiBundle);
+        var snapshot = new DataSnapshot(true, true, List.of(), List.of(), multiBundle);
         when(dataHealthService.snapshot()).thenReturn(snapshot);
 
         var result = service.reload();

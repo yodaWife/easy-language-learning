@@ -11,20 +11,9 @@ import java.util.List;
 public class DictionaryProperties {
 
     @NotBlank
-    private String rootPath = "classpath:data/dictionaries";
-
-    @NotBlank
     private String primaryLanguageCode = "hun";
 
     private List<String> modes = List.of("flashcards", "match");
-
-    public String getRootPath() {
-        return rootPath;
-    }
-
-    public void setRootPath(String rootPath) {
-        this.rootPath = rootPath;
-    }
 
     public String getPrimaryLanguageCode() {
         return primaryLanguageCode;

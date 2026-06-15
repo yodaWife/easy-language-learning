@@ -2,8 +2,6 @@ package com.yodawife.easyll.service;
 
 import com.yodawife.easyll.domain.LanguageBundle;
 import com.yodawife.easyll.domain.MultiLanguageDataBundle;
-import com.yodawife.easyll.domain.ScoreDataBundle;
-import com.yodawife.easyll.domain.WordDataBundle;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
@@ -18,10 +16,7 @@ public record DataSnapshot(
         boolean scoresHealthy,
         List<String> wordErrors,
         List<String> scoreErrors,
-        @Nullable WordDataBundle wordData,
-        @Nullable ScoreDataBundle scoreData,
-        @Nullable MultiLanguageDataBundle multiLanguageData
-) {
+        @Nullable MultiLanguageDataBundle multiLanguageData) {
     public DataSnapshot {
         wordErrors = List.copyOf(wordErrors);
         scoreErrors = List.copyOf(scoreErrors);
@@ -32,12 +27,8 @@ public record DataSnapshot(
         return wordsHealthy && scoresHealthy;
     }
 
-    public static DataSnapshot healthy(WordDataBundle wordData, ScoreDataBundle scoreData) {
-        return new DataSnapshot(true, true, List.of(), List.of(), wordData, scoreData, null);
-    }
-
     public static DataSnapshot degraded(List<String> errors) {
-        return new DataSnapshot(false, false, errors, List.of(), null, null, null);
+        return new DataSnapshot(false, false, errors, List.of(), null);
     }
 
     public Optional<LanguageBundle> getLanguageBundle(String languageCode) {

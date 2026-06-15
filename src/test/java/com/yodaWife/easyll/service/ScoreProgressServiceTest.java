@@ -1,7 +1,7 @@
 package com.yodawife.easyll.service;
 
 import com.yodawife.easyll.domain.UserWordHistory;
-import com.yodawife.easyll.repository.ScoreRepository;
+import com.yodawife.easyll.repository.ScoreReadRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 
 class ScoreProgressServiceTest {
 
-    private final ScoreRepository scoreRepo = mock(ScoreRepository.class);
+    private final ScoreReadRepository scoreRepo = mock(ScoreReadRepository.class);
     private final ScoreProgressService service = new ScoreProgressService(scoreRepo);
 
     @Test

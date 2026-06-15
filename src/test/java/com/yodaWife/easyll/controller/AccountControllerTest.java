@@ -2,18 +2,11 @@ package com.yodawife.easyll.controller;
 
 import com.yodawife.easyll.domain.ActiveUserContext;
 import com.yodawife.easyll.domain.SessionAttributes;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,16 +14,13 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-@SpringBootTest
-@ActiveProfiles("test")
-class AccountControllerTest {
+class AccountControllerTest extends AbstractControllerIntegrationTest {
 
     private static final Path TEMP_ACCOUNTS_DIR;
 
@@ -46,16 +36,6 @@ class AccountControllerTest {
     static void isolateAccountStorage(DynamicPropertyRegistry registry) {
         // Redirect account writes to a temp dir so tests never touch the real users.csv.
         registry.add("app.accounts.file-path", () -> TEMP_ACCOUNTS_DIR.resolve("users-test.csv").toString());
-    }
-
-    @Autowired
-    WebApplicationContext context;
-
-    MockMvc mockMvc;
-
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     }
 
     // ── GET /account/panel ───────────────────────────────────────────────────
