@@ -58,6 +58,28 @@ CSV migration work is complete; normal operation is database-only.
 8. Toggle changes persist to PostgreSQL and are reflected in gameplay.
 9. Dictionary add-row rendering stays aligned whether progress is visible or hidden (new-row colspan respects signed-in state).
 
+### 2.5.1 CSV dictionary upload
+
+1. Dictionary page provides a CSV upload form for the currently selected language.
+2. Upload endpoint is public (`POST /dictionary/upload`) and available to anonymous and signed-in users.
+3. Upload accepts multipart form data with `file` and `languageCode`.
+4. Server-side validation rejects uploads when:
+   1. `languageCode` is blank.
+   2. File is empty.
+   3. File size exceeds 10 MB.
+   4. CSV header is not exactly `ENGLISH,HUNGARIAN,EXAMPLE`.
+   5. Any row does not have exactly 3 columns.
+   6. Any row has blank ENGLISH or HUNGARIAN.
+5. Parsing/validation is fail-fast at file level for row errors (no partial import from invalid files).
+6. ENGLISH and HUNGARIAN values are normalized by trim + first-letter capitalization; EXAMPLE is trimmed only.
+7. In-file duplicates are removed by normalized `(FROM, TO)` pair (first occurrence kept; others counted as skipped).
+8. Existing dictionary duplicates are skipped using the same normalized `(FROM, TO)` key.
+9. New rows are inserted with generated UUID `pair_id` and `global_enabled=true`.
+10. Upload summary is returned to UI via flash messages:
+  1. Success: `Imported N word(s), skipped M duplicate(s).`
+  2. Failure: user-visible error message.
+11. Imported words are global and visible to all users in dictionary and learning modes.
+
 ### 2.6 Data health and reload
 
 1. Health page exposes word and score health states.
@@ -84,6 +106,8 @@ CSV migration work is complete; normal operation is database-only.
   1. `ScoreProgressService -> ScoreReadRepository`
   2. `MatchGameApplicationService -> ScoreWriteRepository`
 7. Service dependencies remain interface-driven (`ScoreReadRepository`, `ScoreWriteRepository`, `DictionaryRepository`) with DB implementations active by default.
+8. Dictionary CSV upload writes are executed under per-language dictionary write lock and Spring transaction boundary to avoid partial writes.
+9. Dictionary insert operations used by upload preserve defaults required by gameplay (`pair_id` generated per new row, `global_enabled=true` on insert).
 
 ## 3. Data Requirements
 

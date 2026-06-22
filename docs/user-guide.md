@@ -112,6 +112,36 @@ You can:
 5. Edit a row using the actions column (pencil icon).
 6. Browse with numbered pagination pills (with ellipsis for longer ranges).
 
+### Upload words from CSV
+
+Use the **Upload CSV** action in the dictionary toolbar to add words to the currently selected language.
+
+1. Click **Upload CSV**.
+2. Choose a `.csv` file.
+3. Click **Upload**.
+
+CSV format requirements:
+
+- Header must be exactly: `ENGLISH,HUNGARIAN,EXAMPLE`
+- Each row must have exactly 3 columns.
+- ENGLISH and HUNGARIAN must be present (not blank).
+- EXAMPLE may be empty.
+- Maximum file size is 10 MB.
+
+What happens during import:
+
+- ENGLISH and HUNGARIAN are trimmed and normalized to start with an uppercase first letter.
+- EXAMPLE is trimmed.
+- Duplicate pairs are skipped:
+   - duplicates inside the uploaded file,
+   - duplicates already present in the dictionary.
+- New words are added as globally enabled entries, so they are available to all users.
+
+After upload, the page shows:
+
+- Success: `Imported N word(s), skipped M duplicate(s).`
+- Error: a validation/import message. If any row is invalid, the entire file is rejected.
+
 When you are signed in, the dictionary table includes an additional **PROGRESS** column with your success percentage per word pair. In guest mode, this column is hidden.
 
 When no rows are available, the page shows a dedicated empty state for either an empty dictionary or no search results.

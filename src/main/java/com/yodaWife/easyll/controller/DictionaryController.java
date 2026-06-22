@@ -19,7 +19,11 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -42,6 +46,7 @@ public class DictionaryController {
     private static final String SORT_BY_FROM = "FROM";
     private static final String SORT_BY_PROGRESS = "PROGRESS";
     private static final String SORT_DIR_DESC = "DESC";
+    private static final long MAX_UPLOAD_SIZE_BYTES = 10L * 1024 * 1024;
 
     private final DataHealthService dataHealthService;
     private final DictionaryEditService dictionaryEditService;
@@ -342,6 +347,48 @@ public class DictionaryController {
         }
 
         return FRAGMENT_ROW;
+    }
+
+    @PostMapping("/dictionary/upload")
+    public String uploadCsv(
+            @RequestParam("languageCode") String languageCode,
+            @RequestParam("file") MultipartFile file,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+        if (languageCode.isBlank()) {
+            redirectAttributes.addFlashAttribute("uploadError", "languageCode must not be blank");
+            return "redirect:/dictionary";
+        }
+        if (file == null || file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("uploadError", "No file selected or file is empty");
+            return "redirect:/dictionary?languageCode=" + languageCode;
+        }
+        if (file.getSize() > MAX_UPLOAD_SIZE_BYTES) {
+            redirectAttributes.addFlashAttribute("uploadError", "File too large (max 10 MB)");
+            return "redirect:/dictionary?languageCode=" + languageCode;
+        }
+        log.info("CSV upload attempt: file='{}', languageCode='{}'", file.getOriginalFilename(), languageCode);
+        String csvContent;
+        try {
+            csvContent = new String(file.getBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.warn("Failed to read uploaded file '{}' for languageCode='{}': {}", file.getOriginalFilename(), languageCode, e.getMessage());
+            redirectAttributes.addFlashAttribute("uploadError", "Failed to read file: " + e.getMessage());
+            return "redirect:/dictionary?languageCode=" + languageCode;
+        }
+        var result = dictionaryEditService.uploadCsvDictionary(languageCode, csvContent);
+        return switch (result) {
+            case DictionaryOperationResult.Success<DictionaryEditService.CsvUploadSummary> s -> {
+                redirectAttributes.addFlashAttribute("uploadSuccess",
+                        "Imported " + s.value().imported() + " word(s), skipped " + s.value().skipped() + " duplicate(s).");
+                yield "redirect:/dictionary?languageCode=" + languageCode;
+            }
+            case DictionaryOperationResult.Failure<DictionaryEditService.CsvUploadSummary> f -> {
+                log.warn("CSV upload failed for languageCode='{}': {}", languageCode, f.errorMessage());
+                redirectAttributes.addFlashAttribute("uploadError", f.errorMessage());
+                yield "redirect:/dictionary?languageCode=" + languageCode;
+            }
+        };
     }
 
     private void populateSingleRowModel(Model model, String languageCode, String wordId, HttpSession session) {

@@ -8,7 +8,9 @@ import com.yodawife.easyll.repository.DictionaryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.UUID;
 
 /**
@@ -25,16 +27,19 @@ public class DictionaryEditService {
     private final DictionaryWriteLock dictionaryWriteLock;
     private final DictionaryRepository dictionaryRepository;
     private final DictionaryAuditLogService auditLogService;
+    private final CsvDictionaryParser csvDictionaryParser;
 
     public DictionaryEditService(
             DataHealthService dataHealthService,
             DictionaryWriteLock dictionaryWriteLock,
             DictionaryRepository dictionaryRepository,
-            DictionaryAuditLogService auditLogService) {
+            DictionaryAuditLogService auditLogService,
+            CsvDictionaryParser csvDictionaryParser) {
         this.dataHealthService = dataHealthService;
         this.dictionaryWriteLock = dictionaryWriteLock;
         this.dictionaryRepository = dictionaryRepository;
         this.auditLogService = auditLogService;
+        this.csvDictionaryParser = csvDictionaryParser;
     }
 
     /**
@@ -281,5 +286,80 @@ public class DictionaryEditService {
         }
 
         return new DictionaryOperationResult.Success<>(newWord);
+    }
+
+    public record CsvUploadSummary(int imported, int skipped) {}
+
+    @Transactional
+    public DictionaryOperationResult<CsvUploadSummary> uploadCsvDictionary(String languageCode, String csvContent) {
+        var parseResult = csvDictionaryParser.parse(csvContent);
+
+        if (parseResult instanceof CsvDictionaryParser.ParseResult.Failure failure) {
+            log.warn("[CSV-UPLOAD] language={} REJECTED: parser failure: {}", languageCode, failure.errorMessage());
+            return new DictionaryOperationResult.Failure<>(failure.errorMessage());
+        }
+
+        var success = (CsvDictionaryParser.ParseResult.Success) parseResult;
+
+        if (!success.rowErrors().isEmpty()) {
+            var firstError = success.rowErrors().getFirst();
+            log.warn("[CSV-UPLOAD] language={} REJECTED: row validation errors: {}", languageCode, success.rowErrors());
+            return new DictionaryOperationResult.Failure<>("Upload rejected due to invalid rows: " + firstError);
+        }
+
+        if (success.validRows().isEmpty()) {
+            return new DictionaryOperationResult.Success<>(new CsvUploadSummary(0, success.skippedInFileCount()));
+        }
+
+        var bundleOpt = dictionaryRepository.findLanguage(languageCode);
+        if (bundleOpt.isEmpty()) {
+            log.warn("[CSV-UPLOAD] language={} REJECTED: language not found", languageCode);
+            return new DictionaryOperationResult.Failure<>("Language not found: " + languageCode);
+        }
+
+        var bundle = bundleOpt.get();
+        var existingPairs = new HashSet<String>();
+        for (var word : bundle.words()) {
+            existingPairs.add(normalizeForDedup(word.fromWord()) + "\u0000" + normalizeForDedup(word.toWord()));
+        }
+
+        int[] importedCount = {0};
+        int[] skippedAgainstExisting = {0};
+
+        try {
+            dictionaryWriteLock.executeWithLock(languageCode, LOCK_TIMEOUT_MS, () -> {
+                for (var row : success.validRows()) {
+                    var pairKey = row.fromWord() + "\u0000" + row.toWord();
+                    if (existingPairs.contains(pairKey)) {
+                        skippedAgainstExisting[0]++;
+                        continue;
+                    }
+                    var newWordId = new WordId(UUID.randomUUID().toString());
+                    var newWord = new Word(newWordId, row.fromWord(), row.toWord(), row.example(), true);
+                    dictionaryRepository.insertWord(languageCode, newWordId.value(), newWord.fromWord(), newWord.toWord(), newWord.example(), true);
+                    auditLogService.logWordAdd(languageCode, newWordId, newWord);
+                    importedCount[0]++;
+                }
+                dataHealthService.reload();
+            });
+        } catch (DictionaryWriteLock.DictionaryLockTimeoutException e) {
+            return new DictionaryOperationResult.Failure<>("Dictionary is busy, please try again");
+        } catch (RuntimeException e) {
+            log.warn("Failed to update database for language '{}': {}", languageCode, e.getMessage());
+            return new DictionaryOperationResult.Failure<>("Failed to save changes: " + e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return new DictionaryOperationResult.Failure<>("Operation interrupted");
+        }
+
+        int totalSkipped = success.skippedInFileCount() + skippedAgainstExisting[0];
+        log.info("[CSV-UPLOAD] language={} imported={} skipped={}", languageCode, importedCount[0], totalSkipped);
+        return new DictionaryOperationResult.Success<>(new CsvUploadSummary(importedCount[0], totalSkipped));
+    }
+
+    private static String normalizeForDedup(String value) {
+        var trimmed = value.trim();
+        if (trimmed.isEmpty()) return trimmed;
+        return Character.toUpperCase(trimmed.charAt(0)) + trimmed.substring(1);
     }
 }

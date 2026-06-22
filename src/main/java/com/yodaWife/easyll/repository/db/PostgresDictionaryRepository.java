@@ -84,7 +84,11 @@ public class PostgresDictionaryRepository implements DictionaryRepository {
     @Override
     public void insertWord(String languageCode, String pairId, String fromWord, String toWord, String example, boolean globalEnabled) {
         jdbc.update(
-            "INSERT INTO dictionary_pair (pair_id, language_code, from_word, to_word, example, global_enabled) VALUES (?, ?, ?, ?, ?, ?)",
+            """
+            INSERT INTO dictionary_pair
+                (pair_id, language_code, from_word, to_word, example, global_enabled, created_at_utc, updated_at_utc)
+            VALUES (?, ?, ?, ?, ?, ?, now(), now())
+            """,
             pairId, languageCode, fromWord, toWord, example, globalEnabled);
     }
 

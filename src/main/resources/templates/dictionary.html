@@ -12,12 +12,16 @@
              th:data-sort-dir="${sortDir}"
              th:data-page-size="${pageSize}"
              th:data-language="${currentLanguage}"
-             x-data="{ sortBy: $el.dataset.sortBy, sortDir: $el.dataset.sortDir, pageSize: $el.dataset.pageSize, languageCode: $el.dataset.language }">
+             x-data="{ sortBy: $el.dataset.sortBy, sortDir: $el.dataset.sortDir, pageSize: $el.dataset.pageSize, languageCode: $el.dataset.language, showUploadForm: false }">
 
             <h2 class="section-title dict-section-title">📖 Dictionary Management</h2>
 
             <!-- Error banner -->
             <div th:if="${error != null}" class="banner-error" th:text="${error}"></div>
+
+            <!-- Upload result banners -->
+            <div th:if="${uploadSuccess != null}" class="banner-success" th:text="${uploadSuccess}"></div>
+            <div th:if="${uploadError != null}" class="banner-error" th:text="${uploadError}"></div>
 
             <!-- Unified Toolbar -->
             <div class="dict-toolbar">
@@ -85,6 +89,10 @@
                                 });
                             "
                             aria-label="Add new word">+ Add</button>
+                    <button type="button"
+                            class="btn-dict-add"
+                            @click="showUploadForm = !showUploadForm"
+                            aria-label="Upload CSV">&#8593; Upload CSV</button>
                 </div>
 
                 <!-- Hidden shared params -->
@@ -93,6 +101,22 @@
                     <input type="hidden" name="sortBy" :value="sortBy">
                     <input type="hidden" name="sortDir" :value="sortDir">
                     <input type="hidden" name="page" value="0">
+                </div>
+            </div>
+
+            <!-- CSV Upload modal -->
+            <div class="upload-modal-overlay" :class="{ 'is-open': showUploadForm }" @click.self="showUploadForm = false">
+                <div class="upload-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="upload-modal-title">
+                    <p id="upload-modal-title" class="upload-modal-title">Upload CSV</p>
+                    <p class="upload-modal-hint">File must have a header row: <code>ENGLISH,HUNGARIAN,EXAMPLE</code></p>
+                    <form method="post" action="/dictionary/upload" enctype="multipart/form-data">
+                        <input type="hidden" name="languageCode" th:value="${currentLanguage}">
+                        <input type="file" name="file" accept=".csv,text/csv" class="upload-modal-file-input" required>
+                        <div class="upload-modal-actions">
+                            <button type="button" class="nickname-modal-btn-cancel" @click="showUploadForm = false">Cancel</button>
+                            <button type="submit" class="nickname-modal-btn-accept">Upload</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
